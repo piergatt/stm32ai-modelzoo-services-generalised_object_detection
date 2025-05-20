@@ -27,7 +27,7 @@ To install X-LINUX-AI on your target device please follow the dedicated wiki pag
 
 To facilitate the deployment and avoid tools installation, the MPU deployment is based on [ST Edge AI developer cloud](https://stedgeai-dc.st.com/home) to access the ST Edge AI functionalities without installing the software. This requires an internet connection and making a free account.
 
-You can use the deployment service by using a model zoo [pre-trained model](../pretrained_models/README.md) from the [STM32 model zoo](https://github.com/STMicroelectronics/stm32ai-modelzoo/tree/master/image_classification/) or your own image classification model. Please refer to the YAML file [deployment_mpu_config.yaml](../src/config_file_examples/deployment_mpu_config.yaml), which is a ready YAML file with all the necessary sections ready to be filled, or you can update the [user_config.yaml](../src/user_config.yaml) to use it.
+You can use the deployment service by using a model zoo [pre-trained model](../pretrained_models/README.md) from the [STM32 model zoo](https://github.com/STMicroelectronics/stm32ai-modelzoo/tree/master/image_classification/) or your own image classification model. Please refer to the YAML file [deployment_mpu_config.yaml](../src/config_file_examples/deployment_mpu_config.yaml), which is a ready YAML file with all the necessary sections ready to be filled, or you can update the [user_config.yaml](../user_config.yaml) to use it.
 
 As an example, we will show how to deploy the model [mobilenet_v2_1.0_224_int8_per_tensor.tflite](https://github.com/STMicroelectronics/stm32ai-modelzoo/blob/master/image_classification/mobilenetv2/Public_pretrainedmodel_public_dataset/ImageNet/mobilenet_v2_1.0_224/mobilenet_v2_1.0_224_int8_per_tensor.tflite) pre-trained on the Imagenet dataset using the necessary parameters provided in [mobilenet_v2_1.0_224_per_tensor_config.yaml](https://github.com/STMicroelectronics/stm32ai-modelzoo/blob/master/image_classification/mobilenetv2/Public_pretrainedmodel_public_dataset/ImageNet/mobilenet_v2_1.0_224/mobilenet_v2_1.0_224_per_tensor_config.yaml).
 
@@ -41,7 +41,7 @@ The first section of the configuration file is the `general` section that provid
 
 ```yaml
 general:
-   model_path:  ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
+   model_path:  ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
 
 operation_mode: deployment
 ```
@@ -57,7 +57,7 @@ You must copy the `preprocessing` section to your own configuration file, to ens
 
 Configure the **dataset** section in the YAML file as follows:
 
-The `class_names` attribute specifies the classes that the model is trained on. This information could be provided in the YAML file directly, or in the case of MPU if the `label_file_path` is not provided in the deployment section, the `class_names` can be automatically recovered.
+The `class_names` attribute specifies the classes that the model is trained on. This information could be provided in the YAML file directly, or in the `classes_file_path` so the `class_names` can be automatically recovered.
 
 It avoids listing 1000 classes for the example of the Imagenet dataset used for this model.
 
@@ -66,7 +66,7 @@ It avoids listing 1000 classes for the example of the Imagenet dataset used for 
 
 To run inference in the Python application, we need to apply on the input data the same preprocessing used when training the model.
 
-To do so, you need to specify the **preprocessing** configuration in **[user_config.yaml](../src/user_config.yaml)** as the following:
+To do so, you need to specify the **preprocessing** configuration in **[user_config.yaml](../user_config.yaml)** as the following:
 
 ```yaml
 preprocessing:
@@ -91,6 +91,8 @@ The application code and the model will be deployed on the board through SSH.
 These steps will be done automatically by configuring the **tools** and **deployment** sections in the YAML file as the following:
 
 ```yaml
+dataset: 
+   classes_file_path: ../application_code/image_classification/STM32MP-LINUX/Resources/labels_imagenet_2012.txt
 tools:
    stedgeai:
       version: 10.0.0
@@ -101,7 +103,6 @@ tools:
 
 deployment:
    c_project_path: ../../application_code/image_classification/STM32MP-LINUX/
-   label_file_path: ../../application_code/image_classification/STM32MP-LINUX/Resources/labels_imagenet_2012.txt
    board_deploy_path: /usr/local/image-classification
    verbosity: 1
    hardware_setup:
@@ -113,7 +114,7 @@ deployment:
 where:
 - `on_cloud` - *Bool* enable usage of STM32 developer cloud
 - `c_project_path` - *Path* to [X-LINUX-AI application code](../../application_code/image_classification/STM32MP-LINUX/README.md) project.
-- `label_file_path` - *Path* to Dataset labels file path.
+- `classes_file_path` - *Path* to Dataset labels file path.
 - `board_deploy_path` - *Path* to the on target application deployment directory
 - `serie` - **STM32MP2** or **STM32MP1**, only supported options for *X-LINUX-AI application code*.
 - `board` - **STM32MP257F-EV1** or **STM32MP157F-DK2** or **STM32MP135F-DK**, see the [README](../../application_code/image_classification/STM32MP-LINUX/README.md) for more details.
@@ -127,14 +128,14 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
@@ -143,21 +144,21 @@ mlflow:
 
 First, you need to connect the camera board or USB camera to the *STM32MPU* board, then connect the board to your network using an ethernet cable or WIFI and recover the board IP using the netdata tool on the home screen.
 
-If you chose to modify the [user_config.yaml](../src/user_config.yaml), you can deploy the model by running the following command from the **src/** folder to deploy the application on your board:
+If you chose to modify the [user_config.yaml](../user_config.yaml), you can deploy the model by running the following command from the UC folder to deploy the application on your board:
 
 ```bash
 python stm32ai_main.py
 ```
-If you chose to update the [deployment_config.yaml](../src/config_file_examples/deployment_mpu_config.yaml) and use it, then run the following command from the **src/** folder to build and flash the application on your board:
+If you chose to update the [deployment_config.yaml](../src/config_file_examples/deployment_mpu_config.yaml) and use it, then run the following command from the UC folder to build and flash the application on your board:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name deployment_mpu_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name deployment_mpu_config.yaml
 ```
 
-If you have a Keras model that has not been quantized and you want to quantize it before deploying it, you can use the `chain_qd` tool to quantize and deploy the model sequentially. To do this, update the [chain_qd_config.yaml](../src/config_file_examples/chain_qd_config.yaml) file and then run the following command from the `src/` folder to build and flash the application on your board:
+If you have a Keras model that has not been quantized and you want to quantize it before deploying it, you can use the `chain_qd` tool to quantize and deploy the model sequentially. To do this, update the [chain_qd_config.yaml](../src/config_file_examples/chain_qd_config.yaml) file and then run the following command from the UC folder to build and flash the application on your board:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_qd_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_qd_config.yaml
 ```
 
 When the application is running on the *STM32MPU* board, the LCD displays the following information:

@@ -125,7 +125,7 @@ class ObjectDetectionMetricsData:
         self.classes_ds.assign(tf.zeros([self.dataset_size, self.num_boxes], dtype=tf.float32))
 
 
-def calculate_iou(boxA, boxB):
+def _calculate_iou(boxA, boxB):
     """
     Calculate the IOU between two bounding boxes
     Coordinates must be in (x1, y1, x2, y2) format.
@@ -171,6 +171,12 @@ def calculate_average_metrics(metrics):
     
     return mpre, mrec, mAP
     
+def _smooth(y, f=0.05):
+    """Box filter of fraction f."""
+    nf = round(len(y) * f * 2) // 2 + 1  # number of filter elements (must be odd)
+    p = np.ones(nf // 2)  # ones padding
+    yp = np.concatenate((p * y[0], y, p * y[-1]), 0)  # y padded
+    return np.convolve(yp, np.ones(nf) / nf, mode="valid")  # y-smoothed
 
 def calculate_objdet_metrics(groundtruths_ds, detections_ds, iou_threshold=None, averages_only=False):
     """
@@ -210,6 +216,7 @@ def calculate_objdet_metrics(groundtruths_ds, detections_ds, iou_threshold=None,
     classes = sorted(list(classes))
     
     metrics = {}
+    eps = 1e-16
     for c in classes:   
             
         # Get the groundtruths and detections for current class c
@@ -246,7 +253,7 @@ def calculate_objdet_metrics(groundtruths_ds, detections_ds, iou_threshold=None,
             # Look for the maximum IOU value and the corresponding GT
             iou_max = -1
             for k, gt in enumerate(gts):
-                iou = calculate_iou(det[3:], gt[2:])
+                iou = _calculate_iou(det[3:], gt[2:])
                 if iou > iou_max:
                     iou_max = iou
                     gt_max = k
@@ -270,27 +277,27 @@ def calculate_objdet_metrics(groundtruths_ds, detections_ds, iou_threshold=None,
         rec = acc_TP / npos if len(acc_TP) > 0 and npos > 0 else [0.]
         pre = acc_TP / (acc_FP + acc_TP) if len(acc_TP) > 0 else [0.]
         
-        # Interpolate the precision
-        ipre = np.concatenate(([0.], pre, [0.]))
-        for i in range(len(ipre) - 1, 0, -1):
-            ipre[i - 1] = max(ipre[i - 1], ipre[i])
-                
-        # Find the indices where recall changes
-        ii = []
-        irec = np.concatenate(([0.], rec, [1.]))
-        for i in range(len(irec) - 1):
-            if irec[1 + i] != irec[i]:
-                ii.append(i + 1)
+        #======================================================================================================================================= 
+        #calculate AP
+        mrec = np.concatenate(([0.0], rec, [1.0]))
+        mpre = np.concatenate(([1.0], pre, [0.0]))
+        x = np.linspace(0, 1, 101)  # 101-point interp (COCO)
+        ap = np.trapz(np.interp(x, mrec, mpre), x)  # integrate
+        #=======================================================================================================================================
+        # calculate F1-score
+        x = np.linspace(0, 1, 1000)
+        conf_l = [detection[2] for detection in detections]
+        conf = np.array(conf_l)
+        irec = np.interp(-x, -conf, rec, left=0)
+        ipre = np.interp(-x, -conf, pre, left=1)
 
-        # Calculate the average precision (AUC)
-        ap = 0
-        for i in ii:
-            ap = ap + np.sum((irec[i] - irec[i - 1]) * ipre[i])
-
+        f1_curve = 2 * (ipre) * (irec) / ((ipre) + (irec) + eps)
+        ifo = _smooth(f1_curve, 0.1).argmax()  # max F1 index
+        p, r, f1 = ipre[ifo], irec[ifo], f1_curve[ifo]  # max-F1 precision, recall, F1 values
         # Record the class metrics
         metrics[int(c)] = {
-            'pre': np.mean(pre),
-            'rec': np.mean(rec),
+            'pre': p,
+            'rec': r,
             'ap': ap,
             'interpolated_precision': ipre,
             'interpolated_recall': irec,

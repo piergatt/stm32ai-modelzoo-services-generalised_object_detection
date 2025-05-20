@@ -8,12 +8,13 @@
 #  *--------------------------------------------------------------------------------------------*/
 
 import tensorflow as tf
-from random_utils import check_dataaug_argument
-from objdet_random_utils import objdet_apply_change_rate
-from bounding_boxes_utils import bbox_corners_to_center_coords, bbox_center_to_corners_coords, bbox_normalized_to_abs_coords
+
+from common.data_augmentation import check_dataaug_argument
+from .objdet_random_utils import objdet_apply_change_rate
+from src.utils import bbox_corners_to_center_coords, bbox_center_to_corners_coords, bbox_normalized_to_abs_coords
 
 
-def check_objdet_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation):
+def _check_objdet_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation):
 
     def check_value_range(arg_value, arg_name):
         if isinstance(arg_value, (tuple, list)):
@@ -102,7 +103,7 @@ def objdet_random_crop(
     """
     
     # Check the function arguments
-    check_objdet_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation)
+    _check_objdet_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation)
 
     if not isinstance(crop_width, (tuple, list)):
         crop_width = (crop_width, crop_width)

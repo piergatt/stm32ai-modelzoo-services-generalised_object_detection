@@ -18,19 +18,18 @@ import numpy as np
 import tensorflow as tf
 from typing import Tuple, List, Dict, Optional
 
-from logs_utils import log_to_file, log_last_epoch_history
-from models_utils import model_summary
-from models_mgt import load_model_for_training
-from loss import spe_loss
-from metrics import single_pose_heatmaps_oks
-from preprocess import apply_rescaling
-from postprocess import heatmaps_spe_postprocess
-from heatmaps_train_model import HMTrainingModel
-from common_training import set_frozen_layers, set_dropout_rate, get_optimizer
-from callbacks import get_callbacks
-from evaluate import evaluate
+from common.utils import log_to_file, log_last_epoch_history, model_summary
+from common.training import set_frozen_layers, get_optimizer, set_dropout_rate
+from src.evaluation import evaluate
+from src.utils import load_model_for_training
+from .loss import spe_loss
+from .heatmaps_train_model import HMTrainingModel
+from .callbacks import get_callbacks
+from src.preprocessing import apply_rescaling
+from src.evaluation import single_pose_heatmaps_oks
 
-def setup_hm_model(cfg, model, loss, metrics, model_input_shape, seed=None):
+
+def _setup_hm_model(cfg, model, loss, metrics, model_input_shape, seed=None):
 
     data_augmentation_cfg = cfg.data_augmentation.config if cfg.data_augmentation else None
     scale = cfg.preprocessing.rescaling.scale
@@ -88,7 +87,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
     
     def oks(a,b): return single_pose_heatmaps_oks(a,b)
 
-    train_model = setup_hm_model(cfg,model,heatmaps_spe_loss,[oks],model_input_shape)
+    train_model = _setup_hm_model(cfg,model,heatmaps_spe_loss,[oks],model_input_shape)
 
     train_model.compile(optimizer=get_optimizer(cfg.training.optimizer))
 

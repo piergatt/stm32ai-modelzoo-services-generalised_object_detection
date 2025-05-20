@@ -12,7 +12,7 @@ operation_mode: chain_tqeb
 dataset:
    name: flowers
    class_names: [daisy, dandelion, roses, sunflowers, tulips]
-   training_path: ../datasets/flower_photos
+   training_path: ./datasets/flower_photos
    validation_split: 0.15
    quantization_split: 0.3
 
@@ -84,8 +84,8 @@ benchmarking:
    board: STM32H747I-DISCO
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

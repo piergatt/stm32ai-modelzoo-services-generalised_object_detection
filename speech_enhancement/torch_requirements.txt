@@ -19,3 +19,4 @@ hydra-core
 munch
 marshmallow==3.23.1
 scikit-learn==1.5.2
+clearml

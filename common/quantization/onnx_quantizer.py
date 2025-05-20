@@ -8,7 +8,6 @@
 from datetime import datetime
 import glob
 from hydra.core.hydra_config import HydraConfig
-import logging
 import numpy as np
 import onnx
 import onnxruntime
@@ -17,13 +16,10 @@ from onnxruntime import quantization
 from onnxruntime.quantization import (CalibrationDataReader, CalibrationMethod,
                                       QuantFormat, QuantType, quantize_static)
 import os
-import random
-import sys
 from typing import List
-import tqdm
 
 
-def update_opset(input_model, target_opset, export_dir):
+def _update_opset(input_model, target_opset, export_dir):
     '''
     updates the opset of an onnx model
     inputs:
@@ -57,7 +53,7 @@ def update_opset(input_model, target_opset, export_dir):
     print(f"[INFO] : The model has been converted to opset {target_opset} and saved at the same location.")
     return opset_model
 
-def preprocess_random_images(height: int, width: int, channel: int, size_limit=10):
+def _preprocess_random_images(height: int, width: int, channel: int, size_limit=10):
     """
     Loads a batch of images and preprocess them
     parameter height: image height in pixels
@@ -92,7 +88,7 @@ class ImageDataReader(CalibrationDataReader):
         if quantization_samples is not None:
             self.nhwc_data_list = np.expand_dims(quantization_samples, axis=1)
         else:
-            self.nhwc_data_list = preprocess_random_images(height,
+            self.nhwc_data_list = _preprocess_random_images(height,
                                                            width,
                                                            channel)
 
@@ -149,7 +145,7 @@ def quantize_onnx(quantization_samples, configs) -> None:
 
     print(f'[INFO] : Quantizing model : {model_path}')
 
-    opset_model = update_opset(input_model=model_path,
+    opset_model = _update_opset(input_model=model_path,
                  target_opset=target_opset,
                  export_dir=output_dir)
 

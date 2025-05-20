@@ -16,19 +16,14 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/data_augmentation'))
-sys.path.append(os.path.abspath('../../utils'))
-sys.path.append(os.path.abspath('../../preprocessing'))
-sys.path.append(os.path.abspath('../../data_augmentation'))
-sys.path.append(os.path.abspath('../../models'))
+from src.preprocessing import get_evaluation_data_loader
+from common.data_augmentation import random_color, random_misc, random_erasing
+from src.data_augmentation import objdet_random_affine, objdet_random_misc
+from src.utils import plot_bounding_boxes
 
-from datasets import get_evaluation_data_loader
-from bounding_boxes_utils import bbox_normalized_to_abs_coords, bbox_abs_to_normalized_coords, plot_bounding_boxes
-import random_color, random_misc, random_erasing, objdet_random_affine, objdet_random_misc
-from random_utils import remap_pixel_values_range
-from data_augmentation import data_augmentation
 
 
 def plot_images_and_labels(image, labels, image_aug, labels_aug, grayscale=None, legend=None):

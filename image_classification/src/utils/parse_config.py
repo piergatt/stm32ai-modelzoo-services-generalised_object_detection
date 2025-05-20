@@ -11,18 +11,18 @@ import os
 from pathlib import Path
 import re
 from hydra.core.hydra_config import HydraConfig
-from cfg_utils import aspect_ratio_dict, check_attributes, postprocess_config_dict, check_config_attributes, \
+from common.utils import aspect_ratio_dict, check_attributes, postprocess_config_dict, check_config_attributes, \
                       parse_tools_section, parse_benchmarking_section, parse_mlflow_section, parse_quantization_section, \
                       parse_general_section, parse_top_level, parse_training_section, parse_prediction_section, \
-                      parse_deployment_section, check_hardware_type, parse_evaluation_section
+                      parse_deployment_section, check_hardware_type, parse_evaluation_section, get_class_names_from_file
 from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
 import tensorflow as tf
-from data_loader import check_dataset_integrity
+from src.preprocessing import check_dataset_integrity
 from typing import Dict, List
 
 
-def check_dataset_paths_and_contents(cfg, mode: str = None, mode_groups: DictConfig = None) -> None:
+def _check_dataset_paths_and_contents(cfg, mode: str = None, mode_groups: DictConfig = None) -> None:
     """
             This function checks that the paths available in the config file are valid, depending on the operation mode
             considered.
@@ -62,8 +62,8 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
                     None
             """
 
-    legal = ["name", "class_names", "training_path", "validation_path", "validation_split", "test_path",
-             "quantization_path", "quantization_split", "check_image_files", "seed"]
+    legal = ["name", "class_names", "classes_file_path", "training_path", "validation_path", "validation_split", 
+             "test_path", "quantization_path", "quantization_split", "check_image_files", "seed"]
 
     required = []
     one_or_more = []
@@ -71,28 +71,39 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
         required += ["training_path",]
     elif mode in mode_groups.evaluation:
         one_or_more += ["training_path", "test_path", "validation_path"]
-    elif mode in mode_groups.deployment:
-        if hardware_type == "MCU":
-            required += ["class_names",]
-    elif mode == "prediction":
-         required += ["class_names",]
+    elif mode in ["chain_qd", "deployment", "prediction"]:
+        one_or_more += ["class_names", "classes_file_path"]
 
     check_config_attributes(cfg, specs={"legal": legal, "all": required, "one_or_more": one_or_more},
                             section="dataset")
-
+    
     # Set default values of missing optional attributes
     if not cfg.name:
         cfg.name = "<unnamed>"
+    if cfg.name not in ("emnist", "cifar10", "cifar100") and mode not in ("deployment", "benchmarking"):
+        _check_dataset_paths_and_contents(cfg, mode=mode, mode_groups=mode_groups)
+
+    # Determine and Set Class Names for the Dataset
+    if cfg.class_names:
+        cfg.class_names = sorted(cfg.class_names) 
+        print("[INFO] : Using provided class names from dataset.class_names")
+    elif cfg.classes_file_path:
+        cfg.class_names = get_class_names_from_file(cfg)
+        print("[INFO] : Found {} classes in label file {}".format(len(cfg.class_names), cfg.classes_file_path))
+    elif mode in mode_groups.training or mode_groups.evaluation:
+        for path in [cfg.training_path, cfg.validation_path, cfg.test_path]:
+            if path:
+                cfg.class_names = _get_class_names(dataset_root_dir=path)
+                print(f"[INFO] : Found {len(cfg.class_names)} classes in the dataset.")
+                break
+    elif cfg.name in ("emnist", "cifar10", "cifar100") :
+        cfg.class_names = _get_class_names(cfg.name)
+        print(f"[INFO] : Using predefined class names for dataset {cfg.name}")
+    
     if not cfg.validation_split:
         cfg.validation_split = 0.2
     cfg.check_image_files = cfg.check_image_files if cfg.check_image_files is not None else False
     cfg.seed = cfg.seed if cfg.seed else 123
-
-    # Sort the class names if they were provided
-    if cfg.class_names:
-        cfg.class_names = sorted(cfg.class_names)
-    elif cfg.name in ("cifar10", "cifar100", "emnist"):
-        cfg.class_names = get_class_names(cfg.name)
 
     # Check the value of validation_split if it is set
     if cfg.validation_split:
@@ -107,9 +118,6 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
         if split <= 0.0 or split >= 1.0:
             raise ValueError(f"\nThe value of `quantization_split` should be > 0 and < 1. Received {split}\n"
                              "Please check the 'dataset' section of your configuration file.")
-
-    if cfg.name not in ("emnist", "cifar10", "cifar100"):
-        check_dataset_paths_and_contents(cfg, mode=mode, mode_groups=mode_groups)
 
 
 def parse_preprocessing_section(cfg: DictConfig,
@@ -211,24 +219,8 @@ def parse_data_augmentation_section(cfg: DictConfig, config_dict: Dict) -> None:
         del cfg.custom_data_augmentation
 
 
-def get_class_names_from_file(cfg: DictConfig) -> List[str]:
-    """
-    Reads class names from a file specified in the configuration and returns them as a list.
-    Args:
-        cfg (DictConfig): Configuration object containing the path to the label file.
-    Returns:
-        List[str]: A list of class names read from the file.
-    Raises:
-        FileNotFoundError: If the file specified in the configuration does not exist.
-        IOError: If there is an error reading the file.
-    """
-    if cfg.deployment.label_file_path:
-        with open(cfg.deployment.label_file_path, 'r') as file:
-            class_names = [line.strip() for line in file]
-    return class_names
 
-
-def get_class_names(dataset_name: str = None, dataset_root_dir: str = None) -> List:
+def _get_class_names(dataset_name: str = None, dataset_root_dir: str = None) -> List:
     """
     This function returns the class names of the dataset.
       - If the dataset is cifar10, cifar100 or emnist, the class names
@@ -362,7 +354,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # Evaluation section parsing
     if cfg.operation_mode in mode_groups.evaluation and "evaluation" in cfg:
-        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name", "target"]
+        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name", "target", 
+                 "profile", "input_type", "output_type", "input_chpos", "output_chpos"]
         parse_evaluation_section(cfg.evaluation,
                                  legal=legal)
 
@@ -396,14 +389,14 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Deployment section parsing
     if cfg.operation_mode in mode_groups.deployment:
         if cfg.hardware_type == "MCU":
-            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup"]
+            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup", "build_conf"]
             legal_hw = ["serie", "board", "stlink_serial_number"]
             # Append additional items if hardware_type is "MCU_H7"
             if cfg.deployment.hardware_setup.serie == "STM32H7":
                 legal_hw += ["input", "output"]
         else:
-            legal = ["c_project_path", "label_file_path","board_deploy_path", "verbosity", "hardware_setup"]
-            legal_hw = ["serie", "board", "ip_address"]
+            legal = ["c_project_path", "board_deploy_path", "verbosity", "hardware_setup"]
+            legal_hw = ["serie", "board", "ip_address", "stlink_serial_number"]
             if cfg.preprocessing.color_mode != "rgb":
                 raise ValueError("\n Color mode used is not supported for deployment on MPU target \n Please use RGB format")
             if cfg.preprocessing.resizing.aspect_ratio != "fit":
@@ -415,17 +408,4 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # MLFlow section parsing
     parse_mlflow_section(cfg.mlflow)
 
-    # Check that all datasets have the required directory structure
-    cds = cfg.dataset
-    if not cds.class_names and cfg.operation_mode not in "benchmarking":
-        # Infer the class names from a dataset
-        for path in [cds.training_path, cds.validation_path, cds.test_path, cds.quantization_path]:
-            if path:
-                cds.class_names = get_class_names(dataset_root_dir=path)
-                print("[INFO] : Found {} classes in dataset {}".format(len(cds.class_names), path))
-                break
-
-        if not cds.class_names and cfg.operation_mode in ("deployment", "chain_qd") and cfg.hardware_type == "MPU":
-            cds.class_names = get_class_names_from_file(cfg)
-            print("[INFO] : Found {} classes in label file {}".format(len(cds.class_names), cfg.deployment.label_file_path))
     return cfg

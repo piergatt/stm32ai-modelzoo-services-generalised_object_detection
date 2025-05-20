@@ -26,7 +26,7 @@ color_mode_n6_dict = {"rgb": "COLOR_RGB",
                       
 
 
-def download_file(url:str, local_path:str):
+def _download_file(url:str, local_path:str):
     """
     Downloads a file from the given URL and saves it to the specified local path.
     args:
@@ -386,6 +386,18 @@ def parse_evaluation_section(cfg: DictConfig,
         cfg.gen_npy_input = False
     if not cfg.gen_npy_output:
         cfg.gen_npy_output = False
+    if not cfg.profile:
+        cfg.profile = "profile_O3"
+    if not cfg.input_type:
+        cfg.input_type = "uint8"
+    if not cfg.output_type:
+        cfg.output_type = "int8"
+    if not cfg.input_chpos:
+        cfg.input_chpos = "chlast"
+    if not cfg.output_chpos:
+        cfg.output_chpos = "chlast"
+    if not cfg.target:
+        cfg.target = "host"
 
 
 def parse_top_level(cfg: DictConfig, 
@@ -484,7 +496,7 @@ def parse_general_section(cfg: DictConfig,
         model_dir = os.path.join(output_dir, 'pretrained_model')
         os.makedirs(model_dir, exist_ok=True)
         local_path = os.path.join(model_dir, url.split('/')[-1])
-        download_file(url, local_path)
+        _download_file(url, local_path)
         cfg.model_path = local_path
         ml_path=local_path
     
@@ -619,7 +631,9 @@ def parse_prediction_section(cfg: DictConfig) -> None:
     args:
         cfg (DictConfig): 'prediction' section of the configuration file
     '''
-    legal = ["test_files_path", "seed","target"]
+
+    legal = ["test_files_path", "seed","target", 
+             "profile", "input_type", "output_type", "input_chpos", "output_chpos"]
     required = ["test_files_path"]
     check_config_attributes(cfg, specs={"legal": legal, "all": required}, section="prediction")
 
@@ -628,7 +642,20 @@ def parse_prediction_section(cfg: DictConfig) -> None:
         raise FileNotFoundError("\nUnable to find the directory containing the test files to predict\n"
                                 f"Received path: {cfg.test_files_path}\nPlease check the "
                                 "'prediction.test_files_path' attribute in your configuration file.")
-
+    
+    # Set default values of missing optional arguments
+    if not cfg.profile:
+        cfg.profile = "profile_O3"
+    if not cfg.input_type:
+        cfg.input_type = "uint8"
+    if not cfg.output_type:
+        cfg.output_type = "int8"
+    if not cfg.input_chpos:
+        cfg.input_chpos = "chlast"
+    if not cfg.output_chpos:
+        cfg.output_chpos = "chlast"
+    if not cfg.target:
+        cfg.target = "host"
 
 def parse_deployment_section(cfg: DictConfig,
                              legal: List = None,
@@ -680,8 +707,8 @@ def check_hardware_type(cfg: DictConfig,
 
 
 def get_class_names_from_file(cfg: DictConfig) -> List[str]:
-    if cfg.dataset.classes_file_path :
-        with open(cfg.dataset.classes_file_path, 'r') as file:
+    if cfg.classes_file_path :
+        with open(cfg.classes_file_path, 'r') as file:
             class_names = [line.strip() for line in file]
     return class_names
 

@@ -22,17 +22,15 @@ import logging
 logging.getLogger('mlflow.tensorflow').setLevel(logging.ERROR)
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
-from models_mgt import load_model_for_training
-from models_utils import model_summary
-from train_model import SegmentationTrainingModel
-from common_training import set_frozen_layers, get_optimizer
-from cfg_utils import collect_callback_args
-from logs_utils import LRTensorBoard, log_to_file, log_last_epoch_history
-import lr_schedulers 
-from evaluate import evaluate_h5_model
+from common.utils import log_to_file, log_last_epoch_history, LRTensorBoard, check_training_determinism, \
+                         model_summary, collect_callback_args, vis_training_curves
+from common.training import set_frozen_layers, get_optimizer, lr_schedulers
+from src.evaluation import evaluate_h5_model
+from src.utils import load_model_for_training
+from .train_model import SegmentationTrainingModel
 
 
-def get_callbacks(callbacks_dict: DictConfig, output_dir: str = None, logs_dir: str = None,
+def _get_callbacks(callbacks_dict: DictConfig, output_dir: str = None, logs_dir: str = None,
                   saved_models_dir: str = None) -> List[tf.keras.callbacks.Callback]:
     """
     This function creates the list of Keras callbacks to be passed to 
@@ -188,7 +186,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
     train_model.compile(optimizer=get_optimizer(cfg.training.optimizer))
     
     # Set up callbacks
-    callbacks = get_callbacks(callbacks_dict=cfg.training.callbacks, output_dir=output_dir, 
+    callbacks = _get_callbacks(callbacks_dict=cfg.training.callbacks, output_dir=output_dir, 
                               logs_dir=cfg.general.logs_dir, saved_models_dir=saved_models_dir)
 
     print("[INFO] : Starting training")
@@ -197,7 +195,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
     end_time = timer()
 
     # save the last epoch history in the log file
-    last_epoch=log_last_epoch_history(cfg, output_dir)
+    last_epoch = log_last_epoch_history(cfg, output_dir)
     end_time = timer()
     
     # calculate and log the runtime in the log file

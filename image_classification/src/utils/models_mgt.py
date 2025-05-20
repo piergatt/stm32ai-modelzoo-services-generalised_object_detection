@@ -17,21 +17,11 @@ from typing import Tuple, Dict, Optional, List
 import tensorflow as tf
 from omegaconf import DictConfig
 
-from models_utils import transfer_pretrained_weights, check_attribute_value, check_model_support
-from cfg_utils import check_attributes
-from data_augmentation_layer import DataAugmentationLayer
-from mobilenetv1 import get_mobilenetv1
-from mobilenetv2 import get_mobilenetv2
-from fdmobilenet import get_fdmobilenet
-from resnetv1 import get_resnetv1
-from resnet50v2 import get_resnet50v2
-from squeezenetv11 import get_squeezenetv11
-from stmnist import get_stmnist
-from st_efficientnet_lc_v1 import get_st_efficientnet_lc_v1
-from st_fdmobilenet_v1 import get_st_fdmobilenet_v1
-from st_resnet_8_hybrid import get_st_resnet_8_hybrid_v1, get_st_resnet_8_hybrid_v2
-from efficientnetv2 import get_efficientnetv2
-from custom_model import get_custom_model
+from common.utils import transfer_pretrained_weights, check_attribute_value, check_model_support, check_attributes
+from src.models import get_mobilenetv1, get_mobilenetv2, get_fdmobilenet, get_resnetv1, \
+                                 get_resnet50v2, get_squeezenetv11, get_stmnist, get_st_efficientnet_lc_v1, \
+                                 get_st_fdmobilenet_v1, \
+                                 get_efficientnetv2, get_custom_model
 
 
 def ai_runner_invoke(image_processed,ai_runner_interpreter):
@@ -40,7 +30,7 @@ def ai_runner_invoke(image_processed,ai_runner_interpreter):
     return preds[0].reshape([-1, nb_class])
 
 
-def check_mobilenet(cfg: DictConfig = None, section: str =None, message: str = None):
+def _check_mobilenet(cfg: DictConfig = None, section: str =None, message: str = None):
     """
     Utility function that checks the attributes and pretrained weights
     of MobileNet-V1 and MobileNet-V2 models.
@@ -81,7 +71,6 @@ def get_model(cfg: DictConfig = None, num_classes: int = None, dropout: float = 
         'stmnist': None,
         'st_efficientnet_lc': ['v1'],
         'st_fdmobilenet': ['v1'],
-        'st_resnet_8_hybrid': ['v1', 'v2'],
         'efficientnet': ['v2'],
         'custom': None
     }
@@ -96,7 +85,7 @@ def get_model(cfg: DictConfig = None, num_classes: int = None, dropout: float = 
 
     # If the model is MobileNet V1
     if model_name == "mobilenet" and model_version == "v1":
-        check_mobilenet(cfg, section=section, message=message)
+        _check_mobilenet(cfg, section=section, message=message)
         model = get_mobilenetv1(
                         input_shape=cfg.input_shape,
                         alpha=cfg.alpha,
@@ -112,7 +101,7 @@ def get_model(cfg: DictConfig = None, num_classes: int = None, dropout: float = 
  
     # If the model is MobileNet V2
     if model_name == "mobilenet" and model_version == "v2":
-        check_mobilenet(cfg, section=section, message=message)
+        _check_mobilenet(cfg, section=section, message=message)
         model = get_mobilenetv2(input_shape=cfg.input_shape,
                         alpha=cfg.alpha,
                         dropout=dropout,
@@ -251,40 +240,6 @@ def get_model(cfg: DictConfig = None, num_classes: int = None, dropout: float = 
                         source_model_path=cfg.pretrained_model_path,
                         end_layer_index=46,
                         target_model_name="st_fdmobilenet_v1")
-
-    # If the model is st_resnet_8_hybrid_v1
-    if model_name == "st_resnet_8_hybrid" and model_version == "v1":
-        check_attributes(cfg, expected=["name", "version", "input_shape"],
-                         optional=["pretrained_model_path"], section=section)
-        if (cfg.input_shape[0] % 32 > 0) or (cfg.input_shape[1] % 32 > 0):
-                raise ValueError('input_shape should be multiple of 32 in both dimensions')
-        model = get_st_resnet_8_hybrid_v1(
-                        input_shape=cfg.input_shape,
-                        num_classes=num_classes,
-                        dropout=dropout)
-        if cfg.pretrained_model_path:
-            transfer_pretrained_weights(
-                        model,
-                        source_model_path=cfg.pretrained_model_path,
-                        end_layer_index=87,
-                        target_model_name="st_resnet_8_hybrid_v1")
-
-    # If the model is st_resnet_8_hybrid_v2
-    if model_name == "st_resnet_8_hybrid" and model_version == "v2":
-        check_attributes(cfg, expected=["name", "version", "input_shape"],
-                         optional=["pretrained_model_path"], section=section)
-        if (cfg.input_shape[0] % 32 > 0) or (cfg.input_shape[1] % 32 > 0):
-                raise ValueError('input_shape should be multiple of 32 in both dimensions')
-        model = get_st_resnet_8_hybrid_v2(
-                        input_shape=cfg.input_shape,
-                        num_classes=num_classes,
-                        dropout=dropout)
-        if cfg.pretrained_model_path:
-            transfer_pretrained_weights(
-                        model,
-                        source_model_path=cfg.pretrained_model_path,
-                        end_layer_index=87,
-                        target_model_name="st_resnet_8_hybrid_v2")
 
     # If the model is a custom model
     if model_name == "custom":

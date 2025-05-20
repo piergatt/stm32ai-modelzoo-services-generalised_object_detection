@@ -35,7 +35,7 @@ user_config.yaml
 ```yaml
 general:
   project_name: aed_project
-  model_path: ../../../model_zoo/audio_event_detection/yamnet/ST_pretrainedmodel_public_dataset/esc10/yamnet_256_64x96_tl/yamnet_256_64x96_tl_int8.tflite
+  model_path: ../../stm32ai-modelzoo/audio_event_detection/yamnet/ST_pretrainedmodel_public_dataset/esc10/yamnet_256_64x96_tl/yamnet_256_64x96_tl_int8.tflite
   # Change this path to the model you wish to use
   logs_dir: logs
   saved_models_dir: saved_models
@@ -98,7 +98,7 @@ tools:
   path_to_cubeIDE: C:/ST/STM32CubeIDE_1.17.0/STM32CubeIDE/stm32cubeide.exe # Mandatory
   
 deployment:
-  c_project_path: ../../stm32ai_application_code/sensing_free_rtos # sensing_free_rtos or sensing_thread_x
+  c_project_path: ../stm32ai_application_code/sensing_free_rtos # sensing_free_rtos or sensing_thread_x
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -108,18 +108,18 @@ deployment:
                                # Set to 0 to disable. To enable, set to any float between 0 and 1.
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 You can look at user_config.yaml examples for any operation mode [here](https://github.com/STMicroelectronics/stm32ai-modelzoo-services/tree/main/audio_event_detection/src/config_file_examples)
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

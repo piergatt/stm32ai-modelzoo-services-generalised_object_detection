@@ -21,12 +21,13 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
 from typing import Optional
 
-from postprocess import spe_postprocess, heatmaps_spe_postprocess, yolo_mpe_postprocess
-from preprocess import apply_rescaling
-from metrics import single_pose_oks, multi_pose_oks_mAP, compute_ap
-from models_utils import count_h5_parameters, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from models_mgt   import ai_runner_invoke
-from logs_utils import log_to_file
+from src.postprocessing import spe_postprocess, heatmaps_spe_postprocess, yolo_mpe_postprocess
+from src.preprocessing import apply_rescaling
+from src.utils import ai_runner_invoke
+from common.utils import count_h5_parameters, log_to_file, \
+                         ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
+from .metrics import single_pose_oks, multi_pose_oks_mAP, compute_ap
+
 
 
 def evaluate(cfg: DictConfig = None, eval_ds: tf.data.Dataset = None,
@@ -45,7 +46,7 @@ def evaluate(cfg: DictConfig = None, eval_ds: tf.data.Dataset = None,
         None
     """
     output_dir  = HydraConfig.get().runtime.output_dir
-    model_path  = model_path_to_evaluate if model_path_to_evaluate else cfg.general.model_path
+    model_path  = model_path_to_evaluate if model_path_to_evaluate else os.path.realpath(cfg.general.model_path)
     name_model  = os.path.basename(model_path)
     model_type  = cfg.general.model_type
     num_threads = cfg.general.num_threads_tflite

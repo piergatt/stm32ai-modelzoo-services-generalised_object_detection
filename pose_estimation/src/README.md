@@ -11,7 +11,7 @@ tasks such as evaluating or quantizing the model, while the chained services com
 perform more complex functions, such as evaluating the float model, quantizing it, and evaluating the quantized model
 successively.
 
-To use the services in the Pose estimation model zoo, you can utilize the model zoo [stm32ai_main.py](stm32ai_main.py) along with the [user_config.yaml](user_config.yaml) file as input. The yaml file specifies the service or the chained services and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
+To use the services in the Pose estimation model zoo, you can utilize the model zoo [stm32ai_main.py](../stm32ai_main.py) along with the [user_config.yaml](../user_config.yaml) file as input. The yaml file specifies the service or the chained services and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
 
 More information about the different services and their configuration options can be found in the <a href="#2">next
 section</a>.
@@ -86,9 +86,9 @@ compatible.
 This tutorial demonstrates how to use the `chain_eqeb` services to evaluate, quantize, evaluate, and benchmark
 the model.
 
-To get started, you will need to update the [user_config.yaml](user_config.yaml) file, which specifies the parameters
+To get started, you will need to update the [user_config.yaml](../user_config.yaml) file, which specifies the parameters
 and configuration options for the services that you want to use. Each section of
-the [user_config.yaml](user_config.yaml) file is explained in detail in the following sections.
+the [user_config.yaml](../user_config.yaml) file is explained in detail in the following sections.
 
 <ul><details open><summary><a href="#2-1">2.1 Choose the operation mode</a></summary><a id="2-1"></a>
 
@@ -319,7 +319,7 @@ multi pose estimation model.
 </details></ul>
 <ul><details open><summary><a href="#2-8">2.8 Model quantization</a></summary><a id="2-8"></a>
 
-Configure the quantization section in [user_config.yaml](user_config.yaml) as the following:
+Configure the quantization section in [user_config.yaml](../user_config.yaml) as the following:
 
 ```yaml
 quantization:
@@ -431,8 +431,6 @@ deployment:
 In the `general` section, users must provide the path to the TFlite model file that they want to deploy using
 the `model_path` attribute.
 
-The `dataset` section requires users to provide the names of the classes using the `class_names` attribute.
-
 The `postprocessing` section requires users to provide the values for the post-processing parameters. These parameters
 include the `confidence_thresh`, `NMS_thresh`, `confidence_thresh`, and `max_detection_boxes`. By providing
 these values in the postprocessing section, the pose estimation model can properly post-process the results and
@@ -461,7 +459,7 @@ chained services results</a>:
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown
@@ -469,14 +467,14 @@ below:
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#3"><b>3. Run the object detection chained service</b></a></summary><a id="3"></a>
 
-After updating the [user_config.yaml](user_config.yaml) file, please run the following command:
+After updating the [user_config.yaml](../user_config.yaml) file, please run the following command:
 
 ```bash
 python stm32ai_main.py

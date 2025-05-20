@@ -9,7 +9,7 @@
 
 '''Utility file with functions to load a dataset from the user_config cfg'''
 
-from dataset_utils import Valentini, CustomValentiniLike
+from src.dataset_utils import Valentini, CustomValentiniLike
 
 def _load_valentini(cfg,
                     set,

@@ -21,15 +21,17 @@ from hydra.core.hydra_config import HydraConfig
 from typing import Optional
 from pathlib import Path
 
-import stm32ai_local as stmaic
-from common_benchmark import cloud_connect, cloud_analyze, benchmark_model
-from stm32ai_dc import (CliLibraryIde, CliLibrarySerie, CliParameters)
+import common.stm32ai_local as stmaic
+from common.benchmarking import cloud_connect, cloud_analyze, benchmark_model
+from common.stm32ai_dc import (CliLibraryIde, CliLibrarySerie, CliParameters)
+from .external_memory_mgt import update_activation_c_code
+
 import json
 import re
-from typing import Dict
+from typing import Dict, List 
 
 
-def keep_internal_weights(path_network_data_params: str):
+def _keep_internal_weights(path_network_data_params: str):
     with open(path_network_data_params,'r') as f1,\
         open(os.path.join(os.path.dirname(path_network_data_params), 'network_data_params_modify.c'),'w') as f2:
         for lineNumber, line in enumerate(f1):
@@ -44,7 +46,7 @@ def keep_internal_weights(path_network_data_params: str):
     os.replace(os.path.join(os.path.dirname(path_network_data_params), 'network_data_params_modify.c'), path_network_data_params)
 
 
-def dispatch_weights(internalFlashSizeFlash_KB: str,
+def _dispatch_weights(internalFlashSizeFlash_KB: str,
                      kernelFlash_KB: str,
                      applicationSizeFlash_KB: str,
                      path_network_c_info: str,
@@ -147,7 +149,7 @@ def stm32ai_deploy(target: bool = False,
         split_weights (bool): return true if the weights has been splitted; False otherwise
     """
 
-    def stmaic_local_call(session):
+    def _stmaic_local_call(session):
         """
         Compile the AI model using the STM32Cube.AI compiler.
 
@@ -168,15 +170,13 @@ def stm32ai_deploy(target: bool = False,
             # Clean up the STM32Cube.AI output directory
             shutil.rmtree(stm32ai_output, ignore_errors=True)
             # Set the compiler options
-            opt = stmaic.STMAiCompileOptions(allocate_inputs=True, allocate_outputs=True)
+            opt = stmaic.STMAiCompileOptions(no_inputs_allocation=False, no_outputs_allocation=False)
             opt.optimization = optimization
 
             # Compile the AI model
             stmaic.compile(session, opt)
 
         else:
-            from external_memory_mgt import update_activation_c_code
-
             split_weights =  False
             split_ram = False
 
@@ -223,7 +223,7 @@ def stm32ai_deploy(target: bool = False,
             shutil.rmtree(stm32ai_output, ignore_errors=True)
 
             # Set the compiler options
-            opt = stmaic.STMAiCompileOptions(allocate_inputs=True, allocate_outputs=True, split_weights=split_weights)
+            opt = stmaic.STMAiCompileOptions(no_inputs_allocation=False, no_outputs_allocation=False, split_weights=split_weights)
             opt.optimization = optimization
 
             if split_ram:
@@ -241,7 +241,7 @@ def stm32ai_deploy(target: bool = False,
                 print("[INFO] : Dispatch weights between internal and external flash to fit the large model")
 
                 # @Todo check if fits as well in external and not too large for external as well
-                dispatch_weights(internalFlashSizeFlash_KB=board.config.internalFlash_size,
+                _dispatch_weights(internalFlashSizeFlash_KB=board.config.internalFlash_size,
                                  kernelFlash_KB=board.config.lib_size,
                                  applicationSizeFlash_KB=board.config.application_size,
                                  path_network_c_info=path_network_c_info,
@@ -250,7 +250,7 @@ def stm32ai_deploy(target: bool = False,
                 print("[INFO] : Weights fit in internal flash")
 
                 # @Todo check if fits as well in external and not too large for external as well
-                keep_internal_weights(
+                _keep_internal_weights(
                                  path_network_data_params=os.path.join(session.generated_dir, "network_data_params.c"))
 
 
@@ -287,7 +287,6 @@ def stm32ai_deploy(target: bool = False,
                         includeLibraryForIde=CliLibraryIde(stm32ai_ide.lower())))
 
             else:
-                from external_memory_mgt import update_activation_c_code
                 split_weights = False
                 split_ram = False
 
@@ -329,7 +328,7 @@ def stm32ai_deploy(target: bool = False,
 
                 if split_weights:
                     # @Todo check if fits as well in external and not too large for external as well
-                    dispatch_weights(internalFlashSizeFlash_KB=board.config.internalFlash_size,
+                    _dispatch_weights(internalFlashSizeFlash_KB=board.config.internalFlash_size,
                                     kernelFlash_KB=board.config.lib_size,
                                     applicationSizeFlash_KB="10KB",
                                     path_network_c_info=path_network_c_info,
@@ -338,7 +337,7 @@ def stm32ai_deploy(target: bool = False,
                     print("[INFO] : Weights fit in internal flash")
 
                     # @Todo check if fits as well in external and not too large for external as well
-                    keep_internal_weights(
+                    _keep_internal_weights(
                                     path_network_data_params=os.path.join(session.generated_dir, "network_data_params.c"))
 
             if os.path.exists(stm32ai_output):
@@ -349,11 +348,11 @@ def stm32ai_deploy(target: bool = False,
 
                 # Check if STM32Cube.AI was used locally to add the Lib/Inc generation
                 if not os.listdir(stm32ai_output) or ('Lib' or 'Inc') not in os.listdir(stm32ai_output):
-                    stmaic_local_call(session)
+                    _stmaic_local_call(session)
         else:
-            stmaic_local_call(session)
+            _stmaic_local_call(session)
     else:
-        stmaic_local_call(session)
+        _stmaic_local_call(session)
 
     print("[INFO] : Optimized C code + Lib/Inc files generation done.")
 
@@ -409,7 +408,7 @@ def stm32ai_deploy_stm32n6(target: bool = False,
     Returns:
         split_weights (bool): return true if the weights has been splitted; False otherwise
     """
-    def stmaic_local_call(session):
+    def _stmaic_local_call(session):
         """
         Compile the AI model using the STM32Cube.AI compiler.
 
@@ -464,9 +463,34 @@ def stm32ai_deploy_stm32n6(target: bool = False,
     print("[INFO] : Compiling the model and generating optimized C code + Lib/Inc files: ", model_path, flush=True)
 
     if on_cloud:
-        raise ValueError("Dev cloud is not supported to deploy on N6")
+        # Connect to STM32Cube.AI Developer Cloud
+        login_success, ai, _ = cloud_connect(stm32ai_version=stm32ai_version, credentials=credentials)
+
+        if login_success:
+
+            with open(session._board_config.config.neuralart_user_path) as file:
+                neuralart_options = json.load(file)
+            neuralart_options = neuralart_options['Profiles']['default']["options"].replace('--', "--atonnOptions.")
+
+            # Generate the model C code and library
+            ai.generate(CliParameters(model=model_path, output=stm32ai_output, fromModel=get_model_name_output, target="stm32n6", stNeuralArt="default",
+                                    allocateInputs=False, allocateOutputs=False, mpool=board._conf.mpool, extraCommandLineArguments=neuralart_options,
+                                    includeLibraryForSerie=CliLibrarySerie(stm32ai_serie.upper()),
+                                    includeLibraryForIde=CliLibraryIde(stm32ai_ide.lower())))
+
+            if os.path.exists(stm32ai_output):
+                # Move the existing STM32Cube.AI output directory to the output directory
+                #os.rename(stm32ai_output,"generated")
+                shutil.move(stm32ai_output, os.path.join(output_dir, "generated"))
+                stm32ai_output = os.path.join(output_dir, "generated")
+
+                # Check if STM32Cube.AI was used locally to add the Lib/Inc generation
+                if not os.listdir(stm32ai_output) or ('Lib' or 'Inc') not in os.listdir(stm32ai_output):
+                    _stmaic_local_call(session)
+        else:
+            _stmaic_local_call(session)
     else:
-        stmaic_local_call(session)
+        _stmaic_local_call(session)
 
     print("[INFO] : Optimized C code + Lib/Inc files generation done.")
 
@@ -485,7 +509,7 @@ def stm32ai_deploy_stm32n6(target: bool = False,
 def stm32ai_deploy_mpu(target: bool = False,
                    board_ip_address: str = None,
                    board_deploy: str = None,
-                   label_file: str = None,
+                   class_names: List = None,
                    c_project_path: str = None,
                    verbosity: int = None,
                    debug: bool = False,
@@ -548,6 +572,16 @@ def stm32ai_deploy_mpu(target: bool = False,
     # Populate the deploy directory with application code
     path_to_application = c_project_path + "Application/"
     path_to_resources = c_project_path + "Resources/"
+        
+    # create the class names txt if not already existing 
+    label_file = os.path.join(path_to_resources, 'class_names.txt')
+    if isinstance(class_names, list) and all(isinstance(name, str) for name in class_names):    
+        with open(label_file, 'w') as file:
+            for class_name in class_names:
+                file.write(class_name + '\n')
+    elif isinstance(class_names, str) and class_names.endswith('.txt'):
+        shutil.copy(class_names, label_file)
+    
 
     command = "scp -r " + path_to_application + " " + path_to_resources + " " + model_path + " root@" + board_ip_address + ":" + board_deploy
     deploy_res = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)

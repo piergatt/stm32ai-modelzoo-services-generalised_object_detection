@@ -29,7 +29,7 @@ Minimalistic YAML files are available [here](./config_file_examples/) to experim
 
 The image classification model zoo provides a collection of independent services and pre-built chained services for various machine learning functions related to image classification. Individual services include tasks such as training or quantizing the model, while chained services combine multiple services to perform more complex functions, such as training, quantizing, and evaluating the quantized model successively.
 
-To use the services in the image classification model zoo, utilize the model zoo [stm32ai_main.py](stm32ai_main.py) along with the [user_config.yaml](user_config.yaml) file as input. The YAML file specifies the service or chained services and a set of configuration parameters such as the model (either from the model zoo or your custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
+To use the services in the image classification model zoo, utilize the model zoo [stm32ai_main.py](../stm32ai_main.py) along with the [user_config.yaml](../user_config.yaml) file as input. The YAML file specifies the service or chained services and a set of configuration parameters such as the model (either from the model zoo or your custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
 
 More information about the different services and their configuration options can be found in the <a href="#2">next section</a>.
 
@@ -49,7 +49,7 @@ The classification datasets should be structured in subdirectories for each clas
 
 This tutorial demonstrates how to use the `chain_tqeb` services to train, quantize, evaluate, and benchmark the model. Among the various available [models](../pretrained_models/) in the model zoo, we chose to use the `tf_flowers` classification dataset and apply transfer learning on the MobileNet V2 image classification model as an example to demonstrate the workflow.
 
-To get started, update the [user_config.yaml](user_config.yaml) file, which specifies the parameters and configuration options for the services you want to use. Each section of the [user_config.yaml](user_config.yaml) file is explained in detail in the following sections.
+To get started, update the [user_config.yaml](../user_config.yaml) file, which specifies the parameters and configuration options for the services you want to use. Each section of the [user_config.yaml](../user_config.yaml) file is explained in detail in the following sections.
 
 <ul><details open><summary><a href="#2-1">2.1 Choose the operation mode</a></summary><a id="2-1"></a>
 
@@ -79,7 +79,7 @@ You can refer to the README links below that provide typical examples of operati
    - [evaluation, chain_eqeb](./evaluation/README.md)
    - [benchmarking](./benchmarking/README.md)
    - [prediction](./prediction/README.md)
-   - [deployment, chain_qd](../deployment/README.md)
+   - deployment, chain_qd ([STM32H7](../deployment/README_STM32H7.md), [STM32N6](../deployment/README_STM32N6.md))
 
 In this tutorial, the `operation_mode` used is the `chain_tqeb` as shown below to train a model, quantize, evaluate it, and later deploy it on the STM32 boards.
 
@@ -147,6 +147,8 @@ dataset:
 ```
 
 The `dataset_name` attribute is optional unless you want to use the EMNIST, CIFAR-10, and CIFAR-100 datasets provided with the Model Zoo. In this case, you need to set it to either 'emnist', 'cifar10', or 'cifar100'.
+
+The `class_names` attribute specifies the classes in the dataset. This information must be provided in the YAML file. If the `class_names` attribute is absent, the `classes_name_file` argument can be used as an alternative, pointing to a text file containing the class names. Alternatively, the class names can be deduced from the folder names of each class.
 
 When working with a dataset for the first time, we suggest setting the `check_image_files` attribute to True. This will enable the system to load each image file and identify any corrupt, unsupported, or non-image files. The path to any problematic files will be reported. Once you have verified the cleanliness of your dataset or have cleaned it up, you can set `check_image_files` to False to avoid any potential run time penalties.
 
@@ -224,7 +226,7 @@ Please refer to [the data augmentation documentation](../../common/data_augmenta
 
 A 'training' section is required in all the operation modes that include training, namely 'training', 'chain_tqeb', and 'chain_tqe'.
 
-In this tutorial, we picked a MobileNet V2 model for transfer learning. The model weights are pre-trained on the ImageNet dataset, a large dataset consisting of 1.4M images and 1000 classes. As an example, we will use a MobileNet V2 with alpha = 0.35. To do so, we will need to configure the model section in [user_config.yaml](user_config.yaml) as follows:
+In this tutorial, we picked a MobileNet V2 model for transfer learning. The model weights are pre-trained on the ImageNet dataset, a large dataset consisting of 1.4M images and 1000 classes. As an example, we will use a MobileNet V2 with alpha = 0.35. To do so, we will need to configure the model section in [user_config.yaml](../user_config.yaml) as follows:
 
 ```yaml
 training:
@@ -278,7 +280,7 @@ The best model obtained at the end of the training is saved in the 'experiments_
 </details></ul>
 <ul><details open><summary><a href="#2-7">2.7 Model quantization</a></summary><a id="2-7"></a>
 
-Configure the quantization section in [user_config.yaml](user_config.yaml) as follows:
+Configure the quantization section in [user_config.yaml](../user_config.yaml) as follows:
 
 ```yaml
 
@@ -329,12 +331,12 @@ tools:
 benchmarking:
    board: STM32H747I-DISCO     # Name of the STM32 board to benchmark the model on
 ```
-The `path_to_cubeIDE` attribute is for the [deployment](../deployment/README.md) service which is not part of the chain `chain_tqeb` used in this tutorial.
+The `path_to_cubeIDE` attribute is for the deployment service which is not part of the chain `chain_tqeb` used in this tutorial.
 
 </details></ul>
 <ul><details open><summary><a href="#2-9">2.9 Deploy the model</a></summary><a id="2-9"></a>
 
-In this tutorial, we are using the `chain_tqeb` toolchain, which does not include the deployment service. However, if you want to deploy the model after running the chain, you can do so by referring to the [README](../deployment/README.md) and modifying the `deployment_config.yaml` file or by setting the `operation_mode` to `deploy` and modifying the `user_config.yaml` file as described below:
+In this tutorial, we are using the `chain_tqeb` toolchain, which does not include the deployment service. However, if you want to deploy the model after running the chain, you can do so by referring to the deployment README and modifying the `deployment_config.yaml` file or by setting the `operation_mode` to `deploy` and modifying the `user_config.yaml` file as described below:
 
 ```yaml
 general:
@@ -352,7 +354,7 @@ tools:
   path_to_cubeIDE: C:/ST/STM32CubeIDE_<*.*.*>/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-  c_project_path: ../../application_code/image_classification/STM32H7/
+  c_project_path: ../application_code/image_classification/STM32H7/
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -364,14 +366,15 @@ deployment:
 
 In the `general` section, users must provide the path to the TFlite model file that they want to deploy using the `model_path` attribute.
 
-The `dataset` section requires users to provide the names of the classes using the `class_names` attribute.
+The `dataset` section requires users to provide the names of the classes using the `class_names` or `classes_name_file` attribute. If you use the `classes_file_path`, ensure the classes are listed in alphabetical order or according to the dataset's convention.
 
+This version maintains clarity and conciseness while explaining the different ways to specify class names.
 The `tools` section includes information about the stedgeai toolchain, such as the version, optimization level, and path to the `stedgeai.exe` file.
 
 Finally, in the `deployment` section, users must provide information about the hardware setup, such as the series and board of the STM32 device, as well as the input and output interfaces. Once all of these sections have been filled in, users can run the deployment service to deploy their model to the STM32 device.
 
 Please refer to the readme below for a complete deployment tutorial:
-- on H7-MCU: [README.md](../deployment/README.md)
+- on H7-MCU: [README_STM32H7.md](../deployment/README_STM32H7.md)
 - on N6-NPU: [README_STM32N6.md](../deployment/README_STM32N6.md)
 - on MPU: [README_MPU.md](../deployment/README_MPU.md)
 
@@ -383,20 +386,20 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 </details></ul>
 </details>
 <details open><summary><a href="#3"><b>3. Run the image classification chained service</b></a></summary><a id="3"></a>
 
-After updating the [user_config.yaml](user_config.yaml) file, please run the following command:
+After updating the [user_config.yaml](../user_config.yaml) file, please run the following command:
 
 ```bash
 python stm32ai_main.py

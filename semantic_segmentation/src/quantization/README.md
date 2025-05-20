@@ -30,9 +30,9 @@ dataset:
   class_names: ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
                 "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
                 "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
-  quantization_path: ../datasets/VOC2012_train_val/JPEGImages
-  quantization_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  quantization_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/quantization.txt
+  quantization_path: ./datasets/VOC2012_train_val/JPEGImages
+  quantization_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  quantization_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/quantization.txt
 ```
 
 In the example above, we provide the 3 parameters to properly specify the quantization set: `quantization_path`, `quantization_masks_path`, and `quantization_files_path`. However, we could also use the full training set or a random part of it for activations calibration. The size of the random subset is defined by the percentage value in the `quantization_split` parameter. In this case, we could have set the parameters like this:
@@ -43,9 +43,9 @@ dataset:
   class_names: ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
                 "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
                 "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
-  training_path: ../datasets/VOC2012_train_val/JPEGImages
-  training_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  training_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
+  training_path: ./datasets/VOC2012_train_val/JPEGImages
+  training_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  training_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
   quantization_split: 0.4
 ```
 
@@ -126,24 +126,24 @@ The names of experiment directories are all unique as they are based on the date
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#2"><b>2. Quantize your model</b></a></summary><a id="2"></a>
 
-To launch your model quantization using a real dataset, run the following command from the **src/** folder:
+To launch your model quantization using a real dataset, run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name quantization_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name quantization_config.yaml
 ```
 
 The quantized model can be found in the corresponding **experiments_outputs/** folder.
@@ -152,13 +152,13 @@ The quantized model can be found in the corresponding **experiments_outputs/** f
 In case you want to evaluate the accuracy of the quantized model, you can either launch the evaluation operation mode on the generated quantized model (please refer to the evaluation **[README.md](../evaluation/README.md)** that describes in detail how to proceed) or you can use chained services like launching [chain_eqe](../config_file_examples/chain_eqe_config.yaml) example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_eqe_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_eqe_config.yaml
 ```
 
 In case you want to evaluate your quantized model footprints, you can either launch the benchmark operation mode on the generated quantized model (please refer to the benchmarking **[README.md](../benchmarking/README.md)** that describes in detail how to proceed) or you can use chained services like launching [chain_qb](../config_file_examples/chain_qb_config.yaml) example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_qb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_qb_config.yaml
 ```
 
 Chained services work whether you specify a quantization dataset or not (random quantization).

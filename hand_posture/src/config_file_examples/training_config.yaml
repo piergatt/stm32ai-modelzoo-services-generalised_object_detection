@@ -12,7 +12,7 @@ operation_mode: training
 dataset:
   name: ST_handposture_dataset
   class_names: [None, Like, Dislike, FlatHand, Fist, Love, BreakTime, CrossHands]
-  training_path: ../datasets/ST_VL53L8CX_handposture_dataset
+  training_path: ./datasets/ST_VL53L8CX_handposture_dataset
   validation_path:
   validation_split: 0.2
   test_path:
@@ -50,8 +50,8 @@ training:
       patience: 40
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

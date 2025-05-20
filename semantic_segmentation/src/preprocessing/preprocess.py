@@ -14,8 +14,8 @@ import os
 import sys
 from typing import Tuple
 
-from data_loader import load_dataset
-from models_utils import get_model_name_and_its_input_shape
+from .data_loader import load_dataset
+from common.utils import get_model_name_and_its_input_shape
 
 
 def preprocess(cfg: DictConfig = None) -> Tuple:

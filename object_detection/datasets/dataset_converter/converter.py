@@ -18,6 +18,7 @@ from munch import DefaultMunch
 from omegaconf import OmegaConf
 from omegaconf import DictConfig
 import xml.etree.ElementTree as ET
+from PIL import Image
 
 
 def get_config(config: DictConfig) -> DefaultMunch:
@@ -229,6 +230,97 @@ def convert_coco_to_yolo(coco_annotations_file : str=None,
             shutil.copy(image_path, export_folder)
 
 
+def verify_kitti_classes(kitti_annotations_dir: str = None, classes: list = None) -> None:
+    """
+    Check if all expected classes are well present in the provided dataset
+ 
+    Args:
+        kitti_annotations_dir (str): path to the KITTI annotations directory
+        classes (list): list of the provided classes (from the yaml file)
+ 
+    Returns:
+        None
+    """
+    print("Analyzing the dataset ...")
+    available_classes = set()
+    annotation_files = [file for file in os.listdir(kitti_annotations_dir) if file.endswith('.txt')]
+    for filename in tqdm(annotation_files):
+        annotation_path = os.path.join(kitti_annotations_dir, filename)
+        with open(annotation_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                class_name = parts[0]
+                available_classes.add(class_name)
+ 
+    non_existing_classes = [c for c in classes if c not in available_classes]
+    classes_inspector(non_existing_classes, available_classes)
+ 
+ 
+def convert_kitti_to_yolo(kitti_annotations_dir: str = None,
+                          kitti_images_dir: str = None,
+                          classes: list = None,
+                          export_folder: str = None) -> None:
+    """
+    Core routine that converts KITTI data to YOLO format and exports them
+ 
+    Args:
+        kitti_annotations_dir (str): path to the KITTI annotations directory
+        kitti_images_dir (str): path to the images directory
+        classes (list): list of the provided classes (from the yaml file)
+        export_folder (str): path converted dataset will be stored
+ 
+    Returns:
+        None
+    """
+    verify_kitti_classes(kitti_annotations_dir, classes)
+    if not os.path.exists(export_folder):
+        os.makedirs(export_folder)
+    annotation_files = [file for file in os.listdir(kitti_annotations_dir) if file.endswith('.txt')]
+    for filename in tqdm(annotation_files):
+        copy_image = False
+        annotation_path = os.path.join(kitti_annotations_dir, filename)
+        txt_filename = os.path.splitext(filename)[0] + '.txt'
+        txt_path = os.path.join(export_folder, txt_filename)
+        image_file = os.path.splitext(filename)[0] + '.jpg'
+        image_path = os.path.join(kitti_images_dir, image_file)
+        if not os.path.exists(image_path):
+            continue
+        image = Image.open(image_path)
+        width_image, height_image = image.size
+ 
+        with open(annotation_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                class_name = parts[0]
+                if class_name in classes:
+                    copy_image = True
+                    class_id = classes.index(class_name)
+                    xmin, ymin, xmax, ymax = map(float, parts[4:8])
+                    width = float(parts[8])
+                    height = float(parts[9])
+                    if width == 0 and height == 0:
+                        w = xmax - xmin
+                        h = ymax - ymin
+                        x_center = (xmin + xmax) / 2
+                        y_center = (ymin + ymax) / 2
+                    else:
+                        x_center = (xmin + xmax) / (2 * width)
+                        y_center = (ymin + ymax) / (2 * height)
+                        w = (xmax - xmin) / width
+                        h = (ymax - ymin) / height
+                    x_center /= width_image
+                    y_center /= height_image
+                    w /= width_image
+                    h /= height_image
+                    with open(txt_path, 'a') as label_file:
+                        label_file.write(f"{class_id} {x_center:.6f} {y_center:.6f} {w:.6f} {h:.6f}\n")
+ 
+        if copy_image:
+            image_file = os.path.splitext(filename)[0] + '.jpg'
+            image_path = os.path.join(kitti_images_dir, image_file)
+            shutil.copy(image_path, export_folder)
+
+
 @hydra.main(version_base=None, config_path="", config_name="dataset_config")
 def main(configs: DictConfig) -> None:
     """
@@ -256,7 +348,12 @@ def main(configs: DictConfig) -> None:
                             cfg.pascal_voc_format.images_path,
                             cfg.dataset.class_names, 
                             cfg.pascal_voc_format.export_dir)
-
+    # Converts KITTI dataset to Yolo Darknet format
+    elif cfg.dataset.format == "kitti_format":
+        convert_kitti_to_yolo(cfg.kitti_format.annotations_dir,
+                              cfg.kitti_format.images_path,
+                              cfg.dataset.class_names,
+                              cfg.kitti_format.export_dir)
     else:
         print("Please make sure that you selected one of the following formats: {}, {}".format("coco_format",
                                                                                                "pascal_voc_format"))

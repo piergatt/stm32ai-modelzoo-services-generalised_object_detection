@@ -29,10 +29,6 @@ def _to_cli_arg(key: str, val: Any, vers: Union[str, STMAiVersion, None] = None,
 
     vers_ = STMAiVersion(vers)
     opts_ = _COMPILE_OPTIONS_.copy()
-    if vers_ > '7.2':
-        opts_.update(_COMPILE_OPTIONS_7_3_0_)
-    elif vers_ > '7.1':
-        opts_.update(_COMPILE_OPTIONS_7_2_0_)
     arg = opts_.get(key, None)
     if arg is None and vers_.is_valid() and val:
         msg_ = f'{name}: the "{key}/{val}" option is not supported with {vers_}'
@@ -53,8 +49,8 @@ def _to_cli_arg(key: str, val: Any, vers: Union[str, STMAiVersion, None] = None,
 
 
 _COMPILE_OPTIONS_ = {
-    'allocate_inputs': (False, (bool,), '--allocate-inputs'),
-    'allocate_outputs': (False, (bool,), '--allocate-outputs'),
+    'no-inputs-allocation': (False, (bool,), '--no-inputs-allocation'),
+    'no-outputs-allocation': (False, (bool,), '--no-outputs-allocation'),
     'dll': (True, (bool,), '--dll'),
     'compression': ('lossless', (str, int), '-c'),
     "split_weights": (False, (bool,), '--split-weights'),
@@ -68,18 +64,9 @@ _COMPILE_OPTIONS_ = {
     'output_data_type': ('', (str,), '--output-data-type'),
     'inputs_ch_position': ('', (str,), '--inputs-ch-position'),
     'outputs_ch_position': ('', (str,), '--outputs-ch-position'),
-}
-
-_COMPILE_OPTIONS_7_2_0_ = {
-    'quiet': (False, (bool,), '--quiet'),
-}
-
-
-_COMPILE_OPTIONS_7_3_0_ = {
     'quiet': (True, (bool,), '--quiet'),
     'optimization': ('default', (str,), '-O'),
 }
-
 
 @dataclass
 class STMAiCompileOptions:
@@ -87,8 +74,8 @@ class STMAiCompileOptions:
     st_neural_art: str = ''
     extra: Optional[Union[str, List[str], None]] = None
     dll: bool = True
-    allocate_inputs: bool = False
-    allocate_outputs: bool = False
+    no_inputs_allocation: bool = False
+    no_outputs_allocation: bool = False
     input_data_type: str = ''
     inputs_ch_position: str = ''
     output_data_type: str = ''

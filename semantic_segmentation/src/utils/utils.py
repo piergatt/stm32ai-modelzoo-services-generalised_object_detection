@@ -8,40 +8,13 @@
 #  *--------------------------------------------------------------------------------------------*/
 import numpy as np
 import tensorflow as tf
-from PIL import Image
 from matplotlib import gridspec, pyplot as plt
 import os
-import sys
 from omegaconf import DictConfig
+from src.preprocessing import preprocess_image
 
 
-
-COLOR_MAP = {
-    (0, 0, 0): 0,          # background
-    (128, 0, 0): 1,        # aeroplane
-    (0, 128, 0): 2,        # bicycle
-    (128, 128, 0): 3,      # bird
-    (0, 0, 128): 4,        # boat
-    (128, 0, 128): 5,      # bottle
-    (0, 128, 128): 6,      # bus
-    (128, 128, 128): 7,    # car
-    (64, 0, 0): 8,         # cat
-    (192, 0, 0): 9,        # chair
-    (64, 128, 0): 10,      # cow
-    (192, 128, 0): 11,     # dining table
-    (64, 0, 128): 12,      # dog
-    (192, 0, 128): 13,     # horse
-    (64, 128, 128): 14,    # motorbike
-    (192, 128, 128): 15,   # person
-    (0, 64, 0): 16,        # potted plant
-    (128, 64, 0): 17,      # sheep
-    (0, 192, 0): 18,       # sofa
-    (128, 192, 0): 19,     # train
-    (0, 64, 128): 20       # tv/monitor
-}
-
-
-def create_pascal_label_colormap():
+def _create_pascal_label_colormap():
     """Creates a label colormap used in PASCAL VOC segmentation benchmark."""
     colormap = np.zeros((256, 3), dtype=int)
     ind = np.arange(256, dtype=int)
@@ -52,7 +25,7 @@ def create_pascal_label_colormap():
     return colormap
 
 
-def label_to_color_image(label: np.ndarray = None) -> np.ndarray:
+def _label_to_color_image(label: np.ndarray = None) -> np.ndarray:
 
     """
     Adds color defined by the dataset colormap to the label.
@@ -63,7 +36,7 @@ def label_to_color_image(label: np.ndarray = None) -> np.ndarray:
     """
     if label.ndim != 2:
         raise ValueError('Expect 2-D input label')
-    colormap = create_pascal_label_colormap()
+    colormap = _create_pascal_label_colormap()
     if np.max(label) >= len(colormap):
         raise ValueError('label value too large.')
     return colormap[label]
@@ -85,7 +58,6 @@ def vis_segmentation(image_path: str = None, seg_map: np.ndarray = None, cfg: Di
         Returns:
 
     """
-    from preprocess import preprocess_image
     # Some instrumental parameters
     class_names = cfg.dataset.class_names
     cpp = cfg.preprocessing
@@ -109,7 +81,7 @@ def vis_segmentation(image_path: str = None, seg_map: np.ndarray = None, cfg: Di
 
     # Visualize the segmentation
     full_label_map = np.arange(len(class_names)).reshape(len(class_names), 1)
-    full_color_map = label_to_color_image(full_label_map)
+    full_color_map = _label_to_color_image(full_label_map)
 
     if not cfg.general.display_figures:
         plt.ioff()
@@ -128,7 +100,7 @@ def vis_segmentation(image_path: str = None, seg_map: np.ndarray = None, cfg: Di
 
     # plot Segmentation map
     plt.subplot(grid_spec[1])
-    seg_image = label_to_color_image(seg_map).astype(np.uint8)
+    seg_image = _label_to_color_image(seg_map).astype(np.uint8)
     plt.imshow(seg_image)
     plt.axis('off')
     plt.title('Segmentation map')

@@ -25,16 +25,15 @@ import tensorflow as tf
 import tqdm
 from sklearn.metrics import accuracy_score, confusion_matrix
 
-from preprocess import apply_rescaling, postprocess_output, preprocess_input
-from visualize_utils import plot_confusion_matrix
-from logs_utils import log_to_file
-from onnx_evaluation import model_is_quantized, predict_onnx, count_onnx_parameters
-from models_utils import tf_dataset_to_np_array, compute_confusion_matrix, count_h5_parameters, \
-                         count_tflite_parameters, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from models_mgt import get_loss, ai_runner_invoke
+from src.preprocessing import apply_rescaling, postprocess_output, preprocess_input
+from src.utils import ai_runner_invoke, get_loss
+from common.evaluation import model_is_quantized, predict_onnx
+from common.utils import tf_dataset_to_np_array, compute_confusion_matrix, count_h5_parameters, \
+                         ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant, \
+                         plot_confusion_matrix, log_to_file
 
 
-def evaluate_tflite_quantized_model(cfg: DictConfig = None,
+def _evaluate_tflite_quantized_model(cfg: DictConfig = None,
                                     quantized_model_path: str = None, eval_ds: tf.data.Dataset = None,
                                     class_names: list = None, output_dir: str = None,
                                     name_ds: Optional[str] = 'test_set',
@@ -185,7 +184,7 @@ def evaluate_h5_model(model_path: str = None, eval_ds: tf.data.Dataset = None, c
     return accuracy
 
 
-def evaluate_onnx_model(cfg: DictConfig,
+def _evaluate_onnx_model(cfg: DictConfig,
                         input_samples: np.ndarray,
                         input_labels: np.ndarray,
                         input_model_path: str,
@@ -291,7 +290,7 @@ def evaluate(cfg: DictConfig = None, eval_ds: tf.data.Dataset = None,
                               display_figures=cfg.general.display_figures)
         elif file_extension == '.tflite':
             # Evaluate quantized TensorFlow Lite model
-            evaluate_tflite_quantized_model(cfg=cfg,
+            _evaluate_tflite_quantized_model(cfg=cfg,
                                             quantized_model_path=model_path,
                                             eval_ds=eval_ds, class_names=class_names,
                                             output_dir=output_dir, name_ds=name_ds,
@@ -300,7 +299,7 @@ def evaluate(cfg: DictConfig = None, eval_ds: tf.data.Dataset = None,
         elif file_extension == '.onnx':
             # Evaluate quantized or float ONNX model
             data, labels = tf_dataset_to_np_array(eval_ds)
-            evaluate_onnx_model(cfg=cfg,
+            _evaluate_onnx_model(cfg=cfg,
                                 input_samples=data,
                                 input_labels=labels,
                                 input_model_path=model_path,

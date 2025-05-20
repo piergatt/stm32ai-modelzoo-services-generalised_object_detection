@@ -13,7 +13,7 @@ import librosa
 import numpy as np
 import warnings
 
-def compute_mel_spectrogram(wave: str,
+def _compute_mel_spectrogram(wave: str,
                             sr: int, 
                             n_fft: int, 
                             hop_length: int,
@@ -162,7 +162,7 @@ def get_patches(wave: str,
         -------
         Patches : list of 2D ndarrays of shape (n_mels, patch_length). List of output patches.
     '''
-    db_melspec = compute_mel_spectrogram(wave=wave,
+    db_melspec = _compute_mel_spectrogram(wave=wave,
                                          sr=sr, 
                                          n_fft=n_fft, 
                                          hop_length=hop_length,

@@ -17,14 +17,14 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
 from typing import Optional
 
-from models_utils import get_model_name_and_its_input_shape, tf_dataset_to_np_array
-from models_mgt import AED_CUSTOM_OBJECTS
-from onnx_evaluation import model_is_quantized
-from onnx_quantizer import quantize_onnx
-from onnx_model_convertor import onnx_model_converter
+from common.utils import get_model_name_and_its_input_shape, tf_dataset_to_np_array
+from common.quantization import quantize_onnx
+from common.evaluation import model_is_quantized
+from common.onnx_utils import onnx_model_converter
+from src.utils import AED_CUSTOM_OBJECTS
 
 
-def tflite_ptq_quantizer(model: tf.keras.Model = None, quantization_ds: tf.data.Dataset = None, fake: bool = False,
+def _tflite_ptq_quantizer(model: tf.keras.Model = None, quantization_ds: tf.data.Dataset = None, fake: bool = False,
                          output_dir: str = None, export_dir: Optional[str] = None, input_shape: tuple = None,
                          quantization_input_type: str = None, quantization_output_type: str = None,
                          quantization_split: str = None, quantize_with_full_dataset: bool = False,
@@ -50,7 +50,7 @@ def tflite_ptq_quantizer(model: tf.keras.Model = None, quantization_ds: tf.data.
         None
     """
 
-    def representative_data_gen():
+    def _representative_data_gen():
         """
         Generate representative data for post-training quantization.
 
@@ -104,7 +104,7 @@ def tflite_ptq_quantizer(model: tf.keras.Model = None, quantization_ds: tf.data.
 
     # Set the optimizations and representative dataset generator
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    converter.representative_dataset = representative_data_gen
+    converter.representative_dataset = _representative_data_gen
 
     if quantization_granularity == 'per_tensor':
         converter._experimental_disable_per_channel = True
@@ -194,7 +194,7 @@ def quantize(cfg: DictConfig = None, quantization_ds: Optional[tf.data.Dataset] 
             # if per-tensor quantization is required some optimizations are possible on the float model
             if quantization_granularity == 'per_tensor' and quantization_optimize:
                 try:
-                    from model_formatting_ptq_per_tensor import model_formatting_ptq_per_tensor
+                    from common.optimization import model_formatting_ptq_per_tensor
                 except ImportError:
                     print(
                         "[INFO] : Impossible to import model_formatting_ptq_per_tensor optimization module. "
@@ -210,14 +210,14 @@ def quantize(cfg: DictConfig = None, quantization_ds: Optional[tf.data.Dataset] 
             print("[INFO] : Quantizing the model ... This might take a while ...")
         
             if fake:
-                tflite_ptq_quantizer(model=float_model, fake=fake, output_dir=output_dir,
+                _tflite_ptq_quantizer(model=float_model, fake=fake, output_dir=output_dir,
                                     export_dir=export_dir, input_shape=input_shape,
                                     quantization_input_type=cfg.quantization.quantization_input_type,
                                     quantization_output_type=cfg.quantization.quantization_output_type, 
                                     quantization_granularity=quantization_granularity)
             else:
                 # Quantize the model with training or user-provided data
-                tflite_ptq_quantizer(model=float_model, quantization_ds=quantization_ds, output_dir=output_dir,
+                _tflite_ptq_quantizer(model=float_model, quantization_ds=quantization_ds, output_dir=output_dir,
                                     export_dir=export_dir, input_shape=input_shape,
                                     quantization_input_type=cfg.quantization.quantization_input_type,
                                     quantization_output_type=cfg.quantization.quantization_output_type,

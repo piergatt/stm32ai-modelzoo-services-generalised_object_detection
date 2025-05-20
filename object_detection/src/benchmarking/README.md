@@ -6,7 +6,7 @@ The object detection Model Benchmarking service is a powerful tool that enables 
 
 <details open><summary><a href="#1"><b>1. Configure the YAML file</b></a></summary><a id="1"></a>
 
-To use this service and achieve your goals, you can use the [user_config.yaml](../user_config.yaml) or directly update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) file and use it. This file provides an example of how to configure the benchmarking service to meet your specific needs.
+To use this service and achieve your goals, you can use the [user_config.yaml](../../user_config.yaml) or directly update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) file and use it. This file provides an example of how to configure the benchmarking service to meet your specific needs.
 
 Alternatively, you can follow the tutorial below, which shows how to benchmark your pre-trained object detection model using our evaluation service.
 
@@ -16,7 +16,7 @@ As mentioned previously, all the sections of the YAML file must be set in accord
 
 ```yaml
 general:
-  model_path: ../../../model_zoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
+  model_path: ../../stm32ai-modelzoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
 operation_mode: benchmarking
 ```
 
@@ -58,30 +58,30 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#2"><b>2. benchmark your model</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml), you can evaluate the model by running the following command from the **src/** folder:
+If you chose to modify the [user_config.yaml](../../user_config.yaml), you can evaluate the model by running the following command from the UC folder:
 
 ```bash
 python stm32ai_main.py
 ```
 
-If you chose to update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) and use it, then run the following command from the **src/** folder:
+If you chose to update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) and use it, then run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name benchmarking_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name benchmarking_config.yaml
 ```
 
 Note that you can provide YAML attributes as arguments in the command, as shown below:

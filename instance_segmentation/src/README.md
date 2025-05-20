@@ -7,7 +7,7 @@ Remember that minimalistic yaml files are available [here](./config_file_example
 The Instance Segmentation Model Zoo provides a collection of independent services related to machine learning for instance segmentation.
 
 To use the services in the Instance segmentation model zoo, you can utilize the model
-zoo [stm32ai_main.py](stm32ai_main.py) along with [user_config.yaml](user_config.yaml) file as input. The yaml file
+zoo [stm32ai_main.py](../stm32ai_main.py) along with [user_config.yaml](../user_config.yaml) file as input. The yaml file
 specifies the service and a set of configuration parameters such as the model (either from the
 model zoo or your own custom model), the dataset, and the preprocessing parameters, among others.
 
@@ -16,7 +16,7 @@ More information about the different services and their configuration options ca
 </details>
 <details open><summary><a href="#2"><b>2. Instance segmentation services </b></a></summary><a id="2"></a>
 
-To use any service of this use case, you will need to update the [user_config.yaml](user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](user_config.yaml) file is explained in detail in the following sections.
+To use any service of this use case, you will need to update the [user_config.yaml](../user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](../user_config.yaml) file is explained in detail in the following sections.
 
 The `operation_mode` is a top-level attribute that specifies the operations or the service you want to execute.
 

@@ -10,8 +10,8 @@
 from pathlib import Path
 from omegaconf import DictConfig
 from typing import Optional
-from deployment import gen_h_user_file, generate_LUT_files, stm32ai_deploy_stm32n6
-from utils import get_model_name_and_its_input_shape, get_model_name
+from src.deployment import gen_h_user_file, generate_LUT_files, stm32ai_deploy_stm32n6
+from src.utils import get_model_name_and_its_input_shape, get_model_name
 
 def deploy(cfg: DictConfig = None, model_path_to_deploy: Optional[str] = None,
            credentials: list[str] = None) -> None:

@@ -37,7 +37,7 @@ The most important parts here are to define:
 
 general:
   project_name: aed_project
-  model_path: ../../../model_zoo/audio_event_detection/yamnet/ST_pretrainedmodel_public_dataset/esc10/yamnet_256_64x96_tl/yamnet_256_64x96_tl.h5
+  model_path: ../../stm32ai-modelzoo/audio_event_detection/yamnet/ST_pretrainedmodel_public_dataset/esc10/yamnet_256_64x96_tl/yamnet_256_64x96_tl.h5
   # Change to the path of the model you wish to evaluate
   logs_dir: logs
   saved_models_dir: saved_models
@@ -57,8 +57,8 @@ dataset:
   # Note : It is not strictly necessary to provide a quantization dataset, but not doing so 
   # can greatly reduce quantized model performance
 
-  quantization_audio_path: ../datasets/ESC-50/audio 
-  quantization_csv_path: ../datasets/ESC-50/meta/esc50.csv
+  quantization_audio_path: ./datasets/ESC-50/audio 
+  quantization_csv_path: ./datasets/ESC-50/meta/esc50.csv
   quantization_split:  # Optional
 
   multi_label: False 
@@ -130,7 +130,7 @@ You can look at user_config.yaml examples for any operation mode [here](https://
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

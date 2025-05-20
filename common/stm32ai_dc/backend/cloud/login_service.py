@@ -16,7 +16,7 @@ import os
 import time
 from pathlib import Path
 
-from stm32ai_dc.errors import BlockedAccountException, InvalidCrendetialsException, LoginFailureException
+from common.stm32ai_dc.errors import BlockedAccountException, InvalidCrendetialsException, LoginFailureException
 
 from .helpers import get_ssl_verify_status, _get_env_proxy
 from .endpoints import get_callback_url_ep, get_client_id_ep, get_login_authenticate_ep, get_login_service_ep, get_sso_url_ep, get_user_service_ep
@@ -86,7 +86,6 @@ class LoginService:
                 raise e
             except Exception as e:
                 print('Login issue, retry (' + str(i+1) + '/5)')
-                print(e)
                 time.sleep(5)
 
 

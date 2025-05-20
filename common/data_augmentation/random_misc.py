@@ -22,7 +22,7 @@ Link to the source code:
 """
 
 import tensorflow as tf
-from random_utils import check_dataaug_argument, remap_pixel_values_range, apply_change_rate
+from common.data_augmentation import check_dataaug_argument, remap_pixel_values_range, apply_change_rate
 
 
 def random_blur(images, filter_size=None, padding="reflect",

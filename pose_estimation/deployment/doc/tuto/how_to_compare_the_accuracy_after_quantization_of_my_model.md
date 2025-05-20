@@ -34,7 +34,7 @@ The most important parts to define are:
 # user_config.yaml
 
 general:
-   model_path: ../../../model_zoo/pose_estimation/movenet/Public_pretrainedmodel_custom_dataset/custom_dataset_person_17kpts/movenet_lightning_heatmaps_192/movenet_lightning_heatmaps_192.h5
+   model_path: ../../stm32ai-modelzoo/pose_estimation/movenet/Public_pretrainedmodel_custom_dataset/custom_dataset_person_17kpts/movenet_lightning_heatmaps_192/movenet_lightning_heatmaps_192.h5
    model_type: heatmaps_spe
 
 operation_mode: chain_eqe
@@ -42,8 +42,8 @@ operation_mode: chain_eqe
 dataset:
    name: coco_pose
    keypoints: 17
-   test_path: ../datasets/coco_val_single_pose
-   quantization_path: ../datasets/coco_train_single_pose
+   test_path: ./datasets/coco_val_single_pose
+   quantization_path: ./datasets/coco_train_single_pose
    quantization_split: 0.3
 
 preprocessing:
@@ -65,11 +65,11 @@ quantization:
    granularity: per_tensor
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 When evaluating the model, it is highly recommended to use real data for the final quantization.
 
@@ -78,7 +78,7 @@ You can also find examples of user_config.yaml for any operation mode [here](htt
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

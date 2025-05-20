@@ -15,7 +15,7 @@ import numpy as np
 import tensorflow as tf
 from typing import Tuple, List
 
-def parse_labels(label_path : str):
+def _parse_labels(label_path : str):
     """
     Parsing of the labels files
     Args:
@@ -34,7 +34,7 @@ def parse_labels(label_path : str):
         ground_truths = np.array([[float(j) for j in i] for i in txt],np.float32)
     return ground_truths
 
-def normalize_labels(label, n : int, l : int):
+def _normalize_labels(label, n : int, l : int):
     """
     Normalization of the labels -> same shape for every label regarding the number of ground truths
     Args:
@@ -50,7 +50,7 @@ def normalize_labels(label, n : int, l : int):
     normalized_label = np.concatenate([label,miss])
     return normalized_label
 
-def get_path_dataset(path : str,
+def _get_path_dataset(path : str,
                      seed : int,
                      shuffle : bool = True) -> tf.data.Dataset:
     """
@@ -78,14 +78,14 @@ def get_path_dataset(path : str,
     if len(paths_imgs) != len(paths_labels):
         paths_labels = ["None"]*len(paths_imgs)
 
-    paths_labels = list(map(parse_labels,paths_labels))
+    paths_labels = list(map(_parse_labels,paths_labels))
 
     len_max = max([len(p) for p in paths_labels])
     len_label = len(paths_labels[0][0])
 
     # print("[INFO] : The dataset contains a maximum of ",len_max," poses per image")
 
-    paths_labels = list(map(lambda x : normalize_labels(x,n=len_max,l=len_label), paths_labels))
+    paths_labels = list(map(lambda x : _normalize_labels(x,n=len_max,l=len_label), paths_labels))
 
     data_list = list(zip(paths_imgs,paths_labels))
 
@@ -99,7 +99,7 @@ def get_path_dataset(path : str,
 
     return dataset
 
-def get_padded_labels(data,r,R,height,width):
+def _get_padded_labels(data,r,R,height,width):
 
     sh = tf.shape(data)
 
@@ -154,7 +154,7 @@ def get_padded_labels(data,r,R,height,width):
 
     return padded_labels
 
-def preprocess_function(data_x : tf.Tensor,
+def _preprocess_function(data_x : tf.Tensor,
                         data_y : tf.Tensor,
                         image_size: tuple[int],
                         interpolation: str,
@@ -179,14 +179,14 @@ def preprocess_function(data_x : tf.Tensor,
         data_y = tf.cast(data_y,tf.float32)
     elif aspect_ratio == "padding":
         image = tf.image.resize_with_pad(image, height, width)
-        data_y = get_padded_labels(data_y,r,R,height,width)
+        data_y = _get_padded_labels(data_y,r,R,height,width)
     else:
         raise ValueError("In config file, at section preprocessing.aspect_ratio choose 'fit' or 'padding'")
 
     return image, data_y
 
 
-def get_train_val_ds(training_path: str,
+def _get_train_val_ds(training_path: str,
                      image_size: tuple[int] = None,
                      nbr_keypoints: int = None,
                      interpolation: str = None,
@@ -242,7 +242,7 @@ def get_train_val_ds(training_path: str,
                          color_mode,
                          nbr_keypoints)
 
-    dataset = get_path_dataset(training_path, seed=seed)
+    dataset = _get_path_dataset(training_path, seed=seed)
 
     train_size = int(len(dataset)*(1-validation_split))
     train_ds = dataset.take(train_size)
@@ -251,8 +251,8 @@ def get_train_val_ds(training_path: str,
     if shuffle:
         train_ds = train_ds.shuffle(len(train_ds), reshuffle_each_iteration=True, seed=seed)
     
-    train_ds = train_ds.map(lambda *data : preprocess_function(*data,*preprocess_params))
-    val_ds   =   val_ds.map(lambda *data : preprocess_function(*data,*preprocess_params))
+    train_ds = train_ds.map(lambda *data : _preprocess_function(*data,*preprocess_params))
+    val_ds   =   val_ds.map(lambda *data : _preprocess_function(*data,*preprocess_params))
     
     train_ds = train_ds.batch(batch_size, drop_remainder=True)
     val_ds   =   val_ds.batch(batch_size, drop_remainder=True)
@@ -267,7 +267,7 @@ def get_train_val_ds(training_path: str,
     return train_ds, val_ds
 
 
-def get_ds(data_path: str = None,
+def _get_ds(data_path: str = None,
            image_size: tuple[int] = None,
            nbr_keypoints: int = None,
            interpolation: str = None,
@@ -319,12 +319,12 @@ def get_ds(data_path: str = None,
                          color_mode,
                          nbr_keypoints)
 
-    dataset = get_path_dataset(data_path, seed=seed)
+    dataset = _get_path_dataset(data_path, seed=seed)
 
     if shuffle:
         dataset = dataset.shuffle(len(dataset), reshuffle_each_iteration=True, seed=seed)
     
-    dataset = dataset.map(lambda *data : preprocess_function(*data, *preprocess_params))
+    dataset = dataset.map(lambda *data : _preprocess_function(*data, *preprocess_params))
     dataset = dataset.batch(batch_size, drop_remainder=True)
 
     if to_cache:
@@ -381,7 +381,7 @@ def load_dataset(dataset_name: str = None,
     if training_path and not validation_path:
         # There is no validation. We split the
         # training set in two to create one.
-        train_ds, val_ds = get_train_val_ds(
+        train_ds, val_ds = _get_train_val_ds(
             training_path,
             nbr_keypoints=nbr_keypoints,
             image_size=image_size,
@@ -392,7 +392,7 @@ def load_dataset(dataset_name: str = None,
             batch_size=batch_size,
             seed=seed)
     elif training_path and validation_path:
-        train_ds = get_ds(
+        train_ds = _get_ds(
             training_path,
             nbr_keypoints=nbr_keypoints,
             image_size=image_size,
@@ -403,7 +403,7 @@ def load_dataset(dataset_name: str = None,
             seed=seed,
             shuffle=True)
 
-        val_ds = get_ds(
+        val_ds = _get_ds(
             validation_path,
             nbr_keypoints=nbr_keypoints,
             image_size=image_size,
@@ -414,7 +414,7 @@ def load_dataset(dataset_name: str = None,
             seed=seed)
     elif not training_path and validation_path:
         train_ds = None
-        val_ds = get_ds(
+        val_ds = _get_ds(
             validation_path,
             nbr_keypoints=nbr_keypoints,
             image_size=image_size,
@@ -428,7 +428,7 @@ def load_dataset(dataset_name: str = None,
         val_ds = None
 
     if quantization_path:
-        quantization_ds = get_ds(
+        quantization_ds = _get_ds(
             quantization_path,
             nbr_keypoints=nbr_keypoints,
             image_size=image_size,
@@ -441,7 +441,7 @@ def load_dataset(dataset_name: str = None,
         quantization_ds = None
 
     if test_path:
-        test_ds = get_ds(
+        test_ds = _get_ds(
             test_path,
             nbr_keypoints=nbr_keypoints,
             image_size=image_size,

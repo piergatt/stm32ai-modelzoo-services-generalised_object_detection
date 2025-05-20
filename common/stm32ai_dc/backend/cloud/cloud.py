@@ -9,21 +9,21 @@
 import os
 import functools
 import typing
-from stm32ai_dc.backend.cloud.generate_nbg_service import GenerateNbgService
-from stm32ai_dc.backend.cloud.benchmark_service import BenchmarkService
-from stm32ai_dc.backend.cloud.file_service import FileService
-from stm32ai_dc.backend.cloud.helpers import get_supported_versions
-from stm32ai_dc.backend.cloud.login_service import LoginService
-from stm32ai_dc.backend.cloud.user_service import UserService
-from stm32ai_dc.backend.cloud.stm32ai_service import Stm32AiService
-from stm32ai_dc.errors import GenerateNbgFailure, AnalyzeServerError, BenchmarkServerError, InvalidCrendetialsException
-from stm32ai_dc.errors import FileFormatError, GenerateServerError
-from stm32ai_dc.errors import InternalErrorThatShouldNotHappened
-from stm32ai_dc.errors import ParameterError, ValidateServerError
-from stm32ai_dc.errors import LoginFailureException
-from stm32ai_dc.types import AnalyzeResult, BackendVersionType, BenchmarkResult, BoardData, MpuBenchmarkResult, MpuParameters
-from stm32ai_dc.types import GenerateResult, Stm32AiBackend, CliParameters
-from stm32ai_dc.types import ValidateResult, ValidateResultMetrics
+from common.stm32ai_dc.backend.cloud.generate_nbg_service import GenerateNbgService
+from common.stm32ai_dc.backend.cloud.benchmark_service import BenchmarkService
+from common.stm32ai_dc.backend.cloud.file_service import FileService
+from common.stm32ai_dc.backend.cloud.helpers import get_supported_versions
+from common.stm32ai_dc.backend.cloud.login_service import LoginService
+from common.stm32ai_dc.backend.cloud.user_service import UserService
+from common.stm32ai_dc.backend.cloud.stm32ai_service import Stm32AiService
+from common.stm32ai_dc.errors import GenerateNbgFailure, AnalyzeServerError, BenchmarkServerError, InvalidCrendetialsException
+from common.stm32ai_dc.errors import FileFormatError, GenerateServerError
+from common.stm32ai_dc.errors import InternalErrorThatShouldNotHappened
+from common.stm32ai_dc.errors import ParameterError, ValidateServerError
+from common.stm32ai_dc.errors import LoginFailureException
+from common.stm32ai_dc.types import AnalyzeResult, BackendVersionType, BenchmarkResult, BoardData, MpuBenchmarkResult, MpuParameters
+from common.stm32ai_dc.types import GenerateResult, Stm32AiBackend, CliParameters
+from common.stm32ai_dc.types import ValidateResult, ValidateResultMetrics
 
 
 class CloudBackend(Stm32AiBackend):
@@ -94,9 +94,8 @@ class CloudBackend(Stm32AiBackend):
         rid = self.stm32ai_service.trigger_analyze(options)
         result = self.stm32ai_service.wait_for_run(rid)
 
-        if result is None or 'report' not in result\
-                or result['report'] is None:
-            if result is None and 'message' in result:
+        if result is None: 
+            if 'message' in result:
                 raise AnalyzeServerError(f"Missing data in server \
                     response: {result['message']}")
             raise AnalyzeServerError('Missing data in server response')
@@ -104,14 +103,18 @@ class CloudBackend(Stm32AiBackend):
         report = result.get('report', None)
         graph = result.get('graph', None)
         info = result.get('info', None)
+        cinfo_graph = info['graphs'][0] if info is not None else None
         date_time = info['environment']['generated_model']['generated_time'] if info is not None else report['date_time']
         cli_version_str = info['environment']['tools'][0]['version']  if info is not None else report['cli_version_str']
         cli_parameters = info['environment']['tools'][0]['arguments']  if info is not None else report['cli_parameters']
         memory_footprint = graph.get('memory_footprint', {}) if graph else info.get('memory_footprint', {})
+        macc = functools.reduce(lambda a, b: a+b, map(lambda a: a['macc'], cinfo_graph['nodes']), 0) if cinfo_graph \
+            else graph['macc'] if graph \
+                else 0
         analyze_result = AnalyzeResult(
             activations_size=memory_footprint.get('activations', 0),
             weights=memory_footprint.get('weights', 0),
-            macc=graph['macc'] if graph else 0,
+            macc=macc,
             rom_size=memory_footprint.get('weights', 0)
             + memory_footprint.get('kernel_flash', 0)
             + memory_footprint.get('toolchain_flash', 0),
@@ -148,7 +151,7 @@ class CloudBackend(Stm32AiBackend):
         result = self.stm32ai_service.wait_for_run(rid)
 
         if result is None or 'url' not in result:
-            if result is None and 'message' in result:
+            if 'message' in result:
                 raise GenerateServerError(f"Missing data in server \
                     response: {result.get('message')}")
             raise GenerateServerError('Missing data in server response')
@@ -176,9 +179,8 @@ class CloudBackend(Stm32AiBackend):
         rid = self.stm32ai_service.trigger_validate(options)
         result = self.stm32ai_service.wait_for_run(rid)
 
-        if result is None or 'report' not in result \
-                or result['report'] is None or 'graph' not in result:
-            if result is None and 'message' in result:
+        if result is None:
+            if 'message' in result:
                 raise ValidateServerError(f"Missing data in server \
                     response: {result.get('message')}")
             raise ValidateServerError('Missing data in server response')
@@ -311,7 +313,7 @@ class CloudBackend(Stm32AiBackend):
                     ))
                 cinfo_graph = cinfo['graphs'][0]
                 graph = result['benchmark']['graph']
-                exec_time = cinfo_graph.get('exec_time', graph.get('exec_time', {}))
+                exec_time = cinfo_graph.get('exec_time') if cinfo_graph else graph.get('exec_time', {})
                 c_arrays = {}
                 for arr in [b for b in  cinfo['buffers'] if b['is_param'] is True]:
                     c_arrays[arr['name']] = arr

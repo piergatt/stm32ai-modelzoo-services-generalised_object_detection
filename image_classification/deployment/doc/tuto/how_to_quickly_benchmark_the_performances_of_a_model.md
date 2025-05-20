@@ -41,7 +41,7 @@ The most important parts here are to define:
 
 general:
   # path to the model to benchmark
-  model_path: ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
+  model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
 
 operation_mode: benchmarking
 
@@ -66,11 +66,11 @@ benchmarking:
   board: STM32H747I-DISCO
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
   
 ```
 
@@ -81,7 +81,7 @@ Here is another example where we quantize the model first, then we launch the be
 
 general:
   # path to the model to benchmark
-  model_path: ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
+  model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
 
 operation_mode: chain_qb
 
@@ -117,18 +117,18 @@ benchmarking:
   board: STM32H747I-DISCO
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 Here the quantization is made with random data as no data were provided and main goal was to have a quick insight on the performances of a quantized model for a specific HW. When evaluating the model, it is highly recommended to use real data for the final quantization of course.
 
 ## Run the script:
 
-Edit the user_config.yaml then open a CMD (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a CMD (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

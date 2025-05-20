@@ -39,7 +39,7 @@ def check_dataaug_argument(arg, arg_name, function_name=None, data_type=None, tu
                 2. scalars are not accepted, tuples only.
             By default, both scalers and tuples are accepted.
     """
-    def check_data_type(arg):
+    def _check_data_type(arg):
         # Check that the data type of the argument is as expected.
         arg_type = type(arg)
         if data_type == int and arg_type != int:
@@ -84,10 +84,10 @@ def check_dataaug_argument(arg, arg_name, function_name=None, data_type=None, tu
         if arg[1] <= arg[0]:
             raise ValueError("\nArgument `{}` of function `{}`: the tuple right value should be greater "
                              "than the left value. Received{}".format(arg_name, function_name, arg))  
-        check_data_type(arg[0])
-        check_data_type(arg[1])
+        _check_data_type(arg[0])
+        _check_data_type(arg[1])
     else:
-        check_data_type(arg)
+        _check_data_type(arg)
 
 
 def remap_pixel_values_range(images, input_range, output_range, dtype=tf.float32):

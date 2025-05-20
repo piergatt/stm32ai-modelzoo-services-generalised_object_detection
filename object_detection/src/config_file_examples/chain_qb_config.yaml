@@ -1,10 +1,10 @@
 general:
-  model_path: ../../../model_zoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
+  model_path: ../../stm32ai-modelzoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
   model_type: st_ssd_mobilenet_v1
 operation_mode: chain_qb
 
 dataset:
-  quantization_path: ../datasets/coco_person_2017/train
+  quantization_path: ./datasets/coco_2017_person/train
   quantization_split: 0.5
 
 preprocessing:
@@ -42,8 +42,8 @@ benchmarking:
    board: STM32H747I-DISCO
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

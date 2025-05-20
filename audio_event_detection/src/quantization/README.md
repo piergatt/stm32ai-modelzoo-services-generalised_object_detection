@@ -18,7 +18,7 @@ The [model zoo pretrained_models](https://github.com/STMicroelectronics/stm32ai-
 Some of these models need quite different pre-processing, feature extraction and training parameters, and using different ones could lead to wildly varying performance.
 
 **Each of these subdirectories contains the config.yaml file that was used to train the model**.
-To use these in quantization, copy them over to the [src/](../) folder, and rename them to `user_config.yaml`
+To use these in quantization, copy them over to the [UC](../../) folder, and rename them to `user_config.yaml`
 
 If using one of these configuration files, you will need to change the `operation_mode` parameter to `quantization`. See the next section for more information
 
@@ -71,8 +71,8 @@ dataset:
   name: esc10 # Name of the dataset. Use 'esc10' for ESC-10, 'fsd50k' for FSD50K and 'custom' for any other dataset
   class_names: ['dog', 'chainsaw', 'crackling_fire', 'helicopter', 'rain', 'crying_baby', 'clock_tick', 'sneezing', 'rooster', 'sea_waves'] # Names of the classes to use when training your model
   file_extension: '.wav' # File extension of the audio files
-  training_audio_path: ..\datasets\ESC-50\audio # Mandatory
-  training_csv_path:   ..\datasets\ESC-50\meta\esc50.csv # Mandatory
+  training_audio_path: ./datasets/ESC-50/audio # Mandatory
+  training_csv_path:   ./datasets/ESC-50/meta/esc50.csv # Mandatory
 
   validation_audio_path: # Optional
   validation_csv_path: # Optional
@@ -180,7 +180,7 @@ For more details on what each parameter does, please refer to section 3.11 of th
 </details>
 <details open><summary><a href="#2"><b>2. Run quantization</b></a></summary><a id="2"></a>
 
-Once you have finished setting up your config file, run the following command from the [src/](../) directory : 
+Once you have finished setting up your config file, run the following command from the [UC](../../) directory : 
 
 ```bash
 python stm32ai_main.py 
@@ -194,7 +194,7 @@ All quantization artifacts, figures, and models are saved under the output direc
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 By default, the output directory is `src/experiments_outputs/<date_time_of_your_run>/`(../experiments_outputs). Note that this directory will NOT exist before you run the model zoo at least once.
 

@@ -35,19 +35,19 @@ The most important parts to define are:
 # user_config.yaml
 
 general:
-   model_path: ../../../model_zoo/semantic_segmentation/deeplab_v3/ST_pretrainedmodel_public_dataset/person_coco_2017_pascal_voc_2012/deeplab_v3_mobilenetv2_05_16_320/deeplab_v3_mobilenetv2_05_16_320_asppv2.h5
+   model_path: ../../stm32ai-modelzoo/semantic_segmentation/deeplab_v3/ST_pretrainedmodel_public_dataset/person_coco_2017_pascal_voc_2012/deeplab_v3_mobilenetv2_05_16_320/deeplab_v3_mobilenetv2_05_16_320_asppv2.h5
 
 operation_mode: chain_eqe
 
 dataset:
    name: pascal_voc_person
    class_names: [ "background", "person" ]
-   test_path: ../datasets/person_coco_2017_pascal_voc_2012/JPEGImages
-   test_masks_path: ../datasets/person_coco_2017_pascal_voc_2012/SegmentationClassAug
-   test_files_path: ../datasets/person_coco_2017_pascal_voc_2012/val.txt
-   quantization_path: ../datasets/person_coco_2017_pascal_voc_2012/JPEGImages
-   quantization_masks_path: ../datasets/person_coco_2017_pascal_voc_2012/SegmentationClassAug
-   quantization_files_path: ../datasets/person_coco_2017_pascal_voc_2012/train.txt
+   test_path: ./datasets/person_coco_2017_pascal_voc_2012/JPEGImages
+   test_masks_path: ./datasets/person_coco_2017_pascal_voc_2012/SegmentationClassAug
+   test_files_path: ./datasets/person_coco_2017_pascal_voc_2012/val.txt
+   quantization_path: ./datasets/person_coco_2017_pascal_voc_2012/JPEGImages
+   quantization_masks_path: ./datasets/person_coco_2017_pascal_voc_2012/SegmentationClassAug
+   quantization_files_path: ./datasets/person_coco_2017_pascal_voc_2012/train.txt
    quantization_split: 0.2
 
 preprocessing:
@@ -70,11 +70,11 @@ quantization:
   export_dir: quantized_models
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 When evaluating the model, it is highly recommended to use real data for the final quantization.
 
@@ -83,7 +83,7 @@ You can also find examples of user_config.yaml for any operation mode [here](htt
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

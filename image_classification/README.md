@@ -3,7 +3,7 @@
 
 ## Directory components:
 * [datasets](datasets/README.md) placeholder for the image classification datasets.
-* [deployment](deployment/README.md) contains the necessary files for the deployment service.
+* deployment ([STM32H7](deployment/README_STM32H7.md), [STM32N6](deployment/README_STM32N6.md)) contains the necessary files for the deployment service.
 * [pretrained_models](pretrained_models/README.md) points on a collection of optimized pretrained models on different image classification datasets.
 * [src](src/README.md) contains tools to train, evaluate, benchmark and quantize your model on your STM32 target.
 
@@ -17,9 +17,7 @@ You can refer to readme links below that provide typical examples of operation m
 - [evaluation, chain_eqeb](./src/evaluation/README.md)
 - [benchmarking](./src/benchmarking/README.md)
 - [prediction](./src/prediction/README.md)
-- For deployment and chain_qd:
-  - [README](./deployment/README.md)
-  - For STM32N6: [README_STM32N6](./deployment/README_STM32N6.md)
+- deployment, chain_qd ([STM32H7](./deployment/README_STM32H7.md), [STM32N6](./deployment/README_STM32N6.md))
 
 All .yaml configuration examples are located in [config_file_examples](./src/config_file_examples/) folder.
 

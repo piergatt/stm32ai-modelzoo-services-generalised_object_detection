@@ -19,13 +19,10 @@ from onnx import ModelProto
 from pathlib import Path
 from omegaconf import OmegaConf, DictConfig, open_dict
 
-from cfg_utils import check_attributes
-from models_utils import check_model_support
-from data_augmentation_layers_audio import SpecAugment, VolumeAugment
-import custom_model
-import yamnet
-import miniresnet
-import miniresnetv2
+from common.utils import check_model_support, check_attributes
+from src.models import custom_model, yamnet, miniresnet, miniresnetv2
+from src.data_augmentation import SpecAugment, VolumeAugment
+
 
 
 AED_CUSTOM_OBJECTS={'SpecAugment': SpecAugment,

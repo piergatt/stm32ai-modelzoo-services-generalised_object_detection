@@ -10,7 +10,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import GaussianNoise
-from data_augmentation_layers_audio import SpecAugment, VolumeAugment 
+from .data_augmentation_layers_audio import SpecAugment, VolumeAugment 
 
 def get_data_augmentation(cfg, db_scale: bool = False):
     '''

@@ -305,7 +305,7 @@ they are based on the date and time of the run.
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown
@@ -313,17 +313,17 @@ below:
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#3"><b>3. Train your model</b></a></summary><a id="3"></a>
 
-To launch your model training using a real dataset, run the following command from **src/** folder:
+To launch your model training using a real dataset, run the following command from UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name training_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name training_config.yaml
 ```
 
 Trained h5 model can be found in corresponding **experiments_outputs/** folder.
@@ -424,7 +424,7 @@ chain service called chain_tqeb that stands for train, quantize, evaluate, bench
 Else simple training could be executed like in example below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name training_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name training_config.yaml
 ```
 
 This specific example uses the "Bring Your Own Model" feature using `model_path`, then fine tunes the initial model by

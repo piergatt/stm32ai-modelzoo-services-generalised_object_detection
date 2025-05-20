@@ -16,7 +16,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Lambda
 
 
-def DarknetConv2D_BN_Leaky(filters: int, x: layers.Input) -> layers.Input:
+def _DarknetConv2D_BN_Leaky(filters: int, x: layers.Input) -> layers.Input:
     """
     Darknet Convolution2D followed by CustomBatchNormalization and LeakyReLU.
     
@@ -35,7 +35,7 @@ def DarknetConv2D_BN_Leaky(filters: int, x: layers.Input) -> layers.Input:
 
 def tiny_yolo_v2(input_shape, num_anchors: int, num_classes: int) -> keras.Model:
     """
-    Builds a Tiny YOLOv2 model architecture using the DarknetConv2D_BN_Leaky layer.
+    Builds a Tiny YOLOv2 model architecture using the _DarknetConv2D_BN_Leaky layer.
 
     Args:
     - inputs: a tensor representing the input to the model
@@ -51,27 +51,27 @@ def tiny_yolo_v2(input_shape, num_anchors: int, num_classes: int) -> keras.Model
 
     inputs = tf.keras.Input(shape=(input_shape))
     
-    x = DarknetConv2D_BN_Leaky(16, inputs)
+    x = _DarknetConv2D_BN_Leaky(16, inputs)
     x = layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same')(x)
 
-    x = DarknetConv2D_BN_Leaky(32,x)
+    x = _DarknetConv2D_BN_Leaky(32,x)
     x = layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same')(x)
 
-    x = DarknetConv2D_BN_Leaky(64,x)
+    x = _DarknetConv2D_BN_Leaky(64,x)
     x = layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same')(x)
 
-    x = DarknetConv2D_BN_Leaky(128,x)
+    x = _DarknetConv2D_BN_Leaky(128,x)
     x = layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same')(x)
 
-    x = DarknetConv2D_BN_Leaky(256,x)
+    x = _DarknetConv2D_BN_Leaky(256,x)
     x = layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same')(x)
 
-    x = DarknetConv2D_BN_Leaky(512,x)
+    x = _DarknetConv2D_BN_Leaky(512,x)
     x = layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='same')(x)
 
-    x = DarknetConv2D_BN_Leaky(1024,x)
+    x = _DarknetConv2D_BN_Leaky(1024,x)
 
-    x = DarknetConv2D_BN_Leaky(512,x)
+    x = _DarknetConv2D_BN_Leaky(512,x)
 
     x = layers.Conv2D(len_detection_vector, (1, 1), strides=1, padding='same', use_bias=False)(x)
         

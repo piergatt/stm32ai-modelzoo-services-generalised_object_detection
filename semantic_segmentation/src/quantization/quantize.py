@@ -16,16 +16,18 @@ import os
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
 
-from models_utils import get_model_name_and_its_input_shape
+from common.utils import get_model_name_and_its_input_shape
+from common.quantization import quantize_onnx
+from common.evaluation import model_is_quantized
+from common.optimization import model_formatting_ptq_per_tensor
+from common.onnx_utils import onnx_model_converter
+from src.utils import tf_segmentation_dataset_to_np_array
+
 from typing import Optional
-from onnx_quantizer import quantize_onnx
-from onnx_evaluation import model_is_quantized
-from onnx_model_convertor import onnx_model_converter
-from utils import tf_segmentation_dataset_to_np_array
-from model_formatting_ptq_per_tensor import model_formatting_ptq_per_tensor
 
 
-def tflite_ptq_quantizer(model: tf.keras.Model = None, quantization_ds: tf.data.Dataset = None,
+
+def _tflite_ptq_quantizer(model: tf.keras.Model = None, quantization_ds: tf.data.Dataset = None,
                          output_dir: str = None, export_dir: str = None, input_shape: tuple = None,
                          quantization_granularity: str = None, quantization_input_type: str = None,
                          quantization_output_type: str = None) -> None:
@@ -158,7 +160,7 @@ def quantize(cfg: DictConfig = None, quantization_ds: Optional[tf.data.Dataset] 
     
     elif cfg.quantization.quantizer.lower() == "tflite_converter" and cfg.quantization.quantization_type == "PTQ":
         if file_extension == 'h5':
-            tflite_ptq_quantizer(model=float_model, quantization_ds=quantization_ds, output_dir=output_dir,
+            _tflite_ptq_quantizer(model=float_model, quantization_ds=quantization_ds, output_dir=output_dir,
                                  export_dir=export_dir, input_shape=input_shape,
                                  quantization_granularity=quantization_granularity,
                                  quantization_input_type=cfg.quantization.quantization_input_type,

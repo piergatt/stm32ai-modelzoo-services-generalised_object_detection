@@ -1,11 +1,11 @@
 general:
-   model_path: ../../../model_zoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256_int8.tflite
+   model_path: ../../stm32ai-modelzoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256_int8.tflite
    model_type: st_ssd_mobilenet_v1
 operation_mode: evaluation
 
 dataset:
   class_names: [person]
-  test_path: ../datasets/COCO_2017_person/test
+  test_path: ./datasets/coco_2017_person/test
 
 
 preprocessing:
@@ -16,15 +16,15 @@ preprocessing:
   color_mode: rgb
 
 postprocessing:
-  confidence_thresh: 0.6
+  confidence_thresh: 0.001
   NMS_thresh: 0.5
-  IoU_eval_thresh: 0.3
+  IoU_eval_thresh: 0.5
   plot_metrics: True   # Plot precision versus recall curves. Default is False.
-  max_detection_boxes: 10
+  max_detection_boxes: 100
   
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

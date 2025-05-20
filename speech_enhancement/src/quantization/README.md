@@ -49,7 +49,7 @@ If you're using the Valentini dataset, then all these conditions are already sat
 <details open><summary><a href="#2"><b>2. Create your configuration file</b></a></summary><a id="2"></a>
 <ul><details open><summary><a href="#2-1">2.1 Overview</a></summary><a id="2-1"></a>
 
-The training, evaluation, quantization and benchmarking of the model are driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../user_config.yaml) and is located in the [src/](../) directory.
+The training, evaluation, quantization and benchmarking of the model are driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../../user_config.yaml) and is located in the [UC](../../) directory.
 
 A configuration file includes the following sections:
 
@@ -226,7 +226,7 @@ However, float models provided for quantization must have input shape (batch, n_
 </details>
 <details open><summary><a href="#3"><b>3. Quantize your model</b></a></summary><a id="3"></a>
 
-Run the following command, from the [src/](../) directory:
+Run the following command, from the [UC](../../) directory:
 
 ```bash
 python stm32ai_main.py

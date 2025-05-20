@@ -23,8 +23,8 @@ Link to the source code:
 
 import math
 import tensorflow as tf
-from random_utils import check_dataaug_argument, apply_change_rate
-from random_affine_utils import \
+from common.data_augmentation import check_dataaug_argument, apply_change_rate
+from common.data_augmentation import \
         check_fill_and_interpolation, transform_images, \
         get_flip_matrix, get_translation_matrix, get_rotation_matrix, \
         get_shear_matrix, get_zoom_matrix

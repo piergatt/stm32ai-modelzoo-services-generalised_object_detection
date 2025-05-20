@@ -12,7 +12,7 @@ operation_mode: chain_tqeb
 dataset:
   name: coco_person
   class_names: [person]
-  training_path: ../datasets/coco_2017_person/train
+  training_path: ./datasets/coco_2017_person/train
   validation_split: 0.15
   quantization_split: 0.3
 
@@ -58,11 +58,11 @@ training:
       patience: 40
 
 postprocessing:
-  confidence_thresh: 0.6
+  confidence_thresh: 0.001
   NMS_thresh: 0.5
-  IoU_eval_thresh: 0.3
+  IoU_eval_thresh: 0.5
   plot_metrics: True   # Plot precision versus recall curves. Default is False.
-  max_detection_boxes: 10
+  max_detection_boxes: 100
 
 quantization:
    quantizer: TFlite_converter
@@ -83,8 +83,8 @@ benchmarking:
    board: STM32H747I-DISCO
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

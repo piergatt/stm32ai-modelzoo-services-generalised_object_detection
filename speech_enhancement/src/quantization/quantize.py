@@ -11,9 +11,9 @@ from pathlib import Path
 import copy
 import onnx
 from onnxruntime.quantization import quantize_static, CalibrationMethod, QuantFormat, QuantType
-from quantization import DataLoaderDataReader
-import preprocessing
-from dataset_utils import load_dataset_from_cfg
+from src.quantization import DataLoaderDataReader
+import src.preprocessing
+from src.dataset_utils import load_dataset_from_cfg
 from torch.utils.data import DataLoader
 from onnxruntime.quantization.shape_inference import quant_pre_process
 from onnxruntime.tools.onnx_model_utils import fix_output_shapes, make_dim_param_fixed
@@ -118,7 +118,7 @@ def quantize(cfg):
     pipeline_args = copy.copy(cfg.preprocessing)
     del pipeline_args["pipeline_type"]
 
-    input_pipeline = getattr(preprocessing, cfg.preprocessing.pipeline_type)(
+    input_pipeline = getattr(src.preprocessing, cfg.preprocessing.pipeline_type)(
         magnitude=True, **pipeline_args)
 
     # Load quantisation dataset

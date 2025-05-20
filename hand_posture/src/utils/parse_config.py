@@ -11,17 +11,17 @@ import os
 from pathlib import Path
 import re
 from hydra.core.hydra_config import HydraConfig
-from cfg_utils import postprocess_config_dict, check_attributes, check_config_attributes, parse_tools_section, \
+from common.utils import postprocess_config_dict, check_attributes, check_config_attributes, parse_tools_section, \
                       parse_benchmarking_section, parse_mlflow_section, parse_top_level, parse_general_section, \
                       parse_training_section, parse_deployment_section, parse_prediction_section, check_hardware_type
 from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
 import tensorflow as tf
 from typing import Dict, List
-from handposture_dictionnary import hand_posture_dict
+from .handposture_dictionnary import hand_posture_dict
 
 
-def check_dataset_paths_and_contents(cfg, mode: str = None, mode_groups: DictConfig = None) -> None:
+def _check_dataset_paths_and_contents(cfg, mode: str = None, mode_groups: DictConfig = None) -> None:
 
     dataset_paths = {}
     # Datasets used in a training
@@ -58,7 +58,7 @@ def check_dataset_paths_and_contents(cfg, mode: str = None, mode_groups: DictCon
             cfg[name] = None
 
 
-def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None) -> None:
+def _parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None) -> None:
     # cfg: dictionary containing the 'dataset' section of the configuration file
 
     legal = ["name", "class_names", "training_path", "validation_path", "validation_split", "test_path",
@@ -105,10 +105,10 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
     #                          "Please check the 'dataset' section of your configuration file.")
         
     # if cfg.name not in ("emnist", "cifar10", "cifar100"):
-    check_dataset_paths_and_contents(cfg, mode=mode, mode_groups=mode_groups)
+    _check_dataset_paths_and_contents(cfg, mode=mode, mode_groups=mode_groups)
 
 
-def parse_preprocessing_section(cfg: DictConfig) -> None:
+def _parse_preprocessing_section(cfg: DictConfig) -> None:
     # cfg: 'preprocessing' section of the configuration file
 
     legal = ["Max_distance", "Min_distance", "Background_distance"]
@@ -138,9 +138,7 @@ def parse_preprocessing_section(cfg: DictConfig) -> None:
                          "Please check the 'preprocessing.Background_distance' section of your configuration file.")
 
 
-
-
-def parse_data_augmentation_section(cfg: DictConfig, config_dict: Dict) -> None:
+def _parse_data_augmentation_section(cfg: DictConfig, config_dict: Dict) -> None:
     """
     This function checks the data augmentation section of the config file.
     The attribute that introduces the section is either `data_augmentation`
@@ -180,22 +178,6 @@ def parse_data_augmentation_section(cfg: DictConfig, config_dict: Dict) -> None:
         if cfg.custom_data_augmentation.config:
             cfg.data_augmentation.config = config_dict['custom_data_augmentation']['config'].copy()
         del cfg.custom_data_augmentation
-
-
-def infer_class_names_from_dataset(cfg: DictConfig) -> List:
-    # Look for a dataset that can be used to find the class names
-    if cfg.training_path:
-        path = cfg.training_path
-    elif cfg.validation_path:
-        path = cfg.validation_path
-    elif cfg.test_path:
-        path = cfg.test_path
-    else:
-        raise ValueError("\nUnable to find the class names, no dataset is available."
-                         "\nPlease provide them using the `dataset.class_names` "
-                         "attribute in your configuration file.")
-    # Infer the class names from the dataset
-    return get_class_names(cfg.name, dataset_root_dir=path)
 
 
 def get_config(config_data: DictConfig) -> DefaultMunch:
@@ -258,18 +240,18 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Dataset section parsing
     if not cfg.dataset:
         cfg.dataset = DefaultMunch.fromDict({})
-    parse_dataset_section(cfg.dataset, 
+    _parse_dataset_section(cfg.dataset, 
                           mode=cfg.operation_mode, 
                           mode_groups=mode_groups)
 
     # Preprocessing section parsing
     if cfg.operation_mode in (mode_groups.training + mode_groups.evaluation + mode_groups.deployment):
-        parse_preprocessing_section(cfg.preprocessing)
+        _parse_preprocessing_section(cfg.preprocessing)
 
     # training section parsing
     if cfg.operation_mode in mode_groups.training:
         if cfg.data_augmentation or cfg.custom_data_augmentation:
-            parse_data_augmentation_section(cfg, config_dict)
+            _parse_data_augmentation_section(cfg, config_dict)
         model_path_used = bool(cfg.general.model_path)
         model_type_used = bool(cfg.general.model_type)
         legal = ["model", "batch_size", "epochs", "optimizer", "dropout", "frozen_layers",

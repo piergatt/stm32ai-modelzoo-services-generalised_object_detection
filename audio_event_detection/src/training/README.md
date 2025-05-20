@@ -43,7 +43,7 @@ For more details on how to use FSD50K in the model zoo, please consult section 8
 <details open><summary><a href="#2"><b>2. Create your configuration file</b></a></summary><a id="2"></a>
 <ul><details open><summary><a href="#2-1">2.1 Overview</a></summary><a id="2-1"></a>
 
-The training, evaluation, quantization and benchmarking of the model are driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../user_config.yaml) and is located in the [src/](../) directory.
+The training, evaluation, quantization and benchmarking of the model are driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../../user_config.yaml) and is located in the [src/](../../) directory.
 
 A configuration file includes the following sections:
 
@@ -79,7 +79,7 @@ The [pretrained_models on GH](https://github.com/STMicroelectronics/stm32ai-mode
 Some of these models need quite different pre-processing, feature extraction and training parameters, and using different ones could lead to wildly varying performance.
 
 **Each of these subdirectories contains the config.yaml file that was used to train the model**.
-To use these in training, copy them over to the [src/](../) folder, and rename them to `user_config.yaml`
+To use these in training, copy them over to the [UC](../../) folder, and rename them to `user_config.yaml`
 
 If using one of these configuration files, you will need to change the `operation_mode` parameter to `training`. See the next section for more information
 
@@ -358,7 +358,7 @@ For more details on what each parameter does, please refer to section 3.9 of the
 </details>
 <details open><summary><a href="#3"><b>3. Train your model</b></a></summary><a id="3"></a>
 
-Run the following command, from the [src/](../) directory:
+Run the following command, from the [UC](../../) directory:
 
 ```bash
 python stm32ai_main.py
@@ -386,7 +386,7 @@ All training artifacts, figures, and models are saved under the output directory
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 By default, the output directory is `src/experiments_outputs/<date_time_of_your_run>/`(../experiments_outputs). Note that this directory will NOT exist before you run the model zoo at least once.
 

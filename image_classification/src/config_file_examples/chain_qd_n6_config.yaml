@@ -1,11 +1,11 @@
 general:
-   model_path: ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
+   model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
 
 operation_mode: chain_qd
 
 dataset:
   class_names: [daisy, dandelion, roses, sunflowers, tulips]
-  quantization_path: ../datasets/flowers
+  quantization_path: ./datasets/flowers
   quantization_split: 0.5
 
 preprocessing:
@@ -30,7 +30,7 @@ tools:
    path_to_cubeIDE: C:/ST/STM32CubeIDE_1.17.0/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-   c_project_path: ../../application_code/image_classification/STM32N6/
+   c_project_path: ../application_code/image_classification/STM32N6/
    IDE: GCC
    verbosity: 1
    hardware_setup:
@@ -38,8 +38,8 @@ deployment:
       board: STM32N6570-DK #STM32H747I-DISCO, STM32N6570-DK
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

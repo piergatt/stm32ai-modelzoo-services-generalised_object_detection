@@ -78,7 +78,7 @@ def generate_mel_LUTs(sr: int,
 
     return melFilterLut, melFilterStartIndices.astype('int'), melFilterStopIndices.astype('int')
 
-def generate_hann_window_LUT(window, win_length):
+def _generate_hann_window_LUT(window, win_length):
     '''
     Generates hanning window look-up table for use in the Getting Started C application.
     Raises an exception if attempting to generate another window type 
@@ -101,7 +101,7 @@ def generate_hann_window_LUT(window, win_length):
 
     return hann_window
 
-def generate_LUTs_header_file(path,
+def _generate_LUTs_header_file(path,
                               melFilterLut,
                               melFilterStartIndices,
                               melFilterStopIndices,
@@ -159,7 +159,7 @@ def generate_LUTs_header_file(path,
         f.write('extern const uint32_t  user_melFiltersStopIndices[{}];\n'.format(len(melFilterStopIndices)))
         f.write('#endif /* _MEL_USER_TABLES_H */\n')
 
-def generate_LUTs_c_file(path,
+def _generate_LUTs_c_file(path,
                          melFilterLut,
                          melFilterStartIndices,
                          melFilterStopIndices,
@@ -270,18 +270,18 @@ def generate_mel_LUT_files(config):
         norm=config.feature_extraction.norm,
         htk=config.feature_extraction.htk)
 
-    hannWin = generate_hann_window_LUT(window=config.feature_extraction.window,
+    hannWin = _generate_hann_window_LUT(window=config.feature_extraction.window,
                                        win_length=config.feature_extraction.window_length)
     print("[INFO] : Generating LUT header file")
     if config.deployment.hardware_setup.serie == "STM32N6":
-        generate_LUTs_header_file(path,
+        _generate_LUTs_header_file(path,
                                 melFilterLut, 
                                 melFilterStartIndices,
                                 melFilterStopIndices,
                                 hannWin,
                                 "flexFloatingPoint")
     else:
-        generate_LUTs_header_file(path,
+        _generate_LUTs_header_file(path,
                                 melFilterLut, 
                                 melFilterStartIndices,
                                 melFilterStopIndices,
@@ -289,14 +289,14 @@ def generate_mel_LUT_files(config):
     print("[INFO] : Done generating LUT header file")
     print("[INFO] : Generating LUT C file")
     if config.deployment.hardware_setup.serie == "STM32N6":
-        generate_LUTs_c_file(path,
+        _generate_LUTs_c_file(path,
                             melFilterLut,
                             melFilterStartIndices,
                             melFilterStopIndices,
                             hannWin,
                             "flexFloatingPoint")
     else:
-        generate_LUTs_c_file(path,
+        _generate_LUTs_c_file(path,
                             melFilterLut,
                             melFilterStartIndices,
                             melFilterStopIndices,

@@ -16,6 +16,7 @@ dataset:
 
 settings:
   max_detections: 20
+  exclude_unlabeled_images: True # If set to False, images without ground truths will be included in the dataset.
 ```
 
 In example above Pascal_VOC_2007 will be analyzed, and :

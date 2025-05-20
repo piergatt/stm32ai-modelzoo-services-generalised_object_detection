@@ -7,7 +7,7 @@ The evaluation service is designed to be fast, efficient, and accurate, making i
 
 <details open><summary><a href="#1"><b>1. Configure the YAML file</b></a></summary><a id="1"></a>
 
-To use this service and achieve your goals, you can use the [user_config.yaml](../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
+To use this service and achieve your goals, you can use the [user_config.yaml](../../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
 
 Alternatively, you can follow the tutorial below, which shows how to evaluate your pre-trained image classification model using our evaluation service.
 
@@ -18,7 +18,7 @@ In particular, `operation_mode` should be set to evaluation and the `evaluation`
 
 ```yaml
 general:
-     model_path: .../../../model_zoo/hand_posture/CNN2D_ST_HandPosture/ST_pretrainedmodel_custom_dataset/ST_VL53L8CX_handposture_dataset/CNN2D_ST_HandPosture_8classes/CNN2D_ST_HandPosture_8classes.h5     # Path to the model file to deploy
+     model_path: ../../stm32ai-modelzoo/hand_posture/CNN2D_ST_HandPosture/ST_pretrainedmodel_custom_dataset/ST_VL53L8CX_handposture_dataset/CNN2D_ST_HandPosture_8classes/CNN2D_ST_HandPosture_8classes.h5     # Path to the model file to deploy
   # Path to the model file to deploy
 
 operation_mode: evaluation
@@ -34,7 +34,7 @@ Information about the dataset you want to use for evaluation is provided in the 
 dataset:
   name: ST_handposture_dataset
   class_names: [None, Like, Dislike, FlatHand, Fist, Love, BreakTime, CrossHands]
-  test_path: ../datasets/ST_VL53L8CX_handposture_dataset
+  test_path: ./datasets/ST_VL53L8CX_handposture_dataset
 ```
 
 In this example, the path to the test dataset is provided in the `test_path` parameter.
@@ -47,7 +47,7 @@ If you want to use a different split ratio, you need to specify the percentage t
 dataset:
    name: ST_handposture_dataset
    class_names: [None, Like, Dislike, FlatHand, Fist, Love, BreakTime, CrossHands]
-   training_path: ../datasets/ST_VL53L8CX_handposture_dataset
+   training_path: ./datasets/ST_VL53L8CX_handposture_dataset
 ```
 
 </details></ul>
@@ -72,15 +72,15 @@ preprocessing: # Mandatory
 </details>
 <details open><summary><a href="#2"><b>2. Evaluate your model</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml), you can evaluate the model by running the following command from the **src/** folder:
+If you chose to modify the [user_config.yaml](../../user_config.yaml), you can evaluate the model by running the following command from the UC folder:
 
 ```bash
 python stm32ai_main.py 
 ```
-If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the **src/** folder: 
+If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the UC folder: 
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name evaluation_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name evaluation_config.yaml
 ```
 
 </details>

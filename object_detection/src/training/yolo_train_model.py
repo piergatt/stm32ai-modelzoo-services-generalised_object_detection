@@ -8,13 +8,13 @@
 
 import tensorflow as tf
 
-from bounding_boxes_utils import bbox_normalized_to_abs_coords, \
-         bbox_abs_to_normalized_coords, bbox_corners_to_center_coords
-from yolo_loss import yolo_loss, get_detector_mask
-from data_augmentation import data_augmentation
-from postprocess import decode_yolo_predictions, nms_box_filtering
-from objdet_metrics import ObjectDetectionMetricsData
-            
+from src.utils import bbox_normalized_to_abs_coords, \
+         ObjectDetectionMetricsData, bbox_corners_to_center_coords
+from .yolo_loss import yolo_loss, get_detector_mask
+from src.utils import bbox_abs_to_normalized_coords
+from src.data_augmentation import data_augmentation
+from src.postprocessing import decode_yolo_predictions, nms_box_filtering
+
             
 class YoloTrainingModel(tf.keras.Model):
 

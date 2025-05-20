@@ -1,21 +1,25 @@
 general:
-   model_path: ../../../model_zoo/pose_estimation/movenet/Public_pretrainedmodel_custom_dataset/custom_dataset_person_17kpts/movenet_lightning_heatmaps_192/movenet_lightning_heatmaps_192.h5
+   model_path: ../../stm32ai-modelzoo/pose_estimation/movenet/Public_pretrainedmodel_custom_dataset/custom_dataset_person_17kpts/movenet_lightning_heatmaps_192/movenet_lightning_heatmaps_192.h5
    model_type: heatmaps_spe
 
 operation_mode: chain_qd
 
 dataset:
    name: coco_pose
+   class_names: [person]
    keypoints: 17
-   quantization_path: ../datasets/coco_train_single_pose
+   quantization_path: ./datasets/coco_train_single_pose
    quantization_split: 0.3
 
 preprocessing:
-  rescaling: { scale: 1/127.5, offset: -1 }
-  resizing:
-    aspect_ratio: crop
-    interpolation: nearest
-  color_mode: rgb
+   rescaling: { scale: 1/127.5, offset: -1 }
+   resizing:
+      aspect_ratio: crop
+      interpolation: nearest
+   color_mode: rgb
+
+postprocessing:
+   kpts_conf_thresh: 0.15
 
 quantization:
   quantizer: TFlite_converter #  TFlite_converter or onnx_quantizer
@@ -34,7 +38,7 @@ tools:
    path_to_cubeIDE: C:/ST/STM32CubeIDE_1.17.0/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-   c_project_path: ../../application_code/pose_estimation/STM32N6/
+   c_project_path: ../application_code/pose_estimation/STM32N6/
    IDE: GCC
    verbosity: 1
    hardware_setup:
@@ -42,8 +46,8 @@ deployment:
       board: STM32N6570-DK 
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

@@ -17,14 +17,12 @@ from subprocess import Popen
 from typing import List, Union, Optional, Tuple, Dict
 import mlflow
 from hydra.core.hydra_config import HydraConfig
-from stm32ai_dc import (CliLibraryIde, CliLibrarySerie, CliParameters, MpuParameters, MpuEngine,
-                        CloudBackend, Stm32Ai)
-from stm32ai_dc.errors import BenchmarkServerError
-from stm32ai_dc.types import AtonParameters
-
 from omegaconf import DictConfig
-from logs_utils import log_to_file
-from models_utils import get_model_name_and_its_input_shape, get_model_name
+from common.stm32ai_dc import (CliLibraryIde, CliLibrarySerie, CliParameters, MpuParameters, MpuEngine,
+                        CloudBackend, Stm32Ai)
+from common.stm32ai_dc.errors import BenchmarkServerError
+from common.stm32ai_dc.types import AtonParameters
+from common.utils import log_to_file, get_model_name_and_its_input_shape, get_model_name
 
 
 def benchmark(cfg: DictConfig = None, model_path_to_benchmark: Optional[str] = None,
@@ -57,7 +55,7 @@ def benchmark(cfg: DictConfig = None, model_path_to_benchmark: Optional[str] = N
     get_model_name_output = get_model_name(model_type=str(model_name),
                                            input_shape=str(input_shape[0]),
                                            project_name=cfg.general.project_name)
-    stm32ai_benchmark(footprints_on_target=board,
+    _stm32ai_benchmark(footprints_on_target=board,
                       optimization=optimization,
                       stm32ai_version=stm32ai_version, model_path=model_path,
                       stm32ai_output=stm32ai_output, path_to_stm32ai=path_to_stm32ai,
@@ -65,7 +63,7 @@ def benchmark(cfg: DictConfig = None, model_path_to_benchmark: Optional[str] = N
                       credentials=credentials)
 
 
-def analyze_footprints(offline: bool = True, results: dict = None, stm32ai_output: str = None,
+def _analyze_footprints(offline: bool = True, results: dict = None, stm32ai_output: str = None,
                        inference_res: bool = False, target_mcu: bool = True) -> None:
     """Prints and logs footprints after the Cube.AI benchmark.
 
@@ -95,7 +93,7 @@ def analyze_footprints(offline: bool = True, results: dict = None, stm32ai_outpu
             activations_ram = round(int(results["ram_size"]) / 1024, 2)
             weights_rom = round(int(results["rom_size"]) / 1024, 2)
             macc = round(int(results["macc"]) / 1e6, 3)
-            tools_version = results["report"]["tools_version"]
+#            tools_version = results["report"]["tools_version"]
             # Check if inference results or tools version 8
             version_numbers = ["major", "minor", "micro"]
             version_strings = results["cli_version_str"]
@@ -241,7 +239,7 @@ def benchmark_model(optimization: str = None, model_path: str = None, path_to_st
         print(f"[INFO] : STM32Cube.AI version {version_line} used.")
 
         # Run generate command locally
-        command = f"{path_to_stm32ai} generate --target stm32 -m {model_path} -v 0 --allocate-inputs --allocate-outputs --output {stm32ai_output} --workspace {stm32ai_output} --optimization {optimization}"
+        command = f"{path_to_stm32ai} generate --target stm32 -m {model_path} -v 0 --output {stm32ai_output} --workspace {stm32ai_output} --optimization {optimization}"
         # command = f"{path_to_stm32ai} generate --target stm32n6 -m {model_path} --st-neural-art user_neuralart.json"
         args = shlex.split(command, posix="win" not in sys.platform)
         subprocess.run(args, env=new_env, check=True)
@@ -253,7 +251,7 @@ def benchmark_model(optimization: str = None, model_path: str = None, path_to_st
     return stm32ai_output
 
 
-def get_credentials() -> tuple:
+def _get_credentials() -> tuple:
     """
     Get user credentials.
 
@@ -297,7 +295,7 @@ def cloud_connect(stm32ai_version: str = None, credentials: list[str] = None) ->
         username, password = credentials
     else:
         print("[INFO] : To create an account, go to https://stedgeai-dc.st.com/home. Enter your credentials:")
-        username, password = get_credentials()
+        username, password = _get_credentials()
         credentials = username, password
 
     login_success = False
@@ -313,7 +311,7 @@ def cloud_connect(stm32ai_version: str = None, credentials: list[str] = None) ->
             if type(e).__name__ == "LoginFailureException":
                 if attempt < 2:
                     print("[ERROR]: Login failed. Please try again.")
-                    username, password = get_credentials()
+                    username, password = _get_credentials()
                 else:
                     print("[ERROR]: Failed to create STM32Cube.AI instance.")
 
@@ -351,7 +349,7 @@ def cloud_analyze(ai: Stm32Ai = None, model_path: str = None, optimization: str 
     return res_dict
 
 
-def get_mpu_options(board_name: str = None) -> tuple:
+def _get_mpu_options(board_name: str = None) -> tuple:
     """
     Get MPU benchmark options depending on MPU board selected
 
@@ -392,7 +390,7 @@ def get_mpu_options(board_name: str = None) -> tuple:
     return engine_used, num_cpu_cores
 
 
-def cloud_benchmark(ai: Stm32Ai = None, model_path: str = None, board_name: str = None, optimization: str = None,
+def _cloud_benchmark(ai: Stm32Ai = None, model_path: str = None, board_name: str = None, optimization: str = None,
                     get_model_name_output: str = None) -> dict:
     """
     Use STM32Cube.AI Developer Cloud Services to benchmark the model on a board and generate C code.
@@ -419,7 +417,7 @@ def cloud_benchmark(ai: Stm32Ai = None, model_path: str = None, board_name: str 
     print(f"[INFO] : Starting the model benchmark on target {board_name}, other available boards {board_names}...")
     # Determine right parameters for MCU or MPU
     if "STM32MP" in board_name:
-        engine, nbCores = get_mpu_options(board_name)
+        engine, nbCores = _get_mpu_options(board_name)
         stmai_params = MpuParameters(model=model_name, nbCores=nbCores, engine=engine)
     elif "STM32N6" in board_name:
 #        stmai_params = CliParameters(model=model_name, target='stm32n6', stNeuralArt='default', atonnOptions=AtonParameters())
@@ -435,7 +433,7 @@ def cloud_benchmark(ai: Stm32Ai = None, model_path: str = None, board_name: str 
     return res_dict
 
 
-def stm32ai_benchmark(footprints_on_target: str = False, optimization: str = None,
+def _stm32ai_benchmark(footprints_on_target: str = False, optimization: str = None,
                       stm32ai_version: str = None, model_path: str = None,
                       stm32ai_output: str = None, path_to_stm32ai: str = None,
                       get_model_name_output: str = None, on_cloud: bool = False,
@@ -501,7 +499,7 @@ def stm32ai_benchmark(footprints_on_target: str = False, optimization: str = Non
 
             try:
                 # Benchmark the model inference time
-                cloud_res = cloud_benchmark(ai=ai, model_path=model_path, board_name=board_name,
+                cloud_res = _cloud_benchmark(ai=ai, model_path=model_path, board_name=board_name,
                                                 optimization=optimization,
                                                 get_model_name_output=get_model_name_output)
 
@@ -548,4 +546,4 @@ def stm32ai_benchmark(footprints_on_target: str = False, optimization: str = Non
             get_model_name_output=get_model_name_output)
 
     # Print footprints
-    analyze_footprints(offline=offline, results=cloud_res, stm32ai_output=stm32ai_output, inference_res=inference_res, target_mcu=target_mcu)
+    _analyze_footprints(offline=offline, results=cloud_res, stm32ai_output=stm32ai_output, inference_res=inference_res, target_mcu=target_mcu)

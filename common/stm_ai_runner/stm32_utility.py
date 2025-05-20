@@ -36,6 +36,7 @@ _STM32_SERIES_N6 = 5
 _STELLAR_SERIES_E  = 3
 _STELLAR_SERIES_PG =  6
 
+
 def _is_series(fmt, series):
     return (fmt >> 24) == series
 
@@ -111,13 +112,13 @@ def stm32_id_to_str(dev_id):
         0x497: 'STM32WLx',
 
         0x500: 'STM32MP1',
-        0x486: 'STM32N6',
+        0x486: 'STM32N6xx',
         0x155: 'Corstone SSE-300 FVP',
 
         0x2511: 'SR5E1x',
         0x2643: 'SR6P3',
     }
-    desc_ = '0x{:X} - '.format(dev_id)
+    desc_ = f'0x{dev_id:X} - '
     desc_ += switcher.get(dev_id, 'UNKNOW')
     return desc_
 

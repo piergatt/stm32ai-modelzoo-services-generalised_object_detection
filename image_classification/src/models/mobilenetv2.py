@@ -14,7 +14,7 @@ from keras.applications import imagenet_utils
 from tensorflow.keras import layers
 
 
-def make_divisible(v, divisor, min_value=None):
+def _make_divisible(v, divisor, min_value=None):
     """Round the number of filters to be divisible by a given divisor.
 
     This function is used to ensure that the number of filters on the last 1x1
@@ -40,7 +40,7 @@ def make_divisible(v, divisor, min_value=None):
     return new_v
 
 
-def inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
+def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
     """Inverted ResNet block.
 
     This function defines an inverted residual block for use in a mobile
@@ -66,7 +66,7 @@ def inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
     # Calculate the number of filters for the pointwise 1x1 convolution.
     pointwise_conv_filters = int(filters * alpha)
     # Ensure the number of filters on the last 1x1 convolution is divisible by 8.
-    pointwise_filters = make_divisible(pointwise_conv_filters, 8)
+    pointwise_filters = _make_divisible(pointwise_conv_filters, 8)
     # Set the input tensor as the starting point.
     x = inputs
 
@@ -99,7 +99,7 @@ def inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
     return x
 
 
-def get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classes: int = None, 
+def _get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classes: int = None, 
                       dropout: float = None) -> tf.keras.Model:
     """
     Returns a MobileNetV2-based Keras model from scratch.
@@ -119,33 +119,33 @@ def get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classe
     inputs = keras.Input(shape=input_shape)
 
     # Define the first block of the model
-    first_block_filters = make_divisible(32 * alpha, 8)
+    first_block_filters = _make_divisible(32 * alpha, 8)
     x = layers.Conv2D(first_block_filters, kernel_size=3, strides=(2, 2), padding='same', use_bias=False)(inputs)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6.)(x)
 
     # Define the rest of the blocks in the model
-    x = inverted_res_block(x, filters=16, alpha=alpha, stride=1, expansion=1, block_id=0)
-    x = inverted_res_block(x, filters=24, alpha=alpha, stride=2, expansion=6, block_id=1)
-    x = inverted_res_block(x, filters=24, alpha=alpha, stride=1, expansion=6, block_id=2)
-    x = inverted_res_block(x, filters=32, alpha=alpha, stride=2, expansion=6, block_id=3)
-    x = inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=4)
-    x = inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=5)
-    x = inverted_res_block(x, filters=64, alpha=alpha, stride=2, expansion=6, block_id=6)
-    x = inverted_res_block(x, filters=64, alpha=alpha, stride=1, expansion=6, block_id=7)
-    x = inverted_res_block(x, filters=64, alpha=alpha, stride=1, expansion=6, block_id=8)
-    x = inverted_res_block(x, filters=64, alpha=alpha, stride=1, expansion=6, block_id=9)
-    x = inverted_res_block(x, filters=96, alpha=alpha, stride=1, expansion=6, block_id=10)
-    x = inverted_res_block(x, filters=96, alpha=alpha, stride=1, expansion=6, block_id=11)
-    x = inverted_res_block(x, filters=96, alpha=alpha, stride=1, expansion=6, block_id=12)
-    x = inverted_res_block(x, filters=160, alpha=alpha, stride=2, expansion=6, block_id=13)
-    x = inverted_res_block(x, filters=160, alpha=alpha, stride=1, expansion=6, block_id=14)
-    x = inverted_res_block(x, filters=160, alpha=alpha, stride=1, expansion=6, block_id=15)
-    x = inverted_res_block(x, filters=320, alpha=alpha, stride=1, expansion=6, block_id=16)
+    x = _inverted_res_block(x, filters=16, alpha=alpha, stride=1, expansion=1, block_id=0)
+    x = _inverted_res_block(x, filters=24, alpha=alpha, stride=2, expansion=6, block_id=1)
+    x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1, expansion=6, block_id=2)
+    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=2, expansion=6, block_id=3)
+    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=4)
+    x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1, expansion=6, block_id=5)
+    x = _inverted_res_block(x, filters=64, alpha=alpha, stride=2, expansion=6, block_id=6)
+    x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1, expansion=6, block_id=7)
+    x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1, expansion=6, block_id=8)
+    x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1, expansion=6, block_id=9)
+    x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1, expansion=6, block_id=10)
+    x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1, expansion=6, block_id=11)
+    x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1, expansion=6, block_id=12)
+    x = _inverted_res_block(x, filters=160, alpha=alpha, stride=2, expansion=6, block_id=13)
+    x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1, expansion=6, block_id=14)
+    x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1, expansion=6, block_id=15)
+    x = _inverted_res_block(x, filters=320, alpha=alpha, stride=1, expansion=6, block_id=16)
 
     # Define the last block of the model
     if alpha > 1.0:
-        last_block_filters = make_divisible(1280 * alpha, 8)
+        last_block_filters = _make_divisible(1280 * alpha, 8)
     else:
         last_block_filters = 1280
     x = layers.Conv2D(last_block_filters, kernel_size=1, padding='same', use_bias=False)(x)
@@ -167,7 +167,7 @@ def get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classe
     return model
 
 
-def get_transfer_learning_model(input_shape: tuple, alpha: float = None, num_classes: int = None,
+def _get_transfer_learning_model(input_shape: tuple, alpha: float = None, num_classes: int = None,
                                 dropout: float = None, weights: str = None) -> tf.keras.Model:
     """
     Returns a transfer learning model based on MobileNetV2 architecture pre-trained on ImageNet.
@@ -187,7 +187,7 @@ def get_transfer_learning_model(input_shape: tuple, alpha: float = None, num_cla
 
     """
     # Get a random model with the specified input shape and number of classes
-    random_model = get_scratch_model(input_shape=input_shape, num_classes=num_classes, alpha=alpha, dropout=dropout)
+    random_model = _get_scratch_model(input_shape=input_shape, num_classes=num_classes, alpha=alpha, dropout=dropout)
 
     # Check if input_shape is valid for MobileNetV2 architecture
     if input_shape[0] in [224, 192, 160, 128, 96]:
@@ -224,11 +224,11 @@ def get_mobilenetv2(input_shape: tuple, alpha: float = None, num_classes: int = 
     """
     
     if pretrained_weights:
-        model = get_transfer_learning_model(input_shape=input_shape, alpha=alpha, 
+        model = _get_transfer_learning_model(input_shape=input_shape, alpha=alpha, 
                                             num_classes=num_classes, dropout=dropout,
                                             weights=pretrained_weights)
     else:
-        model = get_scratch_model(input_shape=input_shape, alpha=alpha, 
+        model = _get_scratch_model(input_shape=input_shape, alpha=alpha, 
                                   num_classes=num_classes, dropout=dropout)
 
     return model

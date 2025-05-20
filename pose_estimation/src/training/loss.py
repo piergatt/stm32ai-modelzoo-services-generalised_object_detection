@@ -8,9 +8,9 @@
 #  *--------------------------------------------------------------------------------------------*/
 
 import tensorflow as tf
-import numpy as np
 
-def reg_to_heatmaps(tensor: tf.Tensor, mask: tf.Tensor, w: int, h: int):
+
+def _reg_to_heatmaps(tensor: tf.Tensor, mask: tf.Tensor, w: int, h: int):
     '''
     Regressions of (x,y) coordinates to heatmaps
 
@@ -45,7 +45,7 @@ def reg_to_heatmaps(tensor: tf.Tensor, mask: tf.Tensor, w: int, h: int):
 
     return heatmaps
 
-def heatmaps_to_reg(tensor: tf.Tensor, w: int, h: int):
+def _heatmaps_to_reg(tensor: tf.Tensor, w: int, h: int):
     '''
     Continuous function that maps heatmaps to (x,y) coordinates
 
@@ -100,7 +100,7 @@ def spe_loss(y_true: tf.Tensor, y_pred: tf.Tensor, output_type: str = 'heatmaps'
 
     if output_type == 'heatmaps':
         w, h   = y_pred.shape[1:3]
-        y_true = reg_to_heatmaps(y_true[:,:,:,:2],mask,w,h) # shape (batch,W,H,nb_kpts)
+        y_true = _reg_to_heatmaps(y_true[:,:,:,:2],mask,w,h) # shape (batch,W,H,nb_kpts)
         mask   = tf.reduce_sum(mask,axis=1) # shape (batch,nb_kpts)
         mask   = tf.cast(tf.cast(mask,tf.bool),tf.float32) # shape (batch,nb_kpts)
         y_pred *= mask[:,None,None,:] # shape (batch,W,H,nb_kpts)
@@ -111,22 +111,22 @@ def spe_loss(y_true: tf.Tensor, y_pred: tf.Tensor, output_type: str = 'heatmaps'
         y_true = y_true[...,:2] * mask[...,None] # shape (batch,1,nb_kpts,2)
     elif output_type == 'reg_heatmaps':
         w, h   = y_pred.shape[1:3]
-        y_pred = heatmaps_to_reg(y_pred,w,h)     # shape (batch,1,nb_kpts,2)
+        y_pred = _heatmaps_to_reg(y_pred,w,h)     # shape (batch,1,nb_kpts,2)
         y_pred = y_pred[...,:2] * mask[...,None] # shape (batch,1,nb_kpts,2)
         y_true = y_true[...,:2] * mask[...,None] # shape (batch,1,nb_kpts,2)
     else:
         print('[ERROR] this output type is not supported, currently we only support "heatmaps" or "reg"')
 
     if loss_type == 'rmse':
-        loss = rmse_loss(y_true,y_pred)
+        loss = _rmse_loss(y_true,y_pred)
     elif loss_type == 'mse':
-        loss = mse_loss(y_true,y_pred)
+        loss = _mse_loss(y_true,y_pred)
     else:
         print('[ERROR] this loss is not supported, currently we only support "rmse" or "mse"')
 
     return loss
 
-def mse_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
+def _mse_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
     '''
     Calculate mean square error loss
 
@@ -144,7 +144,7 @@ def mse_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
 
     return loss
 
-def rmse_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
+def _rmse_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
     '''
     Calculate root mean square error loss
 
@@ -156,7 +156,7 @@ def rmse_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
         loss    (tf.Tensor): shape (1,) FLOAT32 representing the rmse.
     '''
 
-    mse = mse_loss(y_true,y_pred)
+    mse = _mse_loss(y_true,y_pred)
 
     loss = tf.math.sqrt(mse)
 

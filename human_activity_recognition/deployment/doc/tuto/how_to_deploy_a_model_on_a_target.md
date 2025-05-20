@@ -31,7 +31,7 @@ The most important parts here are to define:
 # user_config.yaml
 
 general:
-   model_path: ../../../model_zoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5     # Path to the model file to deploy
+   model_path: ../../../stm32ai-modelzoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5     # Path to the model file to deploy
 
 operation_mode: deployment
 

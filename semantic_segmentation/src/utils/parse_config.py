@@ -8,24 +8,18 @@
 #  *--------------------------------------------------------------------------------------------*/
 
 import os
-from pathlib import Path
-from copy import deepcopy
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
-import tensorflow as tf
-import numpy as np
-from typing import Dict, List
 
-from cfg_utils import (
-        aspect_ratio_dict, check_attributes, postprocess_config_dict, check_config_attributes,
-        parse_tools_section, parse_benchmarking_section, parse_mlflow_section,
-        parse_quantization_section, parse_general_section, parse_top_level, 
-        parse_random_periodic_resizing, parse_training_section, parse_prediction_section,
-        parse_deployment_section, check_hardware_type, parse_evaluation_section)
+from common.utils import (
+        aspect_ratio_dict, postprocess_config_dict, check_config_attributes, parse_tools_section, 
+        parse_benchmarking_section, parse_mlflow_section, parse_quantization_section, parse_general_section, 
+        parse_top_level, parse_random_periodic_resizing, parse_training_section, parse_prediction_section,
+        parse_deployment_section, check_hardware_type, parse_evaluation_section, get_class_names_from_file)
 
 
-def check_dataset_paths_and_contents_pascal_voc(cfg, mode: str = None, mode_groups: DictConfig = None) -> None:
+def _check_dataset_paths_and_contents_pascal_voc(cfg, mode: str = None, mode_groups: DictConfig = None) -> None:
     """
         This function checks that the paths available in the config file are valid, depending on the operation mode
         considered.
@@ -147,12 +141,13 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
                 None
         """
 
-    legal = ["name", "class_names",
+    legal = ["name", "class_names",  "classes_file_path",
              "training_path", "training_masks_path", "training_files_path",
              "validation_path", "validation_masks_path", "validation_files_path", "validation_split",
              "test_path", "test_masks_path", "test_files_path",
              "quantization_path", "quantization_files_path", "quantization_masks_path", "quantization_split",
              "check_image_files", "seed"]
+
 
     required = []
     one_or_more = []
@@ -160,15 +155,19 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
         required += ["training_path",]
     elif mode in mode_groups.evaluation:
         one_or_more += ["training_path", "test_path", "validation_path"]
-    elif mode in mode_groups.deployment:
-        if hardware_type == "MCU":
-            required += ["class_names",]
-    elif mode == "prediction":
-        required += ["class_names",]
-
     check_config_attributes(cfg, specs={"legal": legal, "all": required, "one_or_more": one_or_more},
                             section="dataset")
 
+    if not mode in ["quantization", "benchmarking", "chain_qb"]:
+        one_or_more = []
+        one_or_more += ["class_names", "classes_file_path"]
+        check_config_attributes(cfg, specs={"legal": legal, "all": None, "one_or_more": one_or_more},
+                                section="dataset")
+        if cfg.class_name:
+            print("[INFO] : Using provided class names from dataset.class_names")
+        elif cfg.class_names == None:
+            cfg.class_names = get_class_names_from_file(cfg)
+            print("[INFO] : Found {} classes in label file {}".format(len(cfg.class_names), cfg.classes_file_path))   
     # Set default values of missing optional attributes
     if not cfg.name:
         cfg.name = "<unnamed>"
@@ -177,10 +176,6 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
     cfg.check_image_files = cfg.check_image_files if cfg.check_image_files is not None else False
     cfg.seed = cfg.seed if cfg.seed else 123
 
-    # Sort the class names if they were provided
-    if cfg.name is not "<unnamed>" and not cfg.class_names:
-        cfg.class_names = get_class_names(cfg.name)
- 
     # Check the value of validation_split if it is set
     if cfg.validation_split:
         split = cfg.validation_split
@@ -196,7 +191,7 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
                              "Please check the 'dataset' section of your configuration file.")
 
     if "pascal_voc" in cfg.name:
-        check_dataset_paths_and_contents_pascal_voc(cfg, mode=mode, mode_groups=mode_groups)
+        _check_dataset_paths_and_contents_pascal_voc(cfg, mode=mode, mode_groups=mode_groups)
     elif cfg.name is not "<unnamed>" and "pascal_voc" not in cfg.name:
         raise ValueError(f"\nWe only support pascal_voc dataset format. \n"
                          "Please check the 'dataset' section of your configuration file.")
@@ -257,7 +252,7 @@ def parse_preprocessing_section(cfg: DictConfig, mode: str = None) -> None:
                          f"Supported values: {color_modes}\n"
                          "Please check the 'preprocessing' section of your configuration file.")
 
-                
+
 def parse_data_augmentation_section(cfg: DictConfig) -> None:
     """
     This function checks the data augmentation section of the config file.
@@ -287,47 +282,6 @@ def parse_data_augmentation_section(cfg: DictConfig) -> None:
                                 "config": cfg.data_augmentation
                             })
  
- 
-def get_class_names_from_file(cfg: DictConfig) -> List:
-    if cfg.deployment.label_file_path :
-        with open(cfg.deployment.label_file_path, 'r') as file:
-            class_names = [line.strip() for line in file]
-    return class_names
-
-
-def get_class_names(dataset_name: str = None, dataset_root_dir: str = None) -> List:
-    """
-    This function returns the class names of the dataset.
-      - If the dataset pascal_voc the class names
-        are returned by functions associated to the dataset.
-
-
-    Args:
-        dataset_name (str): The name of the dataset.
-        dataset_root_dir (str): The path to the root directory of the dataset
-
-    Returns:
-        string (List): A list of strings.
-    """
-
-    if dataset_name:
-        if dataset_name == "pascal_voc":
-            class_names = ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair",
-                           "cow", "dining table", "dog", "horse", "motorbike", "person", "potted plant", "sheep",
-                           "sofa", "train", "tv/monitor"]
-        elif dataset_name == "person_pascal_voc":
-            class_names = ["background", "person"]
-        elif dataset_name == "indoor_pascal_voc":
-            class_names = ["background", "bottle" ,"chair", "dining table",  "person", "tv/monitor"]
-        elif dataset_name == "outdoor_pascal_voc":
-            class_names = ["background", "aerplane",  "bicycle", "boat", "bus", "car", "cat", "dog", "motorbike",
-                           "person", "train"]
-        else:
-            raise ValueError(
-            "\n Your dataset name is not `pascal_voc`, `pascal_voc_person`, `pascal_voc_indoor`, or `pascal_voc_outdoor`."
-            "\n Please add your class_names in your configuration file.")
-        return class_names
-
 
 def get_config(config_data: DictConfig) -> DefaultMunch:
     """
@@ -421,7 +375,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # Evaluation section parsing
     if cfg.operation_mode in mode_groups.evaluation and "evaluation" in cfg:
-        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name", "target"]
+        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name", "target", 
+                 "profile", "input_type", "output_type", "input_chpos", "output_chpos"]
         parse_evaluation_section(cfg.evaluation,
                                  legal=legal)
 
@@ -447,11 +402,11 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Deployment section parsing
     if cfg.operation_mode in mode_groups.deployment:
         if cfg.hardware_type == "MCU":
-            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup"]
+            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup", "build_conf" ]
             legal_hw = ["serie", "board", "stlink_serial_number"]
         else:
-            legal = ["c_project_path", "label_file_path","board_deploy_path", "verbosity", "hardware_setup"]
-            legal_hw = ["serie", "board", "ip_address"]
+            legal = ["c_project_path", "board_deploy_path", "verbosity", "hardware_setup"]
+            legal_hw = ["serie", "board", "ip_address", "stlink_serial_number"]
             if cfg.preprocessing.color_mode != "rgb":
                 raise ValueError("\n Color mode used is not supported for deployment on MPU target "
                                  "\n Please use RGB format")
@@ -464,24 +419,4 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # MLFlow section parsing
     parse_mlflow_section(cfg.mlflow)
-
-    # Check that all datasets have the required directory structure
-    cds = cfg.dataset
-    if not cds.class_names and cfg.operation_mode not in ("quantization", "benchmarking", "chain_qb"):
-        # Infer the class names from a dataset
-        for path in [cds.training_path, cds.validation_path, cds.test_path, cds.quantization_path]:
-            if path:
-                cds.class_names = get_class_names(dataset_root_dir=path)
-                print("[INFO] : Found {} classes in dataset {}".format(len(cds.class_names), path))
-                break
-
-        if not cds.class_names and cfg.operation_mode in ("deployment", "chain_qd") and cfg.hardware_type == "MPU":
-            cds.class_names = get_class_names_from_file(cfg)
-            print("[INFO] : Found {} classes in label file {}".format(len(cds.class_names), cfg.deployment.label_file_path))
-
-        # This should not happen. Just in case.
-        if not cds.class_names:
-            raise ValueError("\nMissing `class_names` attribute\nPlease check the 'dataset' section of your "
-                             "configuration file.")
-
     return cfg

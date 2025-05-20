@@ -63,7 +63,7 @@ This README can be a bit detailed and overwhelming, so if you're new to this par
 <details open><summary><a href="#1"><b>1. Model Zoo Overview</b></a></summary><a id="1"></a>
 <ul><details open><summary><a href="#1-1">1.1 YAML configuration file</a></summary><a id="1-1"></a>
 
-The model zoo is piloted solely from the [user_config.yaml](user_config.yaml) located in the [src/](./) directory (where this README is located.)
+The model zoo is piloted solely from the [user_config.yaml](../user_config.yaml) located in the [src/](./) directory (where this README is located.)
 
 This README explains the structure and syntax used in this file, what each parameter does, and how to edit the config file to use all of the functionalities offered by the model zoo.
 
@@ -230,6 +230,8 @@ model_specific:
 
 The `model_type` attribute designates the architecture of the model you want to train. For now, only the STFTCNN architecture is available. The STFTTCNN is an adaptation of the TCNN model in the frequency domain. See the original paper here : (https://ieeexplore.ieee.org/document/8683634). This attribute is ONLY used for training, and the evaluation of float torch models (but NOT ONNX models).
 
+You can also train a recurrent model composed of a 1D pointwise convolutional encoder, an LSTM stack and a 1D pointwise convolutional decoder by setting `model_type` to `ConvLSTMDenoiser`. **NOTE THAT DEPLOYMENT IS NOT SUPPORTED YET FOR  THIS MODEL**. You can still train and evaluate tthis model.
+
 Additionally, you can train a custom model by setting `model_type` to `Custom`, and defining your architecture in [this python file](models/custom.py) See section <a href="#4-2"> 4.2 </a> of this README for more details.
 
 The `state_dict_path` attribute lets you provide a Pytorch state dict that is loaded into your model before training starts. This can be useful to start training from specific model weights. 
@@ -248,7 +250,7 @@ The model outputs a mask of the same shape as its input, and this mask is applie
 
 Therefore, we expect all models to take magnitude spectrograms as input, i.e. tensors of the shape (batch, n_fft // 2 + 1, sequence_length), and output tensors of the same shape, corresponding to the mask.
 
-- `model_type` : Model class to use. Currently, must be one of `STFTTCNN` or `Custom` (the uppercase is important)
+- `model_type` : Model class to use. Currently, must be one of `STFTTCNN`, `ConvLSTMDenoiser` or `Custom` (the uppercase is important) (Note that `ConvLSTMDenoiser` models cannot be deployed yet)
 - `state_dict_path` : Path to a Pytorch state dict. Optional. Must be compatible with the specified `model_type` and `model_specific` arguments provided. Used for training and evaluation.
 If provided, training starts from the weights in the state dict, and evaluation uses the weights in the state dict. If not provided, training starts from random weights.
 - `onnx_path` : Path to an ONNX model. Used for evaluation, quantization, benchmarking and deployment.
@@ -260,6 +262,14 @@ If provided, training starts from the weights in the state dict, and evaluation 
     - `in_channels` :  Number of input channels. Should be `n_fft` // 2 + 1
     - `tcn_latent_dim` : Number of channels in intermediary Conv1D layers in TCN blocks.
     - `init_dilation` : Initial dilation factor. Dilation factor in each residual block is `init_dilation` ^(i-1). Max dilation factor is equal to (`init_dilation`^`num_layers` - 1)
+    - `mask_activation` : Must be `tanh` or `sigmoid`. Activation function for the output of the model. Sigmoid activation tends to provide models that remove more noise, but degrade speech more.
+
+- `model_specific` attributes for the `ConvLSTMDenoiser` class. For details on the model, see <a href="#A-2"> Appending A.2 </a>
+    - `lstm_hidden_size` : Hidden dimension of each LSTM layer
+    - `num_lstm_layers` : Number of LSTM layers
+    - `in_channels` :  Number of input channels. Should be `n_fft` // 2 + 1
+    - `out_channels` : Number of output channels. Should also be `n_fft`// 2 + 1
+      mask_activation: "sigmoid"
     - `mask_activation` : Must be `tanh` or `sigmoid`. Activation function for the output of the model. Sigmoid activation tends to provide models that remove more noise, but degrade speech more.
 </details></ul>
 
@@ -804,6 +814,26 @@ The parameters related to the STFT-TCNN are the following :
 
 These parameters should be placed in the `model_specific` section of the config file. See section <a href = "#3-4"> 3.4 Model settings </a>.
 
+</details>
 
+<ul><details open><summary><a href="#A-2">A-2 ConvLSTMDenoiser</a></summary><a id="A-2"></a>
+
+
+The ConvLSTMDenoiser is a very simple recurrent architecture consisting of a single-layer 1D pointwise convolutional encoder, followed by a stack of LSTM layers, ending with a single-layer 1D pointwise convolutional decoder.
+
+Much like the STFT-TCNN, the ConvLSTMDenoiser operates in the frequency domain, takes magnitude spectrogram frames as input and outputs a mask that is then applied to the magnitude spectrogram.
+
+**NOTE THAT THIS MODEL CANNOT CURRENTLY BE DEPLOYED OR BENCHMARKED**
+
+The parameters related to this model are the following : 
+
+- `lstm_hidden_size` : Hidden dimension of each LSTM layer
+    - `num_lstm_layers` : Number of LSTM layers
+    - `in_channels` :  Number of input channels. Should be `n_fft` // 2 + 1
+    - `out_channels` : Number of output channels. Should also be `n_fft`// 2 + 1
+      mask_activation: "sigmoid"
+    - `mask_activation` : Must be `tanh` or `sigmoid`. Activation function for the output of the model. Sigmoid activation tends to provide models that remove more noise, but degrade speech more.
+
+These parameters should be placed in the `model_specific` section of the config file. See section <a href = "#3-4"> 3.4 Model settings </a>.
 
 </details>

@@ -9,8 +9,10 @@
 
 from munch import DefaultMunch
 import tensorflow as tf
-import random_color, random_erasing, random_misc
-import objdet_random_affine, objdet_random_misc
+
+from common.data_augmentation import random_color, random_erasing, random_misc
+from src.data_augmentation import objdet_random_affine, objdet_random_misc
+
 
 
 def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_info=None):
@@ -31,7 +33,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
             functions to apply to the input images.
     """
 
-    def get_arg_values(used_args, default_args, function_name):
+    def _get_arg_values(used_args, default_args, function_name):
         """
         This function generates the arguments to use with a data augmentation
         function to be applied to the images, given the arguments used in 
@@ -60,7 +62,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
     for fn, args in config.items():
         if fn == 'random_contrast':
             default = {'factor': None, 'change_rate': 1.0}         
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_contrast(
                             images,
                             factor=args.factor,
@@ -69,7 +71,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_brightness':            
             default = {'factor': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_brightness(
                             images,
                             factor=args.factor,
@@ -78,7 +80,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_gamma':
             default = {'gamma': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_gamma(
                             images, 
                             gamma=args.gamma,
@@ -87,7 +89,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_hue':
             default = {'delta': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_hue(
                             images,
                             delta=args.delta,
@@ -96,7 +98,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_saturation':
             default = {'delta': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_saturation(
                             images,
                             delta=args.delta,
@@ -105,7 +107,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_value':
             default = {'delta': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_value(
                             images,
                             delta=args.delta,
@@ -114,7 +116,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_hsv':
             default = {'hue_delta': None, 'saturation_delta': None, 'value_delta': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_hsv(
                             images,
                             hue_delta=args.hue_delta,
@@ -125,7 +127,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_rgb_to_hsv':
             default = {'change_rate': 0.25}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_rgb_to_hsv(
                             images,
                             pixels_range=pixels_range,
@@ -133,7 +135,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_rgb_to_grayscale':
             default = {'change_rate': 0.25}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_rgb_to_grayscale(
                             images,
                             pixels_range=pixels_range,
@@ -141,7 +143,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
                             
         elif fn == 'random_sharpness':
             default = {'factor': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_sharpness(
                             images,
                             factor=args.factor,
@@ -150,7 +152,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_posterize':
             default = {'bits': None, 'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_posterize(
                             images,
                             bits=args.bits,
@@ -159,7 +161,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_invert':
             default = {'change_rate': 0.25}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_invert(
                             images,
                             pixels_range=pixels_range,
@@ -167,7 +169,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_solarize':
             default = {'change_rate': 0.25}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_solarize(
                             images,
                             pixels_range=pixels_range, 
@@ -175,7 +177,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_autocontrast':
             default = {'cutoff': 10, 'change_rate': 0.25}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_color.random_autocontrast(
                             images,
                             cutoff=args.cutoff, 
@@ -185,7 +187,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
         elif fn == 'random_blur':            
             default = {'filter_size': None, 'padding': 'reflect', 'constant_values': 0,
                        'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_misc.random_blur(
                             images, 
                             filter_size=args.filter_size,
@@ -197,7 +199,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
         elif fn == 'random_gaussian_noise':
             default = {'stddev': None,
                        'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_misc.random_gaussian_noise(
                             images,
                             stddev=args.stddev,
@@ -211,7 +213,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
                        'crop_height': (0.6, 0.9),
                        'interpolation': 'bilinear',
                        'change_rate': 0.9}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images, gt_labels = objdet_random_misc.objdet_random_crop(
                             images,
                             gt_labels,
@@ -224,7 +226,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
 
         elif fn == 'random_flip':
             default = {'mode': None, 'change_rate': 0.5}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images, gt_labels = objdet_random_affine.objdet_random_flip(
                             images,
                             gt_labels,
@@ -235,7 +237,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
             default = {'width_factor': None, 'height_factor': None,
                        'fill_mode': 'reflect', 'interpolation': 'bilinear', 'fill_value': 0.0,
                        'change_rate': 1.0} 
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images, gt_labels = objdet_random_affine.objdet_random_translation(
                             images,
                             gt_labels,
@@ -250,7 +252,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
             default = {'factor': None,
                        'fill_mode': 'reflect', 'interpolation': 'bilinear', 'fill_value': 0.0,
                        'change_rate': 1.0} 
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images, gt_labels = objdet_random_affine.objdet_random_rotation(
                             images,
                             gt_labels,
@@ -264,7 +266,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
             default = {'factor': None,
                        'fill_mode': 'reflect', 'interpolation': 'bilinear', 'fill_value': 0.0,
                        'change_rate': 1.0}
-            args = get_arg_values(args, default, fn)            
+            args = _get_arg_values(args, default, fn)            
             axis = fn[-1] if fn[-2:] in ('_x', '_y') else 'xy'
             images, gt_labels = objdet_random_affine.objdet_random_shear(
                             images,
@@ -280,7 +282,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
             default = {'width_factor': None, 'height_factor': None,
                        'fill_mode': 'reflect', 'interpolation': 'bilinear', 'fill_value': 0.0,
                        'change_rate': 1.0} 
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images, gt_labels = objdet_random_affine.objdet_random_zoom(
                             images,
                             gt_labels,
@@ -299,7 +301,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
                        'color': None,
                        'change_rate': 1.0,
                        'mode': 'image'}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images = random_erasing.random_rectangle_erasing(
                             images,
                             nrec=args.nrec,
@@ -313,7 +315,7 @@ def data_augmentation(images, gt_labels, config=None, pixels_range=None, batch_i
                             
         elif fn == 'random_periodic_resizing':
             default = {'period': None, 'image_sizes': None, 'interpolation': 'bilinear'}
-            args = get_arg_values(args, default, fn)
+            args = _get_arg_values(args, default, fn)
             images, gt_labels = objdet_random_misc.objdet_random_periodic_resizing(
                             images,
                             gt_labels,

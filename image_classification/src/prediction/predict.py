@@ -20,14 +20,14 @@ import warnings
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from models_utils import get_model_name_and_its_input_shape, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from models_mgt import ai_runner_invoke
-from preprocess import preprocess_input
-from onnx_evaluation import predict_onnx
+from common.utils import get_model_name_and_its_input_shape, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
+from common.evaluation import predict_onnx
+from src.utils import ai_runner_invoke
+from src.preprocessing import preprocess_input
 import onnxruntime
 
 
-def load_test_data(directory: str):
+def _load_test_data(directory: str):
     """
     Parse the training data and return a list of paths to annotation files.
     
@@ -83,7 +83,7 @@ def predict(cfg: DictConfig = None) -> None:
     file_extension = Path(model_path).suffix
 
     if test_images_dir:
-        image_filenames =  load_test_data(test_images_dir)
+        image_filenames =  _load_test_data(test_images_dir)
     else:
         print("no test set found")
 
@@ -109,7 +109,8 @@ def predict(cfg: DictConfig = None) -> None:
         if image_filenames[i].endswith(".jpg") or image_filenames[i].endswith(".png") or image_filenames[i].endswith(".jpeg"):
 
             print('Inference on image : ',image_filenames[i])
-            im_path = os.path.join(test_images_dir, image_filenames[i])
+#            im_path = os.path.join(test_images_dir, image_filenames[i])
+            im_path = image_filenames[i]
 
             # Load the image with Tensorflow for the model inference
             try:

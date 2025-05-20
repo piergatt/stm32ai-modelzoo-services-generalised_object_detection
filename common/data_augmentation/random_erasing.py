@@ -8,10 +8,10 @@
 #  *--------------------------------------------------------------------------------------------*/
 
 import tensorflow as tf
-from random_utils import check_dataaug_argument, remap_pixel_values_range, apply_change_rate
+from common.data_augmentation import check_dataaug_argument, remap_pixel_values_range, apply_change_rate
 
 
-def check_rectangle_erasing_args(fill_method, nrec, area, wh_ratio):
+def _check_rectangle_erasing_args(fill_method, nrec, area, wh_ratio):
 
     if fill_method not in {"uniform", "random", "mosaic"}:
         raise ValueError("\nArgument `fill_method` of function `random_rectangle_erasing`: expecting "
@@ -42,7 +42,7 @@ def check_rectangle_erasing_args(fill_method, nrec, area, wh_ratio):
     return nrec, area, wh_ratio
     
 
-def parse_color_arg(color, fill_method=None, function_name=None):
+def _parse_color_arg(color, fill_method=None, function_name=None):
     """
     This function checks that argument `color` is set properly depending
     on the fill method.
@@ -74,7 +74,7 @@ def parse_color_arg(color, fill_method=None, function_name=None):
     return tf.convert_to_tensor(color_spec, dtype=tf.int32)
 
 
-def look_for_grayscale_rgb_images(images):
+def _look_for_grayscale_rgb_images(images):
     """
     This function looks for grayscale images that may be present in input
     RGB images. Their R, G and B planes are identical. We have to insert
@@ -99,7 +99,7 @@ def look_for_grayscale_rgb_images(images):
     return grayscale
 
 
-def generate_rectangle_mask(batch_size, image_size=None, num_planes=None,
+def _generate_rectangle_mask(batch_size, image_size=None, num_planes=None,
                             nrec_range=None, area_range=None, wh_ratio_range=None):
     """
     This function first generates a rectangle in each plane. The coordinates
@@ -178,7 +178,7 @@ def generate_rectangle_mask(batch_size, image_size=None, num_planes=None,
     return tf.cast(mask, tf.int32)
 
 
-def remove_rectangle_overlaps(rectangle_mask):
+def _remove_rectangle_overlaps(rectangle_mask):
     """
     This function removes any overlap between the rectangles that will be
     inserted in an image. This is needed to avoid the superimposition of 
@@ -212,7 +212,7 @@ def remove_rectangle_overlaps(rectangle_mask):
     return tf.where(mask > 0, 1, 0)
 
 
-def generate_color_planes(batch_size, image_size=None, num_planes=None, fill_method=None, color=None):
+def _generate_color_planes(batch_size, image_size=None, num_planes=None, fill_method=None, color=None):
     """
     This function creates planes with uniform RGB colors. The rectangles
     to insert in the images will be cut from these planes to obtain 
@@ -362,14 +362,14 @@ def random_rectangle_erasing(
     pixels_dtype = images.dtype
     images = remap_pixel_values_range(images, pixels_range, (0, 255), dtype=tf.int32)
     
-    nrec, area, wh_ratio = check_rectangle_erasing_args(fill_method, nrec, area, wh_ratio)
-    color = parse_color_arg(color, fill_method=fill_method, function_name="random_rectangle_erasing")
+    nrec, area, wh_ratio = _check_rectangle_erasing_args(fill_method, nrec, area, wh_ratio)
+    color = _parse_color_arg(color, fill_method=fill_method, function_name="random_rectangle_erasing")
 
     if mode not in {"image", "batch"}:
         raise ValueError("\nArgument `mode` of function `random_rectangle_erasing`: "
                          "expecting 'image' or 'batch'. Received {}".format(mode))
 
-    grayscale = look_for_grayscale_rgb_images(images)
+    grayscale = _look_for_grayscale_rgb_images(images)
 
     # We call "planes" areas of the same size as the input images that
     # contain the rectangles to erase from the images. A set of planes
@@ -379,7 +379,7 @@ def random_rectangle_erasing(
     # maximum number of rectangles that may be erased from the image.
     num_planes = nrec[1]
 
-    rectangle_mask = generate_rectangle_mask(
+    rectangle_mask = _generate_rectangle_mask(
                             batch_size=batch_size if mode == "image" else 1,
                             image_size=[width, height],
                             num_planes=num_planes,
@@ -387,11 +387,11 @@ def random_rectangle_erasing(
                             area_range=area,
                             wh_ratio_range=wh_ratio)
     if nrec != (1, 1):
-        rectangle_mask = remove_rectangle_overlaps(rectangle_mask)
+        rectangle_mask = _remove_rectangle_overlaps(rectangle_mask)
 
     # Color the rectangles and compute the union of the
     # planes to obtain images of all the rectangles.
-    color_planes = generate_color_planes(
+    color_planes = _generate_color_planes(
                             batch_size=batch_size if mode == "image" else 1,
                             image_size=[width, height],
                             num_planes=num_planes, 

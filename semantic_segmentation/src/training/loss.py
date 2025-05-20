@@ -1,3 +1,11 @@
+# /*---------------------------------------------------------------------------------------------
+#  * Copyright (c) 2022-2023 STMicroelectronics.
+#  * All rights reserved.
+#  *
+#  * This software is licensed under terms that can be found in the LICENSE file in
+#  * the root directory of this software component.
+#  * If no LICENSE file comes with this software, it is provided AS-IS.
+#  *--------------------------------------------------------------------------------------------*/
 
 import tensorflow as tf
 
@@ -21,7 +29,7 @@ def segmentation_loss(y_true, y_pred, num_classes=None, loss_weights=None, ignor
         if num_classes == 21:
             loss_weights = [0.5] + [1.0] * (num_classes - 1)
         else:
-            loss_weights = [1.0] * (num_classes - 1)
+            loss_weights = [1.0] * (num_classes)
 
     # Flatten logits and labels tensors for processing.
     logits = tf.reshape(logits, [-1, num_classes])
@@ -42,10 +50,8 @@ def segmentation_loss(y_true, y_pred, num_classes=None, loss_weights=None, ignor
     labels_one_hot = tf.one_hot(labels, depth=num_classes)
 
     # Compute the cross entropy loss for each pixel.
-    if num_classes > 2:
-        pixel_losses = tf.nn.softmax_cross_entropy_with_logits(labels=labels_one_hot, logits=logits)
-    else:
-        pixel_losses = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels_one_hot, logits=logits)
+
+    pixel_losses = tf.nn.softmax_cross_entropy_with_logits(labels=labels_one_hot, logits=logits)
 
     weighted_pixel_losses = pixel_losses * weights
     total_loss = tf.reduce_sum(weighted_pixel_losses)

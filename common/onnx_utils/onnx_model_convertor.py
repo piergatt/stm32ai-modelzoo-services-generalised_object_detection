@@ -16,7 +16,7 @@ import onnx as onx
 import onnxruntime as onx_rt
 import numpy as np
 
-def quantized_per_tensor(model_path):
+def _quantized_per_tensor(model_path):
     """
     Check if a TFLite model is quantized per-tensor.
 
@@ -32,7 +32,7 @@ def quantized_per_tensor(model_path):
     bool: True if the model is quantized per-tensor, False otherwise.
     
     Usage:
-    is_per_tensor_quantized = quantized_per_tensor('path/to/model.tflite')
+    is_per_tensor_quantized = _quantized_per_tensor('path/to/model.tflite')
     print(is_per_tensor_quantized)
     """
     # Load the TFLite model
@@ -59,7 +59,7 @@ def quantized_per_tensor(model_path):
     # If all quantized tensors use per-tensor quantization or if there are no quantized tensors, return True
     return True
 
-def tool_version_used():
+def _tool_version_used():
     """
     Prints the versions of the ONNX, ONNX Runtime, and TensorFlow libraries currently installed.
 
@@ -70,7 +70,7 @@ def tool_version_used():
     No parameters are needed, and there are no return values.
     Make sure to import the required libraries are installed and imported
     Usage:
-    tool_version_used()  # Call the function to print the versions of the libraries
+    _tool_version_used()  # Call the function to print the versions of the libraries
     """
     print('The version of libraries are: ')
     print(f'onnx: {onx.__version__}')
@@ -87,7 +87,7 @@ def onnx_model_converter(input_model_path: str, target_opset: int = 17, output_d
     If the model is already in ONNX format, it prints a message and does nothing.
     For .h5 models, it uses the tf2onnx converter.
     For .tflite models, it checks if the model is quantized per-tensor using the
-    quantized_per_tensor function. If it is, it uses the tflite2onnx converter.
+    _quantized_per_tensor function. If it is, it uses the tflite2onnx converter.
     If the model is not quantized per-tensor, it raises a TypeError.
     If the input model is neither .h5 nor .tflite, it raises a TypeError.
 
@@ -139,7 +139,7 @@ def onnx_model_converter(input_model_path: str, target_opset: int = 17, output_d
                                     output_path=output_dir)
     elif model_type == '.tflite':
         import tflite2onnx
-        if quantized_per_tensor(input_model_path):
+        if _quantized_per_tensor(input_model_path):
             onnx_file_name = ".".join(os.path.basename(input_model_path).split(".")[:-1])
             tflite2onnx.convert(input_model_path, f"{onnx_file_name}.onnx")
         else:
@@ -154,5 +154,5 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', help='the output dir')
     parser.add_argument('--static_input_shape', help="Static input shape for ONNX model", default=None)
     args = parser.parse_args()
-    tool_version_used()
+    _tool_version_used()
     onnx_model_converter(args.model, args.opset, args.output_dir)

@@ -9,7 +9,7 @@ import numpy as np
 import os
 import onnx
 import mlflow
-from logs_utils import log_to_file
+from common.utils import log_to_file
 
 
 def predict_onnx(sess: onnx.ModelProto, data: np.ndarray) -> np.ndarray:

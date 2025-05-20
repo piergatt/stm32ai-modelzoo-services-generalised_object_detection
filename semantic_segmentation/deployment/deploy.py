@@ -19,11 +19,11 @@ from typing import Optional
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from models_utils import get_model_name_and_its_input_shape, get_model_name
-from common_deploy import stm32ai_deploy_stm32n6, stm32ai_deploy_mpu
-from common_benchmark import cloud_connect
-from stm32ai_dc import Stm32Ai, CloudBackend, CliParameters, ModelNotFoundError
-from gen_h_file import gen_h_user_file_n6
+from common.utils import get_model_name_and_its_input_shape, get_model_name
+from common.deployment import stm32ai_deploy_stm32n6, stm32ai_deploy_mpu
+from common.benchmarking import cloud_connect
+from common.stm32ai_dc import Stm32Ai, CloudBackend, CliParameters, ModelNotFoundError
+from src.utils import gen_h_user_file_n6
 
 def deploy(cfg: DictConfig = None, model_path_to_deploy: Optional[str] = None,
            credentials: list[str] = None) -> None:
@@ -67,17 +67,37 @@ def deploy(cfg: DictConfig = None, model_path_to_deploy: Optional[str] = None,
         gen_h_user_file_n6(config=cfg, quantized_model_path=model_path)
 
     if stm32ai_serie.upper() == "STM32N6" and stm32ai_ide.lower() == "gcc":
-        stmaic_conf_filename = "stmaic_STM32N6570-DK.conf"
-        stm32ai_deploy_stm32n6(target=board, stlink_serial_number=stlink_serial_number, stm32ai_version=stm32ai_version, c_project_path=c_project_path,
-                                output_dir=output_dir,
-                                stm32ai_output=stm32ai_output, optimization=optimization, path_to_stm32ai=path_to_stm32ai,
-                                path_to_cube_ide=path_to_cube_ide, stmaic_conf_filename=stmaic_conf_filename,
-                                verbosity=verbosity,
-                                debug=False, model_path=model_path, get_model_name_output=get_model_name_output,
-                                stm32ai_ide=stm32ai_ide, stm32ai_serie=stm32ai_serie, on_cloud=cfg.tools.stm32ai.on_cloud,
-                                check_large_model=True, cfg=cfg,
-                                input_data_type='uint8', output_data_type='uint8',
-                                inputs_ch_position='chlast', outputs_ch_position='chlast'
+        if board == "STM32N6570-DK":
+            stmaic_conf_filename = "stmaic_STM32N6570-DK.conf"
+        elif board == "NUCLEO-N657X0-Q":
+            stmaic_conf_filename = "stmaic_NUCLEO-N657X0-Q.conf"
+        else:
+            raise TypeError("The hardware selected in cfg.deployment.hardware_setup.board is not supported yet!\n"
+                            "Please choose one of the following boards : `stmaic_STM32N6570-DK.conf` or `stmaic_NUCLEO-N657X0-Q.conf`.")
+
+        stm32ai_deploy_stm32n6(target=board, stlink_serial_number=stlink_serial_number,
+                               stm32ai_version=stm32ai_version,
+                               c_project_path=c_project_path,
+                               output_dir=output_dir,
+                               stm32ai_output=stm32ai_output,
+                               optimization=optimization,
+                               path_to_stm32ai=path_to_stm32ai,
+                               path_to_cube_ide=path_to_cube_ide,
+                               stmaic_conf_filename=stmaic_conf_filename,
+                               verbosity=verbosity,
+                               debug=False,
+                               model_path=model_path,
+                               get_model_name_output=get_model_name_output,
+                               stm32ai_ide=stm32ai_ide,
+                               stm32ai_serie=stm32ai_serie,
+                               on_cloud=cfg.tools.stm32ai.on_cloud,
+                               build_conf = cfg.deployment.build_conf,
+                               check_large_model=True,
+                               cfg=cfg,
+                               input_data_type='uint8',
+                               output_data_type='uint8',
+                               inputs_ch_position='chlast',
+                               outputs_ch_position='chlast'
                                 )
     else:
         raise TypeError("Options for cfg.deployment.hardware_setup.serie and cfg.deployment.IDE not supported yet!")
@@ -98,7 +118,7 @@ def deploy_mpu(cfg: DictConfig = None, model_path_to_deploy: Optional[str] = Non
     # Build and flash Getting Started
     board = cfg.deployment.hardware_setup.board
     c_project_path = cfg.deployment.c_project_path
-    label_file_path = cfg.deployment.label_file_path
+    class_names = cfg.dataset.class_names
     board_deploy_path = cfg.deployment.board_deploy_path
     verbosity = cfg.deployment.verbosity
     board_serie = cfg.deployment.hardware_setup.serie
@@ -133,7 +153,7 @@ def deploy_mpu(cfg: DictConfig = None, model_path_to_deploy: Optional[str] = Non
 
     if board in ["STM32MP257F-EV1","STM32MP157F-DK2","STM32MP135F-DK"]:
         # Run the deployment
-        res = stm32ai_deploy_mpu(target=board, board_ip_address=board_ip, label_file=label_file_path, board_deploy=board_deploy_path, c_project_path=c_project_path,
+        res = stm32ai_deploy_mpu(target=board, board_ip_address=board_ip, class_names=class_names, board_deploy=board_deploy_path, c_project_path=c_project_path,
                                     verbosity=verbosity, debug=False, model_path=model_path,cfg=cfg)
         if res == False:
             raise TypeError("Deployment on the target failed\n")

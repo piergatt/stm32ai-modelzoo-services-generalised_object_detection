@@ -41,7 +41,7 @@ The most important parts here are to define:
 
 general:
   # path to the model to benchmark
-  model_path: ../../../model_zoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
+  model_path: ../../stm32ai-modelzoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
   model_type: st_ssd_mobilenet_v1
 
 operation_mode: chain_qb
@@ -86,11 +86,11 @@ benchmarking:
   board: STM32H747I-DISCO
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
   
 ```
 Here the quantization is made with random data as no data were provided and main goal was to have a quick insight on the performances of a quantized model for a specific HW. When evaluating the model, it is highly recommended to use real data for the final quantization of course.
@@ -103,7 +103,7 @@ To make the benchmark locally instead of using the ST Edge AI Development Cloud 
 
 ## Run the script:
 
-Edit the user_config.yaml then open a CMD (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a CMD (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

@@ -6,8 +6,8 @@ model:
 quantization:
     fake: False
     quantization_type: per_channel
-    quantization_input_type: float
-    quantization_output_type: uint8
+    quantization_input_type: uint8
+    quantization_output_type: float 
     calib_dataset_path: ./calibration_dataset
     export_path: ./quantized_models
 pre_processing:

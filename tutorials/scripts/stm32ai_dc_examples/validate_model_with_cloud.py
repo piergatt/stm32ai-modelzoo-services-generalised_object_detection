@@ -21,10 +21,14 @@ Main Features
 import sys
 import os
 # Append sys.path in order to add import folder for STM32AI
-dir_name = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(os.path.join(dir_name, '..')))
-sys.path.append(os.path.abspath('../../../common'))
-from stm32ai_dc import Stm32Ai, CloudBackend, CliParameters, ModelNotFoundError
+#dir_name = os.path.dirname(__file__)
+#sys.path.insert(0, os.path.abspath(os.path.join(dir_name, '..')))
+#sys.path.append(os.path.abspath('../../../common'))
+
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+from common.stm32ai_dc import Stm32Ai, CloudBackend, CliParameters, ModelNotFoundError
+
 
 # Get username/password from your environment 
 username = os.environ.get('STM32AI_USERNAME', None)

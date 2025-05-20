@@ -18,12 +18,12 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import librosa
 import numpy as np
-from trainers import BaseTrainer
+from src.trainers import BaseTrainer
 from tqdm import tqdm
 from torch.utils.data import default_collate
 from pesq import pesq
 from pystoi import stoi
-from metrics import si_snr, snr, SISNRLoss, SNRLoss
+from src.metrics import si_snr, snr, SISNRLoss, SNRLoss
 from pathlib import Path
 
 class OutputHook(list):

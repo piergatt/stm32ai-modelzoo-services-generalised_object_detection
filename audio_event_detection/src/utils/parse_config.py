@@ -11,30 +11,28 @@ import os
 from pathlib import Path
 import re
 from hydra.core.hydra_config import HydraConfig
-from cfg_utils import replace_none_string, postprocess_config_dict, check_config_attributes, parse_tools_section, \
-                      parse_benchmarking_section, parse_mlflow_section, parse_top_level, parse_general_section, \
-                      parse_training_section, parse_quantization_section, parse_prediction_section, parse_deployment_section, \
-                      check_hardware_type, parse_evaluation_section
 from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
 import tensorflow as tf
 import pandas as pd
 from typing import Dict, List
 
+from common.utils import replace_none_string, postprocess_config_dict, check_config_attributes, parse_tools_section, \
+                      parse_benchmarking_section, parse_mlflow_section, parse_top_level, parse_general_section, \
+                      parse_training_section, parse_quantization_section, parse_prediction_section, parse_deployment_section, \
+                      check_hardware_type, parse_evaluation_section, get_class_names_from_file
 
-def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None) -> None:
+def _parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None) -> None:
     # cfg: dictionary containing the 'dataset' section of the configuration file
 
-    legal = ["name", "training_audio_path", "training_csv_path",
-             "multi_label", "use_garbage_class", "expand_last_dim", "file_extension",
-             "to_cache", "shuffle", "batch_size",  "class_names","validation_audio_path", "validation_csv_path",
-             "validation_split", "test_audio_path", "test_csv_path",
-             "quantization_audio_path", "quantization_csv_path", "quantization_split",
-             "n_samples_per_garbage_class", "seed"]
+    legal = ["name", "training_audio_path", "training_csv_path", "multi_label", "use_garbage_class", 
+             "expand_last_dim", "file_extension", "to_cache", "shuffle", "batch_size",  "class_names",
+             "classes_file_path", "validation_audio_path", "validation_csv_path", "validation_split",
+             "test_audio_path", "test_csv_path", "quantization_audio_path", "quantization_csv_path", 
+             "quantization_split", "n_samples_per_garbage_class", "seed"]
 
     required = ["name", "multi_label", "use_garbage_class", "expand_last_dim", "file_extension",
-                "to_cache", "shuffle", "class_names",
-                "n_samples_per_garbage_class", "seed"]
+                "to_cache", "shuffle", "n_samples_per_garbage_class", "seed"]
     one_or_more = []
     if mode in mode_groups.training and cfg.name != "fsd50k":
         required += ["training_csv_path", "training_audio_path"]
@@ -47,6 +45,18 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
 
     check_config_attributes(cfg, specs={"legal": legal, "all": required, "one_or_more": one_or_more},
                             section="dataset")
+    # A third check for the class_names
+    if not mode in ["quantization", "benchmarking", "chain_qb"]:
+        one_or_more = []
+        one_or_more += ["class_names", "classes_file_path"]
+        check_config_attributes(cfg, specs={"legal": legal, "all": None, "one_or_more": one_or_more},
+                                section="dataset")
+        if cfg.class_names: 
+             print("[INFO] : Using provided class names from dataset.class_names")
+        elif cfg.class_names == None:
+            cfg.class_names = get_class_names_from_file(cfg)
+            print("[INFO] : Found {} classes in label file {}".format(len(cfg.class_names), cfg.classes_file_path))
+        cfg.class_names = sorted(cfg.class_names)    
 
     # Set default values of missing optional attributes
     if not cfg.name:
@@ -54,10 +64,6 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
     if not cfg.validation_split:
         cfg.validation_split = 0.2
     cfg.seed = cfg.seed if cfg.seed else 123
-
-    # Sort the class names if they were provided
-    if cfg.class_names:
-        cfg.class_names = sorted(cfg.class_names)
 
     # Check the value of validation_split if it is set
     if cfg.validation_split:
@@ -95,14 +101,14 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
                                     f"Received path: {path}\n"
                                     "Please check the 'dataset' section of your configuration file.") 
 
-def parse_dataset_specific_fsd50k_section(cfg: DictConfig) -> None:
+def _parse_dataset_specific_fsd50k_section(cfg: DictConfig) -> None:
     # cfg: 'preprocessing' section of the configuration file
     legal = ["csv_folder", "dev_audio_folder", "eval_audio_folder", "audioset_ontology_path",
              "only_keep_monolabel"]
     # All are required if this function is called
-    check_config_attributes(cfg, specs={"legal": legal, "all": legal}, section="preprocessing")
+    check_config_attributes(cfg, specs={"legal": legal, "all": legal}, section="dataset_specific.fsd50k")
 
-def parse_preprocessing_section(cfg: DictConfig) -> None:
+def _parse_preprocessing_section(cfg: DictConfig) -> None:
     # cfg: 'preprocessing' section of the configuration file
     legal = ["min_length", "max_length", "target_rate",
              "top_db", "frame_length", "hop_length",
@@ -110,7 +116,7 @@ def parse_preprocessing_section(cfg: DictConfig) -> None:
     # All are required
     check_config_attributes(cfg, specs={"legal": legal, "all": legal}, section="preprocessing")
 
-def parse_feature_extraction_section(cfg: DictConfig) -> None:
+def _parse_feature_extraction_section(cfg: DictConfig) -> None:
     # cfg: 'feature_extraction' section of the config file
 
     legal = ["patch_length", "n_mels", "overlap", "n_fft",
@@ -121,7 +127,7 @@ def parse_feature_extraction_section(cfg: DictConfig) -> None:
     check_config_attributes(cfg, specs={"legal": legal, "all": legal}, section="feature_extraction")
     replace_none_string(cfg)
 
-def parse_data_augmentation_section(cfg: DictConfig) -> None:
+def _parse_data_augmentation_section(cfg: DictConfig) -> None:
     """
     This function checks the data augmentation section of the config file.
     
@@ -155,7 +161,7 @@ def parse_data_augmentation_section(cfg: DictConfig) -> None:
                             section="data_augmentation.SpecAug")
 
 
-def get_class_names(cfg: DictConfig, name: str, csv_path=None):
+def _get_class_names(cfg: DictConfig, name: str, csv_path=None):
     '''Attemps to get class names for a dataset.
        If the dataset name is not previously known, attemps to get the class names 
        from the dataset's associated csv file. Expects that this csv file is in ESC-10 format.
@@ -240,19 +246,21 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     if cfg.operation_mode != "benchmarking":
         if not cfg.dataset:
             cfg.dataset = DefaultMunch.fromDict({})
-        parse_dataset_section(cfg.dataset, 
+        _parse_dataset_section(cfg.dataset, 
                               mode=cfg.operation_mode, 
                               mode_groups=mode_groups)
         # If dataset is FSD50K, parse its dedicated section
-        if cfg.dataset.name.lower() == 'fsd50k':
-            parse_dataset_specific_fsd50k_section(cfg.dataset_specific.fsd50k)
-        parse_preprocessing_section(cfg.preprocessing)
-        parse_feature_extraction_section(cfg.feature_extraction)
+        # No need to have this section if all we're doing is deploying,
+        if cfg.dataset.name.lower() == 'fsd50k' and cfg.operation_mode != "deployment":
+                _parse_dataset_specific_fsd50k_section(cfg.dataset_specific.fsd50k)
+
+        _parse_preprocessing_section(cfg.preprocessing)
+        _parse_feature_extraction_section(cfg.feature_extraction)
 
     # Training section parsing
     if cfg.operation_mode in mode_groups.training:
         if cfg.data_augmentation:
-            parse_data_augmentation_section(cfg)
+            _parse_data_augmentation_section(cfg)
         model_path_used = bool(cfg.general.model_path)
         model_type_used = bool(cfg.general.model_type)
         legal = ["model", "batch_size", "epochs", "optimizer", "dropout", "frozen_layers",
@@ -272,7 +280,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # Evaluation section parsing
     if cfg.operation_mode in mode_groups.evaluation and "evaluation" in cfg:
-        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name", "target"]
+        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name", "target", 
+                 "profile", "input_type", "output_type", "input_chpos", "output_chpos"]
         parse_evaluation_section(cfg.evaluation,
                                  legal=legal)
 
@@ -313,7 +322,7 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
         if not cds.class_names and cfg.operation_mode not in ("quantization", "benchmarking", "chain_qb"):
             # Infer the class names from a dataset if there is one
             for path in [cds.training_csv_path, cds.validation_csv_path, cds.test_csv_path, cds.quantization_csv_path]:
-                cds.class_names = get_class_names(cfg, name=cds.name, csv_path=path)
+                cds.class_names = _get_class_names(cfg, name=cds.name, csv_path=path)
                 print(f"[INFO] : Found {len(cds.class_names)} classes in dataset {path}")
                 print(f"[INFO] : Automatically inferred classes {cds.class_names}")
                 break

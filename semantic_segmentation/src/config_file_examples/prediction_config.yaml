@@ -1,6 +1,6 @@
 general:
-   model_path: ../../../model_zoo/semantic_segmentation/deeplab_v3/ST_pretrainedmodel_public_dataset/coco_2017_pascal_voc_2012/deeplab_v3_mobilenetv2_05_16_512_fft/deeplab_v3_mobilenetv2_05_16_512_fft.h5
-   
+   model_path: ../../stm32ai-modelzoo/semantic_segmentation/deeplab_v3/ST_pretrainedmodel_public_dataset/coco_2017_pascal_voc_2012/deeplab_v3_mobilenetv2_05_16_512/deeplab_v3_mobilenetv2_05_16_512_asppv1.h5
+
 operation_mode: prediction
 
 dataset:
@@ -19,11 +19,11 @@ preprocessing:
    color_mode: rgb
 
 prediction:
-   test_files_path: ../datasets/VOC2012_test_nano/
+   test_files_path: ./datasets/VOC2012_test_nano/
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

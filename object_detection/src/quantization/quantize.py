@@ -21,15 +21,16 @@ from onnx import ModelProto
 import onnxruntime
 from typing import Optional
 
-from datasets import get_quantization_data_loader
-from onnx_quantizer import quantize_onnx
-from onnx_evaluation import model_is_quantized
-from models_utils import tf_dataset_to_np_array
-from onnx_model_convertor import onnx_model_converter
-from model_formatting_ptq_per_tensor import model_formatting_ptq_per_tensor
+from common.optimization import model_formatting_ptq_per_tensor
+from common.utils import tf_dataset_to_np_array
+from common.quantization import quantize_onnx
+from common.evaluation import model_is_quantized
+from common.onnx_utils import onnx_model_converter
+from src.preprocessing import get_quantization_data_loader
 
 
-def tflite_ptq_quantizer(model: tf.keras.Model = None,
+
+def _tflite_ptq_quantizer(model: tf.keras.Model = None,
                          quantization_ds: tf.data.Dataset = None,
                          output_dir: str = None,
                          export_dir: Optional[str] = None,
@@ -58,7 +59,7 @@ def tflite_ptq_quantizer(model: tf.keras.Model = None,
         None
     """
 
-    def data_gen():
+    def _data_gen():
         """
         Generate data for post-training quantization.
 
@@ -72,7 +73,7 @@ def tflite_ptq_quantizer(model: tf.keras.Model = None,
                 image = rescaling[0] * image + rescaling[1]
                 yield [image]
         else:
-            for images in tqdm.tqdm(quantization_ds, total=len(quantization_ds)):
+            for images,_ in tqdm.tqdm(quantization_ds, total=len(quantization_ds)):
                 yield [images]
 
     # Create the TFLite converter
@@ -95,7 +96,7 @@ def tflite_ptq_quantizer(model: tf.keras.Model = None,
 
     # Set the optimizations and representative dataset generator
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    converter.representative_dataset = data_gen
+    converter.representative_dataset = _data_gen
 
     if quantization_granularity == 'per_tensor':
         converter._experimental_disable_per_channel = True
@@ -108,7 +109,7 @@ def tflite_ptq_quantizer(model: tf.keras.Model = None,
     tflite_model_quantized_file.write_bytes(tflite_model_quantized)
 
 
-def quantize_keras_model(cfg: DictConfig, model_path):
+def _quantize_keras_model(cfg: DictConfig, model_path):
     """
     Quantize a Keras model using TFlite
 
@@ -149,7 +150,7 @@ def quantize_keras_model(cfg: DictConfig, model_path):
     cpp = cfg.preprocessing.rescaling
 
     if cfq.quantizer.lower() == "tflite_converter" and cfq.quantization_type == "PTQ":
-        tflite_ptq_quantizer(float_model,
+        _tflite_ptq_quantizer(float_model,
                              quantization_ds=quantization_ds,
                              output_dir=output_dir,
                              export_dir=export_dir,
@@ -165,7 +166,7 @@ def quantize_keras_model(cfg: DictConfig, model_path):
         # Convert the dataset to numpy array
         target_opset = cfg.quantization.target_opset
         if quantization_ds:
-            data, _ = tf_dataset_to_np_array(quantization_ds, labels_included=False, nchw=True)
+            data, _ = tf_dataset_to_np_array(quantization_ds, labels_included=True, nchw=True)
         else:
             data = None
         converted_model_path = os.path.join(output_dir, 'converted_model', 'converted_model.onnx')
@@ -179,7 +180,7 @@ def quantize_keras_model(cfg: DictConfig, model_path):
                         "user_config.yaml file!")
 
 
-def quantize_onnx_model(cfg, model_path):
+def _quantize_onnx_model(cfg, model_path):
     """
         Quantize a onnx model using ONNX runtime
 
@@ -207,7 +208,7 @@ def quantize_onnx_model(cfg, model_path):
     quantization_ds = get_quantization_data_loader(cfg, image_size=input_shape[:2], batch_size=1)
 
     if quantization_ds:
-        data, _ = tf_dataset_to_np_array(quantization_ds, labels_included=False, nchw=True)
+        data, _ = tf_dataset_to_np_array(quantization_ds, labels_included=True, nchw=True)
     else:
         print("[WARNING] No representative images were provided. Quantization will be performed using fake data.")
         data = None
@@ -245,9 +246,9 @@ def quantize(cfg, model_path=None):
     print("[INFO] : Quantizing the model ... This might take few minutes ...")
     start_time = timer()
     if Path(model_path).suffix == ".h5":
-        quantized_model_path = quantize_keras_model(cfg, model_path)
+        quantized_model_path = _quantize_keras_model(cfg, model_path)
     elif Path(model_path).suffix == ".onnx":
-        quantized_model_path = quantize_onnx_model(cfg, model_path)
+        quantized_model_path = _quantize_onnx_model(cfg, model_path)
     end_time = timer()
     
     run_time = int(end_time - start_time)

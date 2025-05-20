@@ -6,9 +6,9 @@ The details on how to use this service are provided in the article below.
 
 <details open><summary><a href="#1"><b>1. Configure the yaml file</b></a></summary><a id="1"></a>
 
-To evaluate a pretrained HAR model using the evaluation service, users can edit the parameters provided in the main [user_config.yaml](../user_config.yaml) file, or alternatively directly update a few parameters in the minimalistic configuration file provided for the evaluation service [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml).
+To evaluate a pretrained HAR model using the evaluation service, users can edit the parameters provided in the main [user_config.yaml](../../user_config.yaml) file, or alternatively directly update a few parameters in the minimalistic configuration file provided for the evaluation service [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml).
 
-To edit the main [user_config.yaml](../user_config.yaml) file, follow the steps below, which show how to evaluate your pretrained HAR model trained on mobility_v1 or WISDM datasets.
+To edit the main [user_config.yaml](../../user_config.yaml) file, follow the steps below, which show how to evaluate your pretrained HAR model trained on mobility_v1 or WISDM datasets.
 
 <ul><details open><summary><a href="#1-1">1.1 Setting the model and the operation mode</a></summary><a id="1-1"></a>
 
@@ -17,7 +17,7 @@ The first thing to set is the path to the pretrained model in the `general.model
 ```yaml
 general:
   project_name: human_activity_recognition # optional, if not provided default name is used for the experiment
-  model_path: ../../../model_zoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5 # mandatory
+  model_path: ../../stm32ai-modelzoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5 # mandatory
                         # Path to the model file to be evaluated
 operation_mode: evaluation # mandatory
 ```
@@ -67,15 +67,15 @@ training:
 </details>
 <details open><summary><a href="#2"><b>2. Evaluate your model</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml), you can evaluate the model by running the following command from the **src/** folder:
+If you chose to modify the [user_config.yaml](../../user_config.yaml), you can evaluate the model by running the following command from the UC folder:
 
 ```bash
 python stm32ai_main.py 
 ```
-If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the **src/** folder: 
+If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the UC folder: 
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name evaluation_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name evaluation_config.yaml
 ```
 
 </details>

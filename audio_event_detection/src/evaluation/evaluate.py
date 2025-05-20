@@ -26,16 +26,15 @@ from typing import Optional, Tuple
 from sklearn.metrics import accuracy_score
 from pathlib import Path
 
-from preprocess import preprocess_input
-from visualize_utils import compute_confusion_matrix, plot_confusion_matrix
-from models_mgt import get_loss
-from logs_utils import log_to_file
-from onnx_evaluation import model_is_quantized, predict_onnx 
-from models_utils import tf_dataset_to_np_array, count_h5_parameters, ai_runner_interp
+from src.preprocessing import preprocess_input
+from src.utils import get_loss
+from common.evaluation import model_is_quantized, predict_onnx
+from common.utils import tf_dataset_to_np_array, count_h5_parameters, \
+                         ai_runner_interp, plot_confusion_matrix, log_to_file, compute_confusion_matrix2
 import onnx
 
 
-def sanitize_onnx_opset_imports(onnx_model_path: str,
+def _sanitize_onnx_opset_imports(onnx_model_path: str,
                                 target_opset: int):
     '''
     remove all the un-necessary opset imports from an onnx model resulting due to tf2onnx opperation
@@ -104,7 +103,7 @@ def _majority_vote(preds: tf.Tensor,
         return onehot_vote
 
 
-def _aggregate_predictions(preds, clip_labels, multi_label=False, is_truth=False,
+def aggregate_predictions(preds, clip_labels, multi_label=False, is_truth=False,
                            return_proba=False):
     '''
     Aggregate predictions from patch level to clip level.
@@ -141,7 +140,7 @@ def _aggregate_predictions(preds, clip_labels, multi_label=False, is_truth=False
                     )
     return aggregated_preds
 
-def compute_accuracy_score(y_true, y_pred, is_multilabel=False):
+def _compute_accuracy_score(y_true, y_pred, is_multilabel=False):
     """Wrapper function around sklearn.metrics.accuracy_score"""
     if not is_multilabel:
         y_true = np.argmax(y_true, axis=1)
@@ -152,7 +151,7 @@ def compute_accuracy_score(y_true, y_pred, is_multilabel=False):
         raise NotImplementedError("Not implemented yet for multi_label=True")
 
 
-def evaluate_tflite_quantized_model(cfg: DictConfig = None,
+def _evaluate_tflite_quantized_model(cfg: DictConfig = None,
                                     quantized_model_path: str = None, eval_ds: tf.data.Dataset = None,
                                     batch_size: int = None, class_names: list = None,
                                     output_dir: str = None, clip_labels: np.ndarray = None,
@@ -235,21 +234,21 @@ def evaluate_tflite_quantized_model(cfg: DictConfig = None,
             np.save(os.path.join(output_dir, f"{npy_out_name}.npy"), preds)
 
     # Compute patch-level accuracy
-    patch_level_accuracy = compute_accuracy_score(patch_labels,
+    patch_level_accuracy = _compute_accuracy_score(patch_labels,
                                                   preds,
                                                   is_multilabel=multi_label)
 
     # Compute clip-level accuracy
     # Aggregate clip-level labels
-    aggregated_labels = _aggregate_predictions(preds=patch_labels,
+    aggregated_labels = aggregate_predictions(preds=patch_labels,
                                                clip_labels=clip_labels,
                                                multi_label=multi_label,
                                                is_truth=True)
-    aggregated_preds = _aggregate_predictions(preds=preds,
+    aggregated_preds = aggregate_predictions(preds=preds,
                                               clip_labels=clip_labels,
                                               multi_label=multi_label,
                                               is_truth=False)
-    clip_level_accuracy = compute_accuracy_score(aggregated_labels,
+    clip_level_accuracy = _compute_accuracy_score(aggregated_labels,
                                                  aggregated_preds,
                                                  is_multilabel=multi_label)
     # Print metrics & log in MLFlow
@@ -272,8 +271,8 @@ def evaluate_tflite_quantized_model(cfg: DictConfig = None,
         # plot_multilabel_confusion_matrices(patch_level_cms)
         # plot_multilabel_confusion_matrices(clip_level_cms)
     else:
-        patch_level_cm = compute_confusion_matrix(patch_labels, preds)
-        clip_level_cm = compute_confusion_matrix(aggregated_labels, aggregated_preds)
+        patch_level_cm = compute_confusion_matrix2(patch_labels, preds)
+        clip_level_cm = compute_confusion_matrix2(aggregated_labels, aggregated_preds)
 
         patch_level_title = ("Quantized model patch-level confusion matrix \n"
                              f"On dataset : {name_ds} \n"
@@ -339,22 +338,22 @@ def evaluate_h5_model(model_path: str = None, eval_ds: tf.data.Dataset = None,
         pass
 
     # Compute patch-level accuracy
-    patch_level_accuracy = compute_accuracy_score(patch_labels,
+    patch_level_accuracy = _compute_accuracy_score(patch_labels,
                                                   preds,
                                                   is_multilabel=multi_label)
 
     # Compute clip-level accuracy
     # Aggregate clip-level labels
     if clip_labels is not None:
-        aggregated_labels = _aggregate_predictions(preds=patch_labels,
+        aggregated_labels = aggregate_predictions(preds=patch_labels,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=True)
-        aggregated_preds = _aggregate_predictions(preds=preds,
+        aggregated_preds = aggregate_predictions(preds=preds,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=False)
-        clip_level_accuracy = compute_accuracy_score(aggregated_labels,
+        clip_level_accuracy = _compute_accuracy_score(aggregated_labels,
                                                     aggregated_preds,
                                                     is_multilabel=multi_label)
     # Print metrics & log in MLFlow
@@ -385,13 +384,13 @@ def evaluate_h5_model(model_path: str = None, eval_ds: tf.data.Dataset = None,
         # plot_multilabel_confusion_matrices(patch_level_cms)
         # plot_multilabel_confusion_matrices(clip_level_cms)
     else:
-        patch_level_cm = compute_confusion_matrix(patch_labels, preds)
+        patch_level_cm = compute_confusion_matrix2(patch_labels, preds)
 
         patch_level_title = (f"Float model patch-level confusion matrix \n"
                              f"On dataset : {name_ds} \n"
                              f"Float model patch-level accuracy : { patch_level_accuracy}")
         if clip_labels is not None:
-            clip_level_cm = compute_confusion_matrix(aggregated_labels, aggregated_preds)
+            clip_level_cm = compute_confusion_matrix2(aggregated_labels, aggregated_preds)
             clip_level_title = (f"Float model clip-level confusion matrix \n"
                                 f"On dataset : {name_ds} \n"
                                 f"Float model clip-level accuracy : {clip_level_accuracy}")
@@ -411,7 +410,7 @@ def evaluate_h5_model(model_path: str = None, eval_ds: tf.data.Dataset = None,
     else:
         return patch_level_accuracy, None
     
-def evaluate_onnx_model_aed(input_samples:np.ndarray,
+def _evaluate_onnx_model_aed(input_samples:np.ndarray,
                             patch_labels:np.ndarray,
                             clip_labels:np.ndarray,
                             input_model_path:str,
@@ -438,7 +437,7 @@ def evaluate_onnx_model_aed(input_samples:np.ndarray,
             Is None if clip_labels is None.
     """
     # fixing the opset of the input model
-    sanitize_onnx_opset_imports(onnx_model_path = input_model_path,
+    _sanitize_onnx_opset_imports(onnx_model_path = input_model_path,
                                 target_opset = 17)
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
@@ -457,22 +456,22 @@ def evaluate_onnx_model_aed(input_samples:np.ndarray,
     # Convert patch labels and preds from one-hot to integer labels
     # We still need to keep the one-hot labels for aggregation
 
-    patch_level_accuracy = round(compute_accuracy_score(patch_labels, preds) * 100, 2)
+    patch_level_accuracy = round(_compute_accuracy_score(patch_labels, preds) * 100, 2)
     print(f'[INFO] : {model_type} patch-level evaluation accuracy: {patch_level_accuracy} %')
 
     if clip_labels is not None:
         # Compute clip-level accuracy
         # Aggregate clip-level labels
-        aggregated_labels = _aggregate_predictions(preds=patch_labels,
+        aggregated_labels = aggregate_predictions(preds=patch_labels,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=True)
-        aggregated_preds = _aggregate_predictions(preds=preds,
+        aggregated_preds = aggregate_predictions(preds=preds,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=False)
 
-        clip_level_accuracy = round(compute_accuracy_score(aggregated_labels, aggregated_preds) * 100, 2)
+        clip_level_accuracy = round(_compute_accuracy_score(aggregated_labels, aggregated_preds) * 100, 2)
         print(f'[INFO] : {model_type} clip-level evaluation accuracy: {clip_level_accuracy} %')
 
     if not os.path.exists("outputs"):
@@ -489,9 +488,9 @@ def evaluate_onnx_model_aed(input_samples:np.ndarray,
         acc_metric_name = f"quant_clip_acc_{name_ds}" if model_is_quantized(input_model_path) else f"clip_float_acc_{name_ds}"
         mlflow.log_metric(acc_metric_name, clip_level_accuracy)
 
-    patch_level_cm = compute_confusion_matrix(patch_labels, preds)
+    patch_level_cm = compute_confusion_matrix2(patch_labels, preds)
     if clip_labels is not None:
-        clip_level_cm = compute_confusion_matrix(aggregated_labels, aggregated_preds)
+        clip_level_cm = compute_confusion_matrix2(aggregated_labels, aggregated_preds)
     
 
     patch_level_title = (f"{model_type} patch-level confusion matrix \n"
@@ -558,22 +557,22 @@ def _evaluate_stairunner(input_samples:np.ndarray,
     # Convert patch labels and preds from one-hot to integer labels
     # We still need to keep the one-hot labels for aggregation
 
-    patch_level_accuracy = round(compute_accuracy_score(patch_labels, preds) * 100, 2)
+    patch_level_accuracy = round(_compute_accuracy_score(patch_labels, preds) * 100, 2)
     print(f'[INFO] : {model_name} patch-level evaluation accuracy on target {target}: {patch_level_accuracy} %')
 
     if clip_labels is not None:
         # Compute clip-level accuracy
         # Aggregate clip-level labels
-        aggregated_labels = _aggregate_predictions(preds=patch_labels,
+        aggregated_labels = aggregate_predictions(preds=patch_labels,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=True)
-        aggregated_preds = _aggregate_predictions(preds=preds,
+        aggregated_preds = aggregate_predictions(preds=preds,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=False)
 
-        clip_level_accuracy = round(compute_accuracy_score(aggregated_labels, aggregated_preds) * 100, 2)
+        clip_level_accuracy = round(_compute_accuracy_score(aggregated_labels, aggregated_preds) * 100, 2)
         print(f'[INFO] : {model_name} clip-level evaluation accuracy on target {target}: {clip_level_accuracy} %')
 
     if not os.path.exists("outputs"):
@@ -590,9 +589,9 @@ def _evaluate_stairunner(input_samples:np.ndarray,
         acc_metric_name = f"{target}_clip_int_acc_{name_ds}"
         mlflow.log_metric(acc_metric_name, clip_level_accuracy)
 
-    patch_level_cm = compute_confusion_matrix(patch_labels, preds)
+    patch_level_cm = compute_confusion_matrix2(patch_labels, preds)
     if clip_labels is not None:
-        clip_level_cm = compute_confusion_matrix(aggregated_labels, aggregated_preds)
+        clip_level_cm = compute_confusion_matrix2(aggregated_labels, aggregated_preds)
     
 
     patch_level_title = (f"{model_name} patch-level confusion matrix \n"
@@ -672,7 +671,7 @@ def evaluate(cfg: DictConfig = None, eval_ds: tf.data.Dataset = None,
             file_extension = Path(model_path).suffix
             if file_extension == '.tflite':
                 # Evaluate quantized TensorFlow Lite model
-                evaluate_tflite_quantized_model(cfg=cfg, 
+                _evaluate_tflite_quantized_model(cfg=cfg, 
                                                 quantized_model_path=model_path,
                                                 eval_ds=eval_ds,
                                                 batch_size=batch_size,
@@ -697,7 +696,7 @@ def evaluate(cfg: DictConfig = None, eval_ds: tf.data.Dataset = None,
                                 multi_label=multi_label)
             elif file_extension == '.onnx':
                 data, labels = tf_dataset_to_np_array(eval_ds, nchw=False)
-                evaluate_onnx_model_aed(input_samples=data,
+                _evaluate_onnx_model_aed(input_samples=data,
                                         patch_labels=labels,
                                         clip_labels=clip_labels,
                                         input_model_path=model_path,

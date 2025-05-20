@@ -26,7 +26,7 @@ from . import stm32msg_pb2 as stm32msg
 from .stm_ai_utils import stm_ai_node_type_to_str, AiBufferFormat, IOTensor
 from .stm_ai_utils import RT_ST_AI_NAME, st_neural_art_node_type_to_str
 from .tflm_utils import tflm_node_type_to_str
-from .utils import set_log_level
+from .utils import set_log_level, get_log_level
 
 
 __version__ = '2.0'
@@ -57,6 +57,11 @@ class AiRunTimeDecoder():
     def __init__(self, rt_id: int = 0, name: str = 'undefined'):
         self._rt_id: int = rt_id
         self._name: str = name
+        self._config = {}
+
+    def set_rt_id(self, rt_id: int):
+        """set the full runtime id"""  # noqa: DAR101,DAR201,DAR401
+        self._rt_id = rt_id
 
     @property
     def compiler_id(self):
@@ -88,21 +93,23 @@ class AiRunTimeDecoder():
         if self.api_id & stm32msg.AI_RT_API_ST_AI:
             msg_ = 'st-ai'
         if self.api_id & stm32msg.AI_RT_API_RELOC:
-            msg_ = '+reloc'
+            msg_ += '+reloc'
         if self.api_id & stm32msg.AI_RT_API_LITE:
             msg_ = '+lite'
         return msg_
 
-    def set_rt_id(self, rt_id: int):
-        """set the full runtime id"""  # noqa: DAR101,DAR201,DAR401
-        self._rt_id = rt_id
+    @property
+    def name(self):
+        """return name fo the RT decoder"""
+        # noqa: DAR101,DAR201,DAR401
+        return f'{self._name} ({self.api_desc} api)'
 
     def has_params(self):
         """Indicates if the size of the params is provided"""  # noqa: DAR101,DAR201,DAR401
         return self.extra & 2 == 0
 
     def has_activations(self):
-        """Indicates if the size of the params is provided"""  # noqa: DAR101,DAR201,DAR401
+        """Indicates if the size of the activations is provided"""  # noqa: DAR101,DAR201,DAR401
         return self.extra & 1 == 0
 
     def has_macc(self):
@@ -178,11 +185,17 @@ class AiRunTimeDecoder():
         desc_, build_, ver_ = self._extract_runtime_desc(rt_desc, rt_ver)
         return f'v{ver_}{build_} compiled with {desc_} ({compiler_})'
 
-    @property
-    def name(self):
-        """return name fo the RT decoder"""
-        # noqa: DAR101,DAR201,DAR401
-        return f'{self._name} ({self.api_desc} api)'
+    def build_option_parameter(self, user_options: int = 0, sample_idx: int = -1):
+        """Build the 'option' parameter (run command, default)"""
+        param_option = 1 if (sample_idx >= 0 and sample_idx == 0) else 0
+        param_option |= (user_options << 8)
+        return param_option
+
+    def __str__(self) -> str:
+        """."""
+        desc_ = f'RT_DECODER: {self.name}, id=0x{self._rt_id:x}, compiler={_tools_desc(self.compiler_id)}'
+        desc_ += f', act={self.has_activations()}, params={self.has_params()}, macc={self.has_macc()}'
+        return desc_
 
 
 class AiRtStmAiDecoder(AiRunTimeDecoder):
@@ -232,7 +245,13 @@ class AiRtSTNeuralARTDecoder(AiRunTimeDecoder):
         return f'aton_tens_n_{node_idx}_{tens_idx}'
 
     def default_name_node(self, _, m_id):
-        return f'EpochBlock_{m_id & 0xFFFF}'  # ({m_id >> 16})'
+        num_ = m_id & 0xFFFF
+        num_last_ = m_id >> 16
+        if num_last_ & 0x8000:
+            return f'EpochBlock_{num_} ({0xFFFF - num_last_ + 1})'
+        if num_ != num_last_:
+            return f'EpochBlock_{num_} -> {num_last_}'
+        return f'EpochBlock_{num_}'
 
     def m_id(self, _):
         return '-'  # '{}.{}'.format(m_id & 0xFFFF, m_id >> 16)
@@ -285,8 +304,10 @@ def op_msg_to_str(op_msg, rt_decoder):
     msg_fmt_ = ' name="{}" counters=\"{}\"{} dur={:.3f}ms id={}.{} type={}'
     counter_type_ = rt_decoder.counter_desc(op_msg.counter_type)
     counters_ = rt_decoder.counter_decode(op_msg.counter_type, op_msg.counters)
+    sub_id = op_msg.id >> 16
+    sub_id = -(0xFFFF - sub_id + 1) if sub_id & 0x8000 else sub_id
     return msg_fmt_.format(op_msg.name, counter_type_, counters_,
-                           op_msg.duration, op_msg.id & 0xFFFF, op_msg.id >> 16,
+                           op_msg.duration, op_msg.id & 0xFFFF, sub_id,  # op_msg.id >> 16,
                            op_type_to_str(op_msg.type, rt_decoder))
 
 
@@ -299,51 +320,58 @@ def _get_rt_decoder(rt_id: int) -> AiRunTimeDecoder:
 
 class DeviceDecoder():
     """Default decoder for generic device"""
-    def __init__(self, sys_info_msg, itf_msg_ver):
+    def __init__(self, sys_info_msg):
         self._sys_info_msg = sys_info_msg
-        self._itf_msg_ver = itf_msg_ver
+        self._config = {}
+        self._s_msgs = []
+
+    def _is_stellar_family(self):
+        """."""
+        return self.get_dev_id() == 0x2511 or self.get_dev_id() == 0x2643
+
+    def _is_stm32_n6(self):
+        """."""
+        return self.get_dev_id() == 0x486
 
     def family(self) -> str:
         """Return family description"""  # noqa: DAR101,DAR201,DAR401
-        return 'undefined'
+        return 'stellar' if self._is_stellar_family() else 'stm32'
 
     def get_dev_id(self) -> int:
         """Return device ID value"""  # noqa: DAR101,DAR201,DAR401
-        return 0
+        return self._sys_info_msg.devid
+
+    def get_sys_clk(self) -> int:
+        """Return sys/mcu clock value (Hertz)"""  # noqa: DAR101,DAR201,DAR401
+        return self._sys_info_msg.sclock
+
+    def get_bus_clk(self) -> int:
+        """Return main bus clock value (Hertz)"""  # noqa: DAR101,DAR201,DAR401
+        return self._sys_info_msg.hclock
 
     def get_dev_id_str(self) -> str:
         """Return short desc of the associated device ID"""  # noqa: DAR101,DAR201,DAR401
-        return 'unknow'
+        return stm32_id_to_str(self.get_dev_id())
 
     def get_attrs(self) -> List[str]:
         """Return the device settings"""  # noqa: DAR101,DAR201,DAR401
-        return []
+        attrs_ = stm32_attr_config(self._sys_info_msg.cache)
+        if self._is_stm32_n6() and self._config:
+            npu_cache = int(self._config.get('npu_cache', '0'))
+            attrs_.append(f'npu_cache={npu_cache}')
+            for key, val in self._config.items():
+                if 'freq' in key:
+                    attrs_.append(f'{key}={int(int(val) / 1000000)}MHz')
+        elif self._is_stm32_n6() and hasattr(self._sys_info_msg, 'extra'):
+            attrs_.append(f'npu_freq={int(self._sys_info_msg.extra[1] / 1000000)}MHz')
+            attrs_.append(f'nic_freq={int(self._sys_info_msg.extra[2] / 1000000)}MHz')
+        return attrs_
 
     def get_runtime_mode(self) -> str:
         """Return a short description of the used run-time"""  # noqa: DAR101,DAR201,DAR401
         return "bare-metal"
 
     def get_desc(self) -> str:
-        """Return short description of the device"""  # noqa: DAR101,DAR201,DAR401
-        return ''
-
-
-class StellarDeviceDecoder(DeviceDecoder):
-    """Device decoder for STELLAR series"""
-
-    def family(self) -> str:
-        """Return family description"""  # noqa: DAR101,DAR201,DAR401
-        return 'stellar'
-
-    def get_dev_id(self) -> int:
-        """Return device ID value"""  # noqa: DAR101,DAR201,DAR401
-        return self._sys_info_msg.devid
-
-    def get_dev_id_str(self) -> str:
-        """Return short desc of the associated device ID"""  # noqa: DAR101,DAR201,DAR401
-        return stm32_id_to_str(self._sys_info_msg.devid)
-
-    def get_desc(self) -> str:
         """Return short description of the device settings"""  # noqa: DAR101,DAR201,DAR401
         desc_ = self.family() + ' family - '
         desc_ += stm32_id_to_str(self._sys_info_msg.devid)
@@ -351,50 +379,29 @@ class StellarDeviceDecoder(DeviceDecoder):
         desc_ += f'{self._sys_info_msg.hclock / 1000000:.0f}MHz'
         return desc_
 
-    def get_attrs(self) -> List[str]:
-        """Return the device settings"""  # noqa: DAR101,DAR201,DAR401
-        attrs_ = stm32_attr_config(self._sys_info_msg.cache)
-        return attrs_
+    def set_device_extra(self, s_msgs: List[str]):
+        """Save the config info from the 's:' message"""
+        self._s_msgs = [msg_.replace('s:config:','') for msg_ in s_msgs]
+        self._s_msgs.append(f'dev_family:{self.family()}')
+        self._s_msgs.append(f'dev_desc:{stm32_id_to_str(self.get_dev_id())}')
+        for s_msg_ in s_msgs:
+            tokens_ = s_msg_.split(':')
+            if len(tokens_) > 3 and tokens_[0] == 's' and tokens_[1] == 'config':
+                self._config[tokens_[2]] = ':'.join(tokens_[3:])
 
+    def get_device_extra(self):
+        """Return device config ('s:' message format)"""
+        return self._s_msgs
 
-class Stm32DeviceDecoder(DeviceDecoder):
-    """Device decoder for STM32 series"""
-
-    def family(self) -> str:
-        """Return family description"""  # noqa: DAR101,DAR201,DAR401
-        return 'stm32'
-
-    def get_dev_id(self) -> int:
-        """Return device ID value"""  # noqa: DAR101,DAR201,DAR401
-        return self._sys_info_msg.devid
-
-    def get_dev_id_str(self) -> str:
-        """Return short desc of the associated device ID"""  # noqa: DAR101,DAR201,DAR401
-        return stm32_id_to_str(self._sys_info_msg.devid)
-
-    def get_desc(self) -> str:
-        """Return short description of the device settings"""  # noqa: DAR101,DAR201,DAR401
-        desc_ = self.family() + ' family - '
-        desc_ += stm32_id_to_str(self._sys_info_msg.devid)
-        desc_ += f' @{self._sys_info_msg.sclock / 1000000:.0f}/'
-        desc_ += f'{self._sys_info_msg.hclock / 1000000:.0f}MHz'
+    def __str__(self) -> str:
+        """."""
+        desc_ = f'DEV_DECODER: {self.get_desc()}, {self.get_attrs()}'
         return desc_
 
-    def get_attrs(self) -> List[str]:
-        """Return the device settings"""  # noqa: DAR101,DAR201,DAR401
-        attrs_ = stm32_attr_config(self._sys_info_msg.cache)
-        if self.get_dev_id() == 0x486 and hasattr(self._sys_info_msg, 'extra'):
-            attrs_.append(f'npu_freq={int(self._sys_info_msg.extra[1] / 1000000)}mhz')
-            attrs_.append(f'nic_freq={int(self._sys_info_msg.extra[2] / 1000000)}mhz')
-        return attrs_
 
-
-def _get_device_decoder(sys_info_msg, itf_msg_ver):
+def _get_device_decoder(sys_info_msg):
     """Return DEVICE decoder object for a given Device ID"""  # noqa: DAR101,DAR201,DAR401
-
-    if sys_info_msg.devid == 0x2511 or sys_info_msg.devid == 0x2643:  # STELLAR devices family
-        return StellarDeviceDecoder(sys_info_msg, itf_msg_ver)
-    return Stm32DeviceDecoder(sys_info_msg, itf_msg_ver)
+    return DeviceDecoder(sys_info_msg)
 
 
 def _get_shape_from_msg(msg):
@@ -547,19 +554,22 @@ class AiPbMsg(AiRunnerDriver):
         self._sys_info = None  # cache for sys info message
         super(AiPbMsg, self).__init__(parent)
         self._io_drv.set_parent(self)
-        msg_ = f'creating {self._io_drv.__class__.__name__} object'
+        msg_ = f'creating {self} (v{__version__})'
         self._logger.debug(msg_)
-        self._target_logger = self._logger
+        msg_ = f'creating {self._io_drv}'
+        self._logger.debug(msg_)
+        self._target_msg: List[str] = []  # used to store the 's:' from target
 
     @property
     def is_connected(self):
         return self._io_drv.is_connected
 
     def connect(self, desc=None, **kwargs):
-        """Connect to the stm.ai run-time"""  # noqa: DAR101,DAR201,DAR401
+        """Connect to the st.ai run-time"""  # noqa: DAR101,DAR201,DAR401
         if self._io_drv.is_connected:
+            self._logger.debug("driver is already connected..")
             return False
-        return self._io_drv.connect(desc, **kwargs)
+        return self._io_drv.connect(desc, logger=self._logger, **kwargs)
 
     @property
     def capabilities(self):
@@ -589,6 +599,14 @@ class AiPbMsg(AiRunnerDriver):
         msg_ver_ = f'{stm32msg.P_VERSION_MAJOR}.{stm32msg.P_VERSION_MINOR}'
         io_drv_ = self._io_drv.short_desc(False)
         return f'Proto-buffer driver v{__version__} (msg v{msg_ver_}) ({io_drv_})'
+
+    def _log_msg(self, msg_, desc_):
+        """Helper fct to log a PB msg"""
+
+        self._logger.debug('-> [%s msg]', desc_)
+        for line_ in str(msg_).splitlines():
+            self._logger.debug(line_)
+        self._logger.debug('<- [%s msg]', desc_)
 
     def _waiting_io_ack(self, timeout):
         """Wait a ack"""  # noqa: DAR101,DAR201,DAR401
@@ -706,19 +724,21 @@ class AiPbMsg(AiRunnerDriver):
         """Process a log message from a device"""  # noqa: DAR101,DAR201,DAR401
         if resp.WhichOneof('payload') == 'log':
             self._send_ack()
-            cur_lvl = self._target_logger.getEffectiveLevel()
-            if cur_lvl > logging.INFO:
-                set_log_level(logging.INFO, self._target_logger)
-            msg = '[TARGET:{}] {}'.format(resp.log.level, resp.log.str)
-            if int(resp.log.level) < 2:
-                self._target_logger.info(msg)
-            elif int(resp.log.level) == 2:
-                self._target_logger.debug(msg)
-            elif int(resp.log.level) == 3:
-                self._target_logger.warning(msg)
+            cur_lvl = get_log_level(self._logger)
+            msg_lvl = int(resp.log.level)
+            if resp.log.str.startswith('s:'):
+                self._target_msg.append(resp.log.str)
+            if resp.log.str.startswith('s:') and cur_lvl > logging.DEBUG:
+                msg_lvl = 2
+            msg = f'[TARGET:{resp.log.level}] {resp.log.str}'
+            if msg_lvl < 2:
+                self._logger.info(msg)
+            elif msg_lvl == 2:
+                self._logger.debug(msg)
+            elif msg_lvl == 3:
+                self._logger.warning(msg)
             else:
-                self._target_logger.error(msg)
-            set_log_level(cur_lvl, self._target_logger)
+                self._logger.error(msg)
             return True
         return False
 
@@ -801,14 +821,20 @@ class AiPbMsg(AiRunnerDriver):
                                     state=stm32msg.S_PROCESSING)
         return resp
 
+    def _get_protocol_version(self):
+        """Return tuple with PB protocol version"""
+        if self._sync is None:
+            return 0, 0
+        return self._sync.version >> 8, self._sync.version & 0xFF
+
     def _protocol_is_supported(self):
         """Indicate if the protocol version is supported"""  # noqa: DAR101,DAR201,DAR401
-        major, minor = self._sync.version >> 8, self._sync.version & 0xFF
+        major, minor = self._get_protocol_version()
         if major == stm32msg.P_VERSION_MAJOR and minor <= stm32msg.P_VERSION_MINOR:
             return True
-        msg = 'COM Protocol is not supported by the driver: {}.{}'.format(major, minor)
-        msg += ' instead {}.[1,{}]'.format(stm32msg.P_VERSION_MAJOR, stm32msg.P_VERSION_MINOR)
-        raise HwIOError(msg)
+        err_msg = f'COM Protocol is not supported: {major}.{minor},'
+        err_msg += f' expected {stm32msg.P_VERSION_MAJOR}.{stm32msg.P_VERSION_MINOR}'
+        raise HwIOError(err_msg)
 
     def _send_data(self, data, buffertype=0, addr=0, is_last=False, state=None):
         """Send a data to the device and wait an ack"""  # noqa: DAR101,DAR201,DAR401
@@ -821,8 +847,8 @@ class AiPbMsg(AiRunnerDriver):
             datas = data
 
         if not isinstance(datas, (bytearray, bytes)):
-            msg = 'Invalid data type: {} instead bytes'.format(type(datas))
-            raise HwIOError(msg)
+            err_msg = f'Invalid data type: {type(datas)} instead bytes'
+            raise HwIOError(err_msg)
 
         data_msg = stm32msg.aiDataMsg()
         data_msg.addr = addr  # pylint: disable=no-member
@@ -860,38 +886,35 @@ class AiPbMsg(AiRunnerDriver):
         """"Indicate if the connection is always alive"""  # noqa: DAR101,DAR201,DAR401
         try:
             self._sync = self._cmd_sync(timeout)
-            self._logger.debug('CMD_SYS_INFO v{}.{}'.format(self._sync.version >> 8, self._sync.version & 0xFF))
+            self._log_msg(self._sync, 'sync')
+            pb_vers_ = self._get_protocol_version()
+            self._logger.debug('CMD_SYNC v%s.%s', pb_vers_[0], pb_vers_[1])
         except (AiRunnerError, TimeoutError) as exc_:
             self._logger.debug('is_alive() %s', str(exc_))
             return False
         return self._protocol_is_supported()
 
-    def _to_device(self):
+    def _to_device(self, dev_decoder):
         """Return a dict with the device settings"""  # noqa: DAR101,DAR201,DAR401
-        if self._sys_info is None:
-            self._sys_info = self._cmd_sys_info(timeout=500)
-
-        dev_decoder = _get_device_decoder(self._sys_info,
-                                          (self._sync.version >> 8, self._sync.version & 0xFF))
         return {
             'dev_type': dev_decoder.family(),
             'desc': dev_decoder.get_desc(),
-            'dev_id': dev_decoder.get_dev_id_str(),
-            'system': 'no-os',
-            'sys_clock': self._sys_info.sclock,
-            'bus_clock': self._sys_info.hclock,
+            'dev_id': dev_decoder.get_dev_id(),
+            'system': dev_decoder.get_runtime_mode(),
+            'sys_clock': dev_decoder.get_sys_clk(),
+            'bus_clock': dev_decoder.get_bus_clk(),
             'attrs': dev_decoder.get_attrs(),
+            'extra': dev_decoder.get_device_extra()
         }
 
-    def _to_runtime(self, model_info):
+    def _to_runtime(self, model_info, rt_decoder):
         """Return a dict with the runtime attributes"""  # noqa: DAR101,DAR201,DAR401
-        rt_decoder_ = _get_rt_decoder(model_info.rtid)
         return {
             'protocol': self.short_desc(),
-            'name': rt_decoder_.name,
-            'rt_lib_desc': rt_decoder_.runtime_desc(model_info.runtime_desc,
-                                                    model_info.runtime_version),
-            'compiler': _tools_desc(rt_decoder_.compiler_id),
+            'name': rt_decoder.name,
+            'rt_lib_desc': rt_decoder.runtime_desc(model_info.runtime_desc,
+                                                   model_info.runtime_version),
+            'compiler': _tools_desc(rt_decoder.compiler_id),
             'version': _to_version(model_info.runtime_version),
             'capabilities': self.capabilities,
             'tools_version': _to_version(model_info.tool_version),
@@ -900,7 +923,8 @@ class AiPbMsg(AiRunnerDriver):
     def _model_to_dict(self, model):
         """Return a dict with the network info"""  # noqa: DAR101,DAR201,DAR401
         model_info = model['info']
-        rt_decoder_ = _get_rt_decoder(model_info.rtid)
+        rt_decoder_ =  model['rt_decoder']
+        dev_decoder_ = model['dev_decoder']
         params_size_ = sum([p.size for p in model_info.params])
         acts_size_ = sum([p.size for p in model_info.activations])
         return {
@@ -918,13 +942,13 @@ class AiPbMsg(AiRunnerDriver):
                 'params': _get_model_io_desc(model['tens_params']),
                 'activations': _get_model_io_desc(model['tens_activations'])
             },
-            'macc': model_info.n_macc if rt_decoder_.has_macc() else 0,
-            'runtime': self._to_runtime(model_info),
-            'device': self._to_device(),
+            'macc': model_info.n_macc if rt_decoder_.has_macc() else None,
+            'runtime': self._to_runtime(model_info, rt_decoder_),
+            'device': self._to_device(dev_decoder_),
         }
 
     def get_info(self, c_name=None):
-        """Return a dict with the network info of the given model"""  # noqa: DAR101,DAR201,DAR401
+        """Return a dict with the network info of a given model"""  # noqa: DAR101,DAR201,DAR401
         if not self._models:
             return dict()
         if c_name is None or c_name not in self._models:  # .keys():
@@ -935,7 +959,7 @@ class AiPbMsg(AiRunnerDriver):
             model['cache_info'] = self._model_to_dict(model)
         return model['cache_info']
 
-    def _register_model(self, model_info):
+    def _register_model(self, model_info_msg):
         """Register a new model"""  # noqa: DAR101,DAR201,DAR401
         def _build_io_tensor_list(info_io, prefix, ptag):
             items = []
@@ -943,15 +967,21 @@ class AiPbMsg(AiRunnerDriver):
                 tag = f'{ptag}.{idx}'
                 items.append(_tensor_to_io_tensor(desc, f'{prefix}_{idx + 1}', tag))
             return items
-        self._models[model_info.name] = {
-            'info': model_info,
-            'tens_inputs': _build_io_tensor_list(model_info.inputs, 'input', 'I'),
-            'tens_outputs': _build_io_tensor_list(model_info.outputs, 'output', 'O'),
-            'tens_activations': _build_io_tensor_list(model_info.activations, 'act', 'A'),
-            'tens_params': _build_io_tensor_list(model_info.params, 'param', 'W'),
-            'decoder': _get_rt_decoder(model_info.rtid),
+        rt_decoder_ = _get_rt_decoder(model_info_msg.rtid)
+        dev_decoder_ = _get_device_decoder(self._sys_info)
+        dev_decoder_.set_device_extra(self._target_msg)
+        self._logger.debug(str(rt_decoder_))
+        self._logger.debug(str(dev_decoder_))
+        self._models[model_info_msg.name] = {
+            'info': model_info_msg,
+            'tens_inputs': _build_io_tensor_list(model_info_msg.inputs, 'input', 'I'),
+            'tens_outputs': _build_io_tensor_list(model_info_msg.outputs, 'output', 'O'),
+            'tens_activations': _build_io_tensor_list(model_info_msg.activations, 'act', 'A'),
+            'tens_params': _build_io_tensor_list(model_info_msg.params, 'param', 'W'),
+            'rt_decoder': rt_decoder_,
+            'dev_decoder': dev_decoder_,
         }
-        return model_info.name
+        return model_info_msg.name
 
     def discover(self, flush=False):
         """Build the list of the available model"""  # noqa: DAR101,DAR201,DAR401
@@ -961,12 +991,18 @@ class AiPbMsg(AiRunnerDriver):
             return list(self._models.keys())
         param, cont = 0, True
 
+        if self._sys_info is None:
+            self._sys_info = self._cmd_sys_info(timeout=500)
+        self._log_msg(self._sys_info, 'sys_info')
+
         while cont:
+            self._target_msg = []  # reset buffer to store the 's:' message from target
             n_info = self._cmd_model_info(timeout=5000, param=param)
-            self._logger.debug(n_info)
+            if n_info is not None:
+                self._log_msg(n_info, 'model_info')
             if n_info is not None:
                 name = self._register_model(n_info)
-                msg = 'discover() found="{}"'.format(name)
+                msg = f'discover() found="{name}"'
                 self._logger.debug(msg)
                 param += 1
             else:
@@ -980,6 +1016,7 @@ class AiPbMsg(AiRunnerDriver):
         idx_node = 0
         duration = 0.0
         req_state = stm32msg.S_PROCESSING
+        self._target_msg = []
 
         while True:  # to iterate on the internal operators
             self._logger.debug('-' * 40)
@@ -993,7 +1030,8 @@ class AiPbMsg(AiRunnerDriver):
                 return resp
             # self._send_ack()
 
-            self._logger.debug(f'INTERNAL OPERATOR (idx={idx_node})')
+            node_name = cur_op.name if cur_op.name else rt_decoder.default_name_node(idx_node, cur_op.id)
+            self._logger.debug(f'INTERNAL OPERATOR (idx={idx_node}, name={node_name})')
             # self._logger.debug('{}'.format(cur_op))
             self._logger.debug(op_msg_to_str(cur_op, rt_decoder))
             counters_ = rt_decoder.counter_decode(cur_op.counter_type, resp.op.counters)
@@ -1033,6 +1071,7 @@ class AiPbMsg(AiRunnerDriver):
 
             if profiler:
                 duration += cur_op.duration
+                self._target_msg = [v_.replace('s:node:','') for v_ in self._target_msg]
                 if idx_node >= len(profiler['c_nodes']):
                     item = {
                         'name': cur_op.name if cur_op.name else rt_decoder.default_name_node(idx_node, cur_op.id),
@@ -1050,6 +1089,7 @@ class AiPbMsg(AiRunnerDriver):
                         'zero_point': zeropoints,
                         'io_tensors': io_tensors,
                         'data': features if features is not None else None,
+                        'extra': [self._target_msg]
                     }
                     profiler['c_nodes'].append(item)
                 else:
@@ -1058,6 +1098,8 @@ class AiPbMsg(AiRunnerDriver):
                     item['counters']['values'].append(counters_)
                     for idx, _ in enumerate(features):
                         item['data'][idx] = np.append(item['data'][idx], features[idx], axis=0)
+                    item['extra'].append(self._target_msg)
+                self._target_msg = []
 
             if callback:
                 callback.on_node_end(idx_node,
@@ -1086,15 +1128,17 @@ class AiPbMsg(AiRunnerDriver):
 
         name = kwargs.pop('name', None)
 
-        if name is None or name not in self._models.keys():
+        if name is None or name not in self._models:
             raise InvalidParamError('Invalid requested model name: ' + name)
 
         model = self._models[name]
 
+        rt_decoder = model['rt_decoder']
         profiler = kwargs.pop('profiler', None)
         mode = kwargs.pop('mode', AiRunner.Mode.IO_ONLY)
         callback = kwargs.pop('callback', None)
-        first_sample = kwargs.pop('first_sample', False)
+        sample_idx = kwargs.pop('sample_idx', -1)
+        option = kwargs.pop('option', 0)
 
         param = stm32msg.P_RUN_MODE_IO_ONLY
         if mode & AiRunner.Mode.PER_LAYER:
@@ -1112,18 +1156,19 @@ class AiPbMsg(AiRunnerDriver):
             param |= stm32msg.P_RUN_CONF_CONST_VALUE
             param &= ~stm32msg.P_RUN_MODE_PER_LAYER_WITH_DATA
 
-        opt = 1 if first_sample else 0
+        option = rt_decoder.build_option_parameter(option, sample_idx)
         direct_write_ = False
         if self._io_drv.write_memory(0, None) == 1:
             param |= stm32msg.P_RUN_CONF_DIRECT_WRITE
             direct_write_ = True
 
-        self._logger.debug(f'Requested RUN mode: {mode} (param={bin(param)}, opt={hex(opt)})')
+        self._logger.debug(f'-> Requested RUN mode: {mode} (param={bin(param)}, option={hex(option)})')
 
         s_outputs = []
+        self._target_msg = []
 
         # start a RUN task
-        self._cmd_run(timeout=1000, c_name=name, param=param, opt=opt)
+        self._cmd_run(timeout=1000, c_name=name, param=param, opt=option)
 
         # send the inputs
         for idx, input_ in enumerate(s_inputs):
@@ -1144,7 +1189,7 @@ class AiPbMsg(AiRunnerDriver):
                 self._send_input_buffer(input_, is_last=is_last)
 
         # receive the features
-        resp = self._receive_features(profiler, callback, model['decoder'])
+        resp = self._receive_features(profiler, callback, model['rt_decoder'])
 
         # receive final operation info (model)
         if resp is None:
@@ -1152,9 +1197,9 @@ class AiPbMsg(AiRunnerDriver):
             resp = self._waiting_answer(msg_type='op', timeout=50000, state=stm32msg.S_PROCESSING)
         # self._send_ack()
         self._logger.debug('INFERENCE DONE')
-        self._logger.debug(op_msg_to_str(resp.op, model['decoder']))
-        counter_type_ = model['decoder'].counter_desc(resp.op.counter_type)
-        counters_ = model['decoder'].counter_decode(resp.op.counter_type, resp.op.counters)
+        self._logger.debug(op_msg_to_str(resp.op, model['rt_decoder']))
+        counter_type_ = model['rt_decoder'].counter_desc(resp.op.counter_type)
+        counters_ = model['rt_decoder'].counter_decode(resp.op.counter_type, resp.op.counters)
 
         inference_dur = resp.op.duration
         if profiler:
@@ -1188,6 +1233,8 @@ class AiPbMsg(AiRunnerDriver):
                 profiler['c_durations'].append(inference_dur)
         else:
             dur = inference_dur
+
+        self._logger.debug(f'<- done (target dur={dur:.03f}ms)')
 
         return s_outputs, dur
 
@@ -1306,9 +1353,12 @@ class AiPbMsg(AiRunnerDriver):
             params = [params]
         timeout = kwargs.pop('timeout', 500)
 
+        self._logger.debug(f'<unit-test:{test_id}> params={params}')
+
         if test_id == 0:  # Send a sync request (~is_alive)
             while params[0]:
                 sync = self._cmd_sync(timeout)
+                self._log_msg(sync, f'sync ({params[0]})')
                 params[0] -= 1
             info = {
                 'version': '{}.{}'.format(sync.version >> 8, sync.version & 0xFF),
@@ -1321,8 +1371,9 @@ class AiPbMsg(AiRunnerDriver):
         if test_id == 1:  # send a sys info request
             while params[0]:
                 sys_info = self._cmd_sys_info(timeout)
+                self._log_msg(sys_info, f'sys_info ({params[0]})')
                 params[0] -= 1
-            return {'devid': hex(sys_info.devid), 'sclock': int(sys_info.sclock / 10000000)}
+            return {'devid': hex(sys_info.devid), 'sclock': int(sys_info.sclock)}
 
         if test_id == 10:  # send invalid CMD ID req
             self._send_request(stm32msg.CMD_TEST_UNSUPPORTED)
@@ -1332,6 +1383,7 @@ class AiPbMsg(AiRunnerDriver):
 
         if test_id == 20:  # Send a model info request
             info = self._cmd_model_info(timeout, param=params[0])
+            self._log_msg(info, f'info ({params[0]})')
             return info
 
         return False

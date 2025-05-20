@@ -15,22 +15,20 @@ from typing import Optional, List, Union
 import tensorflow as tf
 from omegaconf import DictConfig
 
+from common.utils import check_attribute_value, check_model_support, check_attributes
+from src.models import get_deeplab_v3, get_custom_model
 
-from models_utils import transfer_pretrained_weights, check_attribute_value, check_model_support
-from cfg_utils import check_attributes
-from deeplabv3 import get_deeplab_v3
-from custom_model import get_custom_model
 
 def ai_runner_invoke(image_processed,ai_runner_interpreter):
     preds, _ = ai_runner_interpreter.invoke(image_processed)
     return preds
 
-def check_backbone(cfg: DictConfig = None, section: str = None, message: str = None):
+def _check_backbone(cfg: DictConfig = None, section: str = None, message: str = None):
     """
     Checks the attributes and pretrained weights of backbone models (mobilenet or resnet).
 
     """
-    def check_pretrained_weights(cfg, message):
+    def _check_pretrained_weights(cfg, message):
         if cfg.pretrained_weights and cfg.pretrained_model_path:
             raise ValueError("\nThe `pretrained_weights` and `pretrained_model_path` attributes "
                              "are mutually exclusive.{}".format(message))
@@ -43,12 +41,12 @@ def check_backbone(cfg: DictConfig = None, section: str = None, message: str = N
     if cfg.name == 'mobilenet':
         check_attributes(cfg, expected=["name", "version", "alpha", "input_shape", "output_stride"],
                          optional=["pretrained_weights", "pretrained_model_path", "aspp"], section=section)
-        check_pretrained_weights(cfg, message)
+        _check_pretrained_weights(cfg, message)
         
     elif cfg.name == 'resnet50':
         check_attributes(cfg, expected=["name", "version", "input_shape", "output_stride"],
                          optional=["pretrained_weights", "pretrained_model_path", "aspp"], section=section)
-        check_pretrained_weights(cfg, message)
+        _check_pretrained_weights(cfg, message)
 
 
 def get_model(cfg: DictConfig = None) -> tf.keras.Model:
@@ -91,7 +89,7 @@ def get_model(cfg: DictConfig = None) -> tf.keras.Model:
     if model_type == 'deeplab_v3':
         if backbone_model == "mobilenet" and backbone_version == "v2" or backbone_model == "resnet50" and backbone_version == 'v1':
             section = "training.model"
-            check_backbone(cfg.training.model, section=section, message=message)
+            _check_backbone(cfg.training.model, section=section, message=message)
             if aspp_version in  ["v1", "v2"]: 
                 model = get_deeplab_v3(input_shape=input_shape, backbone=backbone_model, version=backbone_version,
                                    alpha=backbone_model_alpha, dropout=dropout_rate,pretrained_weights=backbone_model_pretrained_weights, 

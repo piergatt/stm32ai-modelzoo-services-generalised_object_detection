@@ -9,7 +9,7 @@
 import tensorflow as tf
 
 
-def focal_loss(y_true: tf.Tensor, y_pred: tf.Tensor, alpha: float = 0.25, gamma: float = 2) -> tf.Tensor:
+def _focal_loss(y_true: tf.Tensor, y_pred: tf.Tensor, alpha: float = 0.25, gamma: float = 2) -> tf.Tensor:
     """
     Calculate the focal loss
 
@@ -20,7 +20,7 @@ def focal_loss(y_true: tf.Tensor, y_pred: tf.Tensor, alpha: float = 0.25, gamma:
         gamma: Focal loss focusing parameter, a scalar number
 
     Returns:
-        focal_loss: Focal loss, tensor of shape (?, #boxes)
+        _focal_loss: Focal loss, tensor of shape (?, #boxes)
     """
     
     # Normalize the predicted logits
@@ -40,7 +40,7 @@ def focal_loss(y_true: tf.Tensor, y_pred: tf.Tensor, alpha: float = 0.25, gamma:
     return tf.math.reduce_sum(loss, axis=-1)
 
 
-def smooth_l1_loss(y_true: tf.Tensor, y_pred: tf.Tensor, sigma: float = 0.5) -> tf.Tensor:
+def _smooth_l1_loss(y_true: tf.Tensor, y_pred: tf.Tensor, sigma: float = 0.5) -> tf.Tensor:
     """
     Compute smooth L1 loss.
 
@@ -82,11 +82,11 @@ def ssd_focal_loss(y_true, y_pred) -> tf.Tensor:
     n_boxes = tf.shape(y_pred)[1]
 
     # Compute the focal loss for the classification task
-    classification_loss = tf.cast(focal_loss(
+    classification_loss = tf.cast(_focal_loss(
         y_true[:, :, :-8], y_pred[:, :, :-8], alpha=alpha_fl, gamma=gamma_fl), dtype=tf.float32)
 
     # Compute the smooth L1 loss for the localization task
-    localization_loss = tf.cast(smooth_l1_loss(
+    localization_loss = tf.cast(_smooth_l1_loss(
     y_true[:, :, -8:-4], y_pred[:, :, -8:-4], sigma=sigma_l1), dtype=tf.float32)
 
     # Compute the class loss as the sum of the focal loss over all classes

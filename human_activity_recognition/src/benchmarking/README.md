@@ -6,20 +6,20 @@ The benchmarking functionality of the Human Activity Recognition models enables 
 
 <details open><summary><a href="#1"><b>1. Configure the yaml file</b></a></summary><a id="1"></a> 
 
-To use this service and achieve your goals, you can use the [user_config.yaml](../user_config.yaml) or directly update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) file and use it. This file provides an example of how to configure the benchmarking service to meet your specific needs.
+To use this service and achieve your goals, you can use the [user_config.yaml](../../user_config.yaml) or directly update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) file and use it. This file provides an example of how to configure the benchmarking service to meet your specific needs.
 
 Alternatively, you can follow the tutorial below, which shows how to benchmark your pretrained Human Activity Recognition model using our benchmarking service.
 
 <ul><details open><summary><a href="#1-1">1.1 Setting the model and the operation mode</a></summary><a id="1-1"></a>
 
-As mentioned previously, users can either use the minimalistic example [configuration file for the benchmarking](../config_file_examples/benchmarking_config.yaml) file or alternatively follow the steps below to modify all the sections of the [user_config.yaml](../user_config.yaml) main YAML file. 
+As mentioned previously, users can either use the minimalistic example [configuration file for the benchmarking](../config_file_examples/benchmarking_config.yaml) file or alternatively follow the steps below to modify all the sections of the [user_config.yaml](../../user_config.yaml) main YAML file. 
 
 The first thing to be configured is the `general.model_path` in the general section to point to the Keras model that has to be benchmarked.
 
 ```yaml
 general:
   project_name: human_activity_recognition # optional, if not provided <human_activity_recognition> is used
-  model_path:  ../../../model_zoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5
+  model_path:  ../../stm32ai-modelzoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5
               # could be a pretrained (.h5) model from the ../pretrained_models or any model user trained. 
 ```
 
@@ -64,15 +64,15 @@ benchmarking:
 </details>
 <details open><summary><a href="#2"><b>2. Benchmark your model</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml), you can benchmark the model by running the following command from the **src/** folder after the file is modified:
+If you chose to modify the [user_config.yaml](../../user_config.yaml), you can benchmark the model by running the following command from the UC folder after the file is modified:
 
 ```bash
 python stm32ai_main.py
 ```
-If you chose to update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) and use it, then run the following command from the **src/** folder: 
+If you chose to update the [benchmarking_config.yaml](../config_file_examples/benchmarking_config.yaml) and use it, then run the following command from the UC folder: 
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name benchmarking_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name benchmarking_config.yaml
 ```
 Note that you can also overwrite the parameters directly in the CLI by using a provided YAML file. An example of overwriting the `operation_mode` and `model_path` is given below:
 

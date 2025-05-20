@@ -15,7 +15,7 @@ import tensorflow as tf
 from pathlib import Path
 from keras import layers
 from keras.applications import resnet
-
+from src.models import add_head
 
 '''NOTE : Most of this implementation is adapted from the Tensorflow implementation of ResNets.'''
 
@@ -30,7 +30,7 @@ def _check_parameters(n_stacks: int = None,
         assert int(n_stacks) in [1, 2, 3], "n_stacks parameter must be one of (1, 2, 3)\n" \
         ", current value is {}".format(n_stacks)
 
-def block2_custom(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
+def _block2_custom(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
     """A custom ResnetV2 block.
     Args:
         x: input tensor.
@@ -67,7 +67,7 @@ def block2_custom(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name
     x = layers.Add(name=name + '_out')([shortcut, x])
     return x
 
-def MiniResNetV2(n_stacks: int = 1,
+def _MiniResNetV2(n_stacks: int = 1,
                  weights: str = None,
                  input_shape: tuple = None,
                  pooling: str = 'avg'):
@@ -88,20 +88,20 @@ def MiniResNetV2(n_stacks: int = 1,
     resnet : tf.keras.Model : the appropriate MiniResNetv2 model, without a classification head.
     """
 
-    def custom_stack(x, filters, blocks, stride1=2, name=None):
-        x = block2_custom(x, filters, conv_shortcut=True, name=name + '_block1')
+    def _custom_stack(x, filters, blocks, stride1=2, name=None):
+        x = _block2_custom(x, filters, conv_shortcut=True, name=name + '_block1')
         for i in range(2, blocks):
-            x = block2_custom(x, filters, name=name + '_block' + str(i))
-        x = block2_custom(x, filters, stride=stride1, name=name + '_block' + str(blocks))
+            x = _block2_custom(x, filters, name=name + '_block' + str(i))
+        x = _block2_custom(x, filters, stride=stride1, name=name + '_block' + str(blocks))
         return x
 
-    def stack_fn(x):
+    def _stack_fn(x):
         for i in range(n_stacks):
-            x = custom_stack(x, 64 * 2**(i), 2, name='conv{}'.format(2+i))
+            x = _custom_stack(x, 64 * 2**(i), 2, name='conv{}'.format(2+i))
         return x
 
     return resnet.ResNet(
-        stack_fn,
+        _stack_fn,
         True,
         True,
         'resnet_miniv2',
@@ -114,7 +114,7 @@ def MiniResNetV2(n_stacks: int = 1,
         classifier_activation=None)
 
 
-def get_scratch_model(input_shape: tuple = None,
+def _get_scratch_model(input_shape: tuple = None,
                       n_stacks: int = None,
                       n_classes: int = None,
                       pooling: str = 'avg',
@@ -157,7 +157,7 @@ def get_scratch_model(input_shape: tuple = None,
     else:
         activation = 'softmax'
 
-    backbone = MiniResNetV2(n_stacks=n_stacks,
+    backbone = _MiniResNetV2(n_stacks=n_stacks,
                             input_shape=input_shape,
                             weights=None,
                             pooling=pooling)
@@ -173,7 +173,7 @@ def get_scratch_model(input_shape: tuple = None,
                             activity_regularizer=activity_regularizer)
     return miniresnetv2
 
-def get_pretrained_model(n_stacks: int = None,
+def _get_pretrained_model(n_stacks: int = None,
                          n_classes: int = None,
                          pooling: str = None,
                          use_garbage_class: bool = False,
@@ -287,7 +287,7 @@ def get_model(input_shape: tuple = None,
 
     
     if not pretrained_weights:
-        miniresnetv2 = get_scratch_model(input_shape=input_shape,
+        miniresnetv2 = _get_scratch_model(input_shape=input_shape,
                                          n_stacks=n_stacks,
                                          n_classes=n_classes,
                                          pooling=pooling,
@@ -297,7 +297,7 @@ def get_model(input_shape: tuple = None,
                                          kernel_regularizer=kernel_regularizer,
                                          activity_regularizer=activity_regularizer)
     else:
-        miniresnetv2 = get_pretrained_model(n_stacks=n_stacks,
+        miniresnetv2 = _get_pretrained_model(n_stacks=n_stacks,
                                           n_classes=n_classes,
                                           pooling=pooling,
                                           use_garbage_class=use_garbage_class,

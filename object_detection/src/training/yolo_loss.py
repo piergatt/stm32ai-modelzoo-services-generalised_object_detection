@@ -8,7 +8,7 @@
 
 import numpy as np
 import tensorflow as tf
-from postprocess import yolo_head
+from src.postprocessing import yolo_head
 
 
 def get_detector_mask(boxes, anchors, image_size, network_stride):

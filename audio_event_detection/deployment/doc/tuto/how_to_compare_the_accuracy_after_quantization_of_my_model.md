@@ -36,7 +36,7 @@ It is highly recommended to use real data for the final quantization.
 general:
   project_name: aed_project
   # Change to the path of the model you wish to quantize and evaluate
-  model_path: ../../../model_zoo/audio_event_detection/yamnet/ST_pretrainedmodel_public_dataset/esc10/yamnet_256_64x96_tl/yamnet_256_64x96_tl.h5
+  model_path: ../../stm32ai-modelzoo/audio_event_detection/yamnet/ST_pretrainedmodel_public_dataset/esc10/yamnet_256_64x96_tl/yamnet_256_64x96_tl.h5
   logs_dir: logs
   saved_models_dir: saved_models
   global_seed: 120
@@ -50,8 +50,8 @@ dataset:
   class_names: ['dog', 'chainsaw', 'crackling_fire', 'helicopter', 'rain', 'crying_baby', 'clock_tick', 'sneezing', 'rooster', 'sea_waves']
   file_extension: '.wav'
 
-  training_audio_path: ../datasets/ESC-50/audio 
-  training_csv_path:   ../datasets/ESC-50/meta/esc50.csv 
+  training_audio_path: ./datasets/ESC-50/audio 
+  training_csv_path:   ./datasets/ESC-50/meta/esc50.csv 
 
   # Optional but recommended, you can use the training dataset
   quantization_audio_path: <quantization-audio-root-directory>
@@ -106,18 +106,18 @@ quantization:
   export_dir: quantized_models
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 You can look at user_config.yaml examples [here](https://github.com/STMicroelectronics/stm32ai-modelzoo-services/tree/main/audio_event_detection/src/config_file_examples) for other operation modes.
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

@@ -11,7 +11,7 @@ from tensorflow.keras import layers
 from typing import Tuple
 
 
-def fire_module(x: keras.layers.Layer, fire_id: int, squeeze: int = 16, expand: int = 64) -> keras.layers.Layer:
+def _fire_module(x: keras.layers.Layer, fire_id: int, squeeze: int = 16, expand: int = 64) -> keras.layers.Layer:
     """
     Fire module for the SqueezeNet model.
     Implements expand layer, which has a mix of 1x1 and 3x3 filters,
@@ -81,18 +81,18 @@ def get_squeezenetv11(num_classes: int = None, input_shape: Tuple[int, int, int]
     x = layers.MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='pool1')(x)
 
     # Fire modules
-    x = fire_module(x, fire_id=2, squeeze=16, expand=64)
-    x = fire_module(x, fire_id=3, squeeze=16, expand=64)
+    x = _fire_module(x, fire_id=2, squeeze=16, expand=64)
+    x = _fire_module(x, fire_id=3, squeeze=16, expand=64)
     x = layers.MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='pool3')(x)
 
-    x = fire_module(x, fire_id=4, squeeze=32, expand=128)
-    x = fire_module(x, fire_id=5, squeeze=32, expand=128)
+    x = _fire_module(x, fire_id=4, squeeze=32, expand=128)
+    x = _fire_module(x, fire_id=5, squeeze=32, expand=128)
     x = layers.MaxPooling2D(pool_size=(3, 3), strides=(2, 2), name='pool5')(x)
 
-    x = fire_module(x, fire_id=6, squeeze=48, expand=192)
-    x = fire_module(x, fire_id=7, squeeze=48, expand=192)
-    x = fire_module(x, fire_id=8, squeeze=64, expand=256)
-    x = fire_module(x, fire_id=9, squeeze=64, expand=256)
+    x = _fire_module(x, fire_id=6, squeeze=48, expand=192)
+    x = _fire_module(x, fire_id=7, squeeze=48, expand=192)
+    x = _fire_module(x, fire_id=8, squeeze=64, expand=256)
+    x = _fire_module(x, fire_id=9, squeeze=64, expand=256)
 
     # Dropout layer
     if dropout:

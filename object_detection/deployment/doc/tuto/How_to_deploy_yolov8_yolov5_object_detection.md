@@ -30,6 +30,7 @@ If you want to train, you can use directly Ultralytics repository at [https://gi
 By default, Ultralytics requirements do not install the packages required to export to onnx or tensorflow lite.
 When exporting for the first time, it will either use pre-installed packages or do an auto update installing the latest versions which then causes compatibility issues.
 To ensure compatibility, you need to install (or downgrade) the versions of tensorflow, onnx and onnxruntime following below requirements:
+Ultralytics version has to be <= 8.3.88
 Use a python 3.9 environment (for the tflite_support package dependency)
 Tensorflow version between 2.8.3 and 2.15.1
 ONNX version between 1.12.0 and 1.15.0
@@ -68,14 +69,16 @@ By default the exported models are:
 3. A quantized model per tensor with input / output in integer int8 format: yolov8n_saved_model/yolov8n_integer_quant.tflite.
 4. A quantized model per tensor with input / output in float format: yolov8n_saved_model/yolov8n_full_integer_quant.tflite.
 
-> [!TIP] It is recommended to use per-channel quantization to better maintain the accuracy, so we recommend to use directly tensorflow lite converter to do the quantization.
+> [!TIP] 
+It is recommended to use per-channel quantization to better maintain the accuracy, so we recommend to use directly tensorflow lite converter to do the quantization.
 
 Start from the generated saved model (1 above) as input for the tensorflow converter. Be sure to used the saved model generated through the export command with int8=True.  
 A script is provided to quantize the model, the yaml file provide the quantization information (see below details).
 
 For deployment the model shall be quantized with input as uint8 and output as float or int8.
 
-> [!NOTE] Yolov5 
+> [!NOTE] 
+> Yolov5 
 
 > The initial version of yolov5n is using a different output shape. For deployment it requires then to add transpose layers compared to the yolov8n. 
 > Ultralytics introduced the yolov5nu version that is aligned with yolov8 output shape.
@@ -225,7 +228,8 @@ Configuration of the post-processing parameters is done through the configuratio
 
 For model with int8 output, the application will detect automatically the zero point and scale to apply for the post processing.  
 
-> [!NOTE] Yolov5
+> [!NOTE] 
+> Yolov5
 
 > According the model used is the yolov5nu for a given resolution, use the same parameters as for yolov8 for the post-processing as they are identical.
 > In the application code, the code enabled by selecting POSTPROCESS_OD_YOLO_V5_UU is deprecated. it corresponds to the older version of yolov5n and not to the yolov5nu.

@@ -8,9 +8,9 @@
 
 import numpy as np
 import tensorflow as tf
-from bounding_boxes_utils import bbox_center_to_corners_coords
-from models_mgt import model_family
 from pathlib import Path
+
+from src.utils import model_family
 
               
 def decode_ssd_predictions(predictions: tuple, clip_boxes: bool = True) -> tuple:
@@ -158,6 +158,17 @@ def decode_yolo_v8_predictions(predictions):
     scores = transposed_detections[..., 4:]
     return boxes, scores
 
+def decode_yolo_v4_predictions(predictions):
+    # Lists to hold respective values while unwrapping.
+    boxes = np.clip(np.squeeze(predictions[0]), 0, 1)
+    scores = np.squeeze(predictions[1])
+    if(len(scores.shape)==1):
+        scores = np.expand_dims(scores,axis=1)
+    boxes = np.expand_dims(boxes, axis=0)
+    scores = np.expand_dims(scores, axis=0)
+    
+    return boxes, scores
+
     
 
 def nms_box_filtering(
@@ -283,6 +294,8 @@ def get_nmsed_detections(cfg, predictions, image_size):
     
     elif model_family(cfg.general.model_type) == "yolo_v8":
         boxes, scores = decode_yolo_v8_predictions(predictions)
+    elif model_family(cfg.general.model_type) == "yolo_v4":
+        boxes, scores = decode_yolo_v4_predictions(predictions)
     else:
         raise ValueError("Unsupported model type")
         

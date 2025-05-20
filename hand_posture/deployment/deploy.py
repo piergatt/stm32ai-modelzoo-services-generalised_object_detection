@@ -19,9 +19,9 @@ from typing import Optional
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from models_utils import get_model_name_and_its_input_shape, get_model_name
-from common_deploy import stm32ai_deploy
-from gen_h_file import gen_h_user_file
+from common.utils import get_model_name_and_its_input_shape, get_model_name
+from common.deployment import stm32ai_deploy
+from src.utils import gen_h_user_file
 
 
 def deploy(cfg: DictConfig = None, model_path_to_deploy: Optional[str] = None,

@@ -11,8 +11,8 @@ operation_mode: training
 dataset:
    name: Pascal_VOC_2012    
    class_names: [ aeroplane,bicycle,bird,boat,bottle,bus,car,cat,chair,cow,diningtable,dog,horse,motorbike,person,pottedplant,sheep,sofa,train,tvmonitor ]
-   training_path: ../datasets/Pascal_VOC_2012/train/
-   validation_path: ../datasets/Pascal_VOC_2012/valid/
+   training_path: ./datasets/Pascal_VOC_2012/train/
+   validation_path: ./datasets/Pascal_VOC_2012/valid/
    validation_split: 
    test_path:
    quantization_path: 
@@ -60,15 +60,15 @@ training:
       patience: 40
 
 postprocessing:
-  confidence_thresh: 0.6
+  confidence_thresh: 0.001
   NMS_thresh: 0.5
-  IoU_eval_thresh: 0.3
+  IoU_eval_thresh: 0.5
   plot_metrics: True   # Plot precision versus recall curves. Default is False.
-  max_detection_boxes: 10
+  max_detection_boxes: 100
   
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

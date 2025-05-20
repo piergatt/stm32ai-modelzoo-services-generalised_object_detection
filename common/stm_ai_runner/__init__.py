@@ -12,6 +12,7 @@ STM AI runner
 from .ai_runner import AiRunner  # noqa:F401
 from .ai_runner import AiRunnerCallback  # noqa:F401
 from .ai_runner import AiRunnerSession  # noqa:F401
+from .ai_interpreter import AiRunnerInterpreter  # noqa:F401
 
 from .ai_resolver import is_valid_exec_domain  # noqa:F401
 from .stm32_utility import dump_ihex_file  # noqa:F401
@@ -19,5 +20,6 @@ from .stm32_utility import bsdchecksum  # noqa:F401
 
 from .utils import get_logger  # noqa:F401
 from .utils import set_log_level  # noqa:F401
+from .utils import get_log_level  # noqa:F401
 
 from .__version__ import __author__, __copyright__, __license__, __version__  # noqa:F401

@@ -11,6 +11,7 @@ STM AI runner - Serial Low Level or Hw Driver
 
 import time as t
 from typing import List, Tuple, Optional, Dict
+import logging
 
 from serial import Serial
 from serial import serial_for_url
@@ -147,13 +148,17 @@ class SerialHwDriver(AiHwDriver):
                 break
         return hdl
 
-    def _discovery(self, device: str, baudrate: int, timeout: int, io_hw_log=None):
+    def _discovery(self, device: str, baudrate: int, timeout: int, io_hw_log=None,
+                   logger: Optional[logging.Logger] = None):
         """Discover the possible COM port"""  # noqa: DAR101,DAR201,DAR401
         if device is None:
             devices = serial_device_discovery()
         else:
             devices = [{'device': device}]
-        for dev in devices:
+        for idx, dev in enumerate(devices):
+            if logger is not None:
+                desc_ = f'{idx}: {str(dev)}'
+                logger.debug(desc_)
             dry_run = dev != devices[-1]
             hdl_ = self._open(dev['device'], baudrate, timeout, io_hw_log, dry_run=dry_run)
             if hdl_:
@@ -176,18 +181,23 @@ class SerialHwDriver(AiHwDriver):
                     err_msg = f'Invalid firmware - {dev["device"]}:{baudrate}'
                     raise HwIOError(err_msg)
         if not devices:
-            raise HwIOError('No SERIAL COM port detected (STM board is not connected!)')
+            raise HwIOError('No SERIAL COM port detected (Board is not connected!)')
         return None
 
     def _connect(self, desc=None, **kwargs):
         """Open a connection"""  # noqa: DAR101,DAR201,DAR401
 
+        logger_ = kwargs.get('logger', None)
         dev_, baud_ = serial_get_com_settings(desc)
         baud_ = kwargs.get('baudrate', baud_)
         timeout_ = kwargs.get('timeout', 0.1)
         io_hw_log = kwargs.get('io_hw_log', None)
 
-        self._discovery(dev_, baud_, timeout_, io_hw_log)
+        if logger_ is not None:
+            msg_ = f'baud={baud_} device={dev_} timeout={timeout_} io_hw_log={io_hw_log}'
+            logger_.debug(msg_)
+
+        self._discovery(dev_, baud_, timeout_, io_hw_log, logger_)
 
         return self.is_connected
 

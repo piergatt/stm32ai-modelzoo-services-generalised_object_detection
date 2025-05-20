@@ -17,10 +17,32 @@ tf.config.run_functions_eagerly(True)
 from omegaconf import DictConfig
 from typing import Tuple
 
-from utils import COLOR_MAP
+COLOR_MAP = {
+    (0, 0, 0): 0,          # background
+    (128, 0, 0): 1,        # aeroplane
+    (0, 128, 0): 2,        # bicycle
+    (128, 128, 0): 3,      # bird
+    (0, 0, 128): 4,        # boat
+    (128, 0, 128): 5,      # bottle
+    (0, 128, 128): 6,      # bus
+    (128, 128, 128): 7,    # car
+    (64, 0, 0): 8,         # cat
+    (192, 0, 0): 9,        # chair
+    (64, 128, 0): 10,      # cow
+    (192, 128, 0): 11,     # dining table
+    (64, 0, 128): 12,      # dog
+    (192, 0, 128): 13,     # horse
+    (64, 128, 128): 14,    # motorbike
+    (192, 128, 128): 15,   # person
+    (0, 64, 0): 16,        # potted plant
+    (128, 64, 0): 17,      # sheep
+    (0, 192, 0): 18,       # sofa
+    (128, 192, 0): 19,     # train
+    (0, 64, 128): 20       # tv/monitor
+}
 
 
-def check_and_convert_mask(rgb_image: tf.Tensor) -> tf.Tensor:
+def _check_and_convert_mask(rgb_image: tf.Tensor) -> tf.Tensor:
     """
     Checks the mask values and converts an RGB image to a label map if necessary using the predefined COLOR_MAP.
 
@@ -51,7 +73,7 @@ def check_and_convert_mask(rgb_image: tf.Tensor) -> tf.Tensor:
         return tf.cast(rgb_image, tf.uint8)  # Return the original image if no conversion is needed
     
 
-def preprocess_mask(mask_path: str = None, input_size: list = None, aspect_ratio: str = None,
+def _preprocess_mask(mask_path: str = None, input_size: list = None, aspect_ratio: str = None,
                     interpolation_method: str = 'nearest') -> tf.Tensor:
     """
     Loads the mask file and pre-process it according to configuration parameters
@@ -80,7 +102,7 @@ def preprocess_mask(mask_path: str = None, input_size: list = None, aspect_ratio
     mask = tf.where(mask == 255, tf.zeros_like(mask), mask)
 
     # Check and convert the mask if necessary
-    mask = check_and_convert_mask(mask)
+    mask = _check_and_convert_mask(mask)
 
     # # Assertions to ensure mask values are within the expected range
     # unique_values = tf.cast(tf.unique(tf.reshape(mask, [-1]))[0], tf.int32)
@@ -90,7 +112,7 @@ def preprocess_mask(mask_path: str = None, input_size: list = None, aspect_ratio
     return mask
 
 
-def get_image(image_path: str = None, images_nb_channels: int = None, aspect_ratio: str = None,
+def _get_image(image_path: str = None, images_nb_channels: int = None, aspect_ratio: str = None,
               interpolation: str = None, scale: float = None, offset: int = None, input_size: list = None) -> tf.Tensor:
     """
     Loads an image from a file path. Resize it with appropriate interpolation method. Scale it according to
@@ -127,7 +149,7 @@ def get_image(image_path: str = None, images_nb_channels: int = None, aspect_rat
     return img_processed
 
 
-def load_image_and_mask_pascal_voc(image_path: str = None, mask_path: str = None, images_nb_channels: int = None,
+def _load_image_and_mask_pascal_voc(image_path: str = None, mask_path: str = None, images_nb_channels: int = None,
                                    aspect_ratio: str = None, interpolation: str = None, scale: float = None,
                                    offset: int = None, input_size: list = None) -> tuple:
     """
@@ -147,13 +169,13 @@ def load_image_and_mask_pascal_voc(image_path: str = None, mask_path: str = None
             A tuple of tensor containing the image pixels and the mask, appropriately resized and scaled
 
         """
-    input_image = get_image(image_path, images_nb_channels, aspect_ratio, interpolation, scale, offset, input_size)
-    input_mask = preprocess_mask(mask_path, input_size, aspect_ratio, interpolation_method='nearest')
+    input_image = _get_image(image_path, images_nb_channels, aspect_ratio, interpolation, scale, offset, input_size)
+    input_mask = _preprocess_mask(mask_path, input_size, aspect_ratio, interpolation_method='nearest')
     
     return input_image, input_mask
 
 
-def get_path_dataset(images_dir: str = None, masks_dir: str = None, ids_file_path: str = None, seed: int = None,
+def _get_path_dataset(images_dir: str = None, masks_dir: str = None, ids_file_path: str = None, seed: int = None,
                      shuffle: bool = True) -> tf.data.Dataset:
     """
     Creates a tf.data.Dataset from a dataset root directory path.
@@ -195,7 +217,7 @@ def get_path_dataset(images_dir: str = None, masks_dir: str = None, ids_file_pat
     return data_list
 
 
-def get_train_val_ds(images_path: str = None, images_masks: str = None, files_path: str = None, cfg: DictConfig = None,
+def _get_train_val_ds(images_path: str = None, images_masks: str = None, files_path: str = None, cfg: DictConfig = None,
                      image_size: tuple[int] = None, batch_size: int = None, seed: int = None, shuffle: bool = True,
                      to_cache: bool = False) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
     """
@@ -226,7 +248,7 @@ def get_train_val_ds(images_path: str = None, images_masks: str = None, files_pa
     scale = cfg.preprocessing.rescaling.scale
     offset = cfg.preprocessing.rescaling.offset
 
-    datalist = get_path_dataset(images_dir=images_path, masks_dir=images_masks, ids_file_path=files_path, seed=seed)
+    datalist = _get_path_dataset(images_dir=images_path, masks_dir=images_masks, ids_file_path=files_path, seed=seed)
 
     dataset = tf.data.Dataset.from_tensor_slices((datalist[0], datalist[1]))
 
@@ -239,9 +261,9 @@ def get_train_val_ds(images_path: str = None, images_masks: str = None, files_pa
     
     # Map the paths to the actual loaded and preprocessed images and masks
     mapping_params = (channels, aspect_ratio, interpolation, scale, offset, image_size)
-    train_ds = train_ds.map(lambda img, msk: load_image_and_mask_pascal_voc(img, msk, *mapping_params),
+    train_ds = train_ds.map(lambda img, msk: _load_image_and_mask_pascal_voc(img, msk, *mapping_params),
                             num_parallel_calls=tf.data.AUTOTUNE)
-    val_ds = val_ds.map(lambda img, msk: load_image_and_mask_pascal_voc(img, msk, *mapping_params),
+    val_ds = val_ds.map(lambda img, msk: _load_image_and_mask_pascal_voc(img, msk, *mapping_params),
                         num_parallel_calls=tf.data.AUTOTUNE)
 
     train_ds = train_ds.batch(batch_size)
@@ -285,7 +307,7 @@ def get_ds(images_path: str = None, images_masks: str = None, files_path: str = 
     scale = cfg.preprocessing.rescaling.scale
     offset = cfg.preprocessing.rescaling.offset
 
-    datalist = get_path_dataset(images_dir=images_path, masks_dir=images_masks, ids_file_path=files_path, seed=seed)
+    datalist = _get_path_dataset(images_dir=images_path, masks_dir=images_masks, ids_file_path=files_path, seed=seed)
 
     dataset = tf.data.Dataset.from_tensor_slices((datalist[0], datalist[1]))
     
@@ -293,7 +315,7 @@ def get_ds(images_path: str = None, images_masks: str = None, files_path: str = 
         dataset = dataset.shuffle(len(dataset), reshuffle_each_iteration=True, seed=seed)
 
     mapping_params = (channels, aspect_ratio, interpolation, scale, offset, image_size)
-    dataset = dataset.map(lambda img, msk: load_image_and_mask_pascal_voc(img, msk, *mapping_params),
+    dataset = dataset.map(lambda img, msk: _load_image_and_mask_pascal_voc(img, msk, *mapping_params),
                           num_parallel_calls=tf.data.AUTOTUNE)
    
     dataset = dataset.batch(batch_size)
@@ -339,7 +361,7 @@ def load_dataset(cfg: DictConfig = None,
 
     if training_path and not validation_path:
         # There is no validation. We split the training set in two to create one.
-        train_ds, val_ds = get_train_val_ds(images_path=training_path, images_masks=training_masks_path,
+        train_ds, val_ds = _get_train_val_ds(images_path=training_path, images_masks=training_masks_path,
                                             files_path=training_files_path, cfg=cfg, image_size=image_size,
                                             batch_size=batch_size, seed=seed, shuffle=True, to_cache=False)
     elif training_path and validation_path:

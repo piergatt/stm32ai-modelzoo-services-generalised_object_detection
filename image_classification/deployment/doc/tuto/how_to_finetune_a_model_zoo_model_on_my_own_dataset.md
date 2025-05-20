@@ -56,9 +56,9 @@ dataset:
   # So my model output is of size 5
   class_names: ['ADONIS', 'AFRICAN GIANT SWALLOWTAIL', 'AMERICAN SNOOT', 'AN 88', 'APPOLLO'] 
   # define the paths for your training, validation and test data
-  training_path: ../datasets/butterflies/train 
-  validation_path: ../datasets/butterflies/valid
-  test_path: ../datasets/butterflies/test      
+  training_path: ./datasets/butterflies/train 
+  validation_path: ./datasets/butterflies/valid
+  test_path: ./datasets/butterflies/test      
 
 # preprocessing to rescale and resize the data to the model input size define below
 preprocessing:
@@ -113,11 +113,11 @@ training:
         patience: 40
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
   
 ```
 
@@ -128,7 +128,7 @@ You can also find examples of user_config.yaml [here](https://github.com/STMicro
 
 ## Run the script:
 
-Edit the user_config.yaml then open a CMD (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a CMD (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

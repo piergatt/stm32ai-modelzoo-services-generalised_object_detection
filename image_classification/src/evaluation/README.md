@@ -8,7 +8,7 @@ The evaluation service is designed to be fast, efficient, and accurate, making i
 <details open>
 <summary><a href="#1"><b>1. Configure the YAML file</b></a></summary><a id="1"></a>
 
-To use this service and achieve your goals, you can use the [user_config.yaml](../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
+To use this service and achieve your goals, you can use the [user_config.yaml](../../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
 
 Alternatively, you can follow the tutorial below, which shows how to evaluate your pre-trained image classification model using our evaluation service.
 
@@ -20,7 +20,7 @@ In particular, `operation_mode` should be set to evaluation and the `evaluation`
 
 ```yaml
 general:
-   model_path: ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
+   model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
 
 operation_mode: evaluation
 ```
@@ -104,14 +104,14 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details>
@@ -121,20 +121,20 @@ mlflow:
 <details open>
 <summary><a href="#2"><b>2. Evaluate your model</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml), you can evaluate the model by running the following command from the **src/** folder:
+If you chose to modify the [user_config.yaml](../../user_config.yaml), you can evaluate the model by running the following command from the UC folder:
 
 ```bash
 python stm32ai_main.py 
 ```
-If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the **src/** folder:
+If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name evaluation_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name evaluation_config.yaml
 ```
 In case you want to evaluate the accuracy of the quantized model then benchmark it, you can either launch the evaluation operation mode followed by the [benchmark service](../benchmarking/README.md) that describes in detail how to proceed or you can use chained services like launching **[chain_eqeb](../config_file_examples/chain_eqeb_config.yaml)** example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_eqeb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_eqeb_config.yaml
 ```
 
 </details>

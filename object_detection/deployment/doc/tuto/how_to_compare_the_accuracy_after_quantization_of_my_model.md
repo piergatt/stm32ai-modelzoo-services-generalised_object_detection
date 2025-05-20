@@ -36,7 +36,7 @@ It is highly recommended to use real data for the quantization.
 # user_config.yaml
 
 general:
-  model_path: ../../../model_zoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
+  model_path: ../../stm32ai-modelzoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256.h5
   model_type: st_ssd_mobilenet_v1
 operation_mode: chain_eqeb
 
@@ -87,18 +87,18 @@ benchmarking:
    board: STM32H747I-DISCO
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 You can look at user_config.yaml example [here](https://github.com/STMicroelectronics/stm32ai-modelzoo/tree/main/object_detection/src/config_file_examples) for other operation modes.
 
 ## Run the script:
 
-Edit the user_config.yaml then open a CMD (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a CMD (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

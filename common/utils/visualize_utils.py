@@ -100,7 +100,7 @@ def display_figures(cfg: Dict = None):
             img = Image.open(os.path.join(cfg.output_dir, png_file))
             img.show()
 
-def compute_confusion_matrix(y_true, y_pred):
+def compute_confusion_matrix2(y_true, y_pred):
     '''Computes a confusion matrix for multiclass monolabel classification
        Takes one-hot encoded labels and predictions as input.
        Inputs

@@ -14,14 +14,15 @@ import re
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
-from cfg_utils import postprocess_config_dict, check_config_attributes, parse_tools_section, parse_benchmarking_section, \
-                      parse_mlflow_section, parse_top_level, parse_general_section, parse_quantization_section, \
-                      parse_training_section, parse_prediction_section, parse_deployment_section, check_hardware_type, \
-                      parse_evaluation_section
 from typing import Dict
 
+from common.utils import postprocess_config_dict, check_config_attributes, parse_tools_section, parse_benchmarking_section, \
+                      parse_mlflow_section, parse_top_level, parse_general_section, parse_quantization_section, \
+                      parse_training_section, parse_prediction_section, parse_deployment_section, check_hardware_type, \
+                      parse_evaluation_section, check_attributes
 
-def parse_postprocessing_section(cfg: DictConfig) -> None:
+
+def _parse_postprocessing_section(cfg: DictConfig) -> None:
     # cfg: 'postprocessing' section of the configuration file
 
     legal = ["kpts_conf_thresh","confidence_thresh","NMS_thresh","max_detection_boxes","plot_metrics"]
@@ -32,11 +33,10 @@ def parse_postprocessing_section(cfg: DictConfig) -> None:
     cfg.plot_metrics = cfg.plot_metrics if cfg.plot_metrics is not None else False
 
 
-def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None) -> None:
+def _parse_dataset_section(cfg: DictConfig, hardware_type:str, mode: str = None, mode_groups: DictConfig = None) -> None:
     # cfg: dictionary containing the 'dataset' section of the configuration file
-
-    legal = ["name", "keypoints", "training_path", "validation_path", "validation_split", "test_path",
-             "quantization_path", "quantization_split", "seed"]
+    legal = ["name", "keypoints", "keypoints_file_path", "training_path", "validation_path", "validation_split", "test_path",
+             "quantization_path", "quantization_split", "seed", "class_names"]
 
     required = []
     one_or_more = []
@@ -44,8 +44,10 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
         required += ["training_path", "keypoints", ]
     elif mode in mode_groups.evaluation:
         one_or_more += ["training_path", "test_path", "keypoints", ]
-    if mode not in ("quantization", "benchmarking", "chain_qb", "deployment", "chain_qd"):
+    if mode not in ["quantization", "benchmarking", "chain_qb", "deployment", "chain_qd"]:
         required += ["keypoints", ]
+    if mode in mode_groups.deployment and hardware_type == "MPU":
+        required += ["keypoints_file_path"]
     check_config_attributes(cfg, specs={"legal": legal, "all": required, "one_or_more": one_or_more},
                             section="dataset")
 
@@ -71,7 +73,7 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
                              "Please check the 'dataset' section of your configuration file.")
 
 
-def parse_preprocessing_section(cfg: DictConfig, mode:str = None) -> None:
+def _parse_preprocessing_section(cfg: DictConfig, mode:str = None) -> None:
     # cfg: 'preprocessing' section of the configuration file
     legal = ["rescaling", "resizing", "color_mode"]
     if mode == 'deployment':
@@ -117,39 +119,8 @@ def parse_preprocessing_section(cfg: DictConfig, mode:str = None) -> None:
                          f"Supported values: {color_modes}\n"
                          "Please check the 'preprocessing' section of your configuration file.")
 
-def parse_random_periodic_resizing(cfg):
 
-    if "image_sizes" not in cfg:  
-        raise ValueError("\nMissing `image_sizes` argument of function `random_periodic_resizing`\n"
-                         "Please check the data augmentation section of your configuration file.")
-    sizes_str = '['
-    for size in cfg.image_sizes:
-        if isinstance(size, (list, tuple)):
-            sizes_str += '('
-            for x in size:
-                sizes_str += str(x) + ','
-            sizes_str = sizes_str[:-1] + '),'
-        else:
-            sizes_str += str(size) + ','
-    sizes_str = sizes_str[:-1] + ']'
-
-    message = "\nInvalid syntax for `image_sizes` argument of `random_periodic_resizing` function\n" + \
-              "Please check the data augmentation section of your configuration file."
-              
-    try:
-        x = eval(sizes_str)
-        random_sizes = np.array(x, dtype=np.int32)
-    except:
-        raise ValueError(message)
-        
-    if np.shape(random_sizes)[1] != 2:
-        raise ValueError(message)
-
-    # Annotate the parsed image sizes
-    cfg.image_sizes = random_sizes
-
-
-def parse_data_augmentation_section(cfg: DictConfig) -> None:
+def _parse_data_augmentation_section(cfg: DictConfig) -> None:
     """
     This function checks the data augmentation section of the config file.
     The attribute that introduces the section is either `data_augmentation`
@@ -254,18 +225,18 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Dataset section parsing
     if not cfg.dataset:
         cfg.dataset = DefaultMunch.fromDict({})
-    parse_dataset_section(cfg.dataset,
+    _parse_dataset_section(cfg.dataset, cfg.hardware_type,
                           mode=cfg.operation_mode,
-                          mode_groups=mode_groups)
+                          mode_groups=mode_groups,)
 
     # Preprocessing section parsing
-    parse_preprocessing_section(cfg,
+    _parse_preprocessing_section(cfg,
                                 mode=cfg.operation_mode)
 
     # # Training section parsing
     if cfg.operation_mode in mode_groups.training:
         if cfg.data_augmentation or cfg.custom_data_augmentation:
-            parse_data_augmentation_section(cfg)
+            _parse_data_augmentation_section(cfg)
         model_path_used = bool(cfg.general.model_path)
         model_type_used = bool(cfg.general.model_type)
         legal = ["model", "batch_size", "epochs", "optimizer", "dropout", "frozen_layers",
@@ -278,7 +249,7 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Postprocessing section parsing
     #if cfg.operation_mode in (mode_groups.training + mode_groups.evaluation + mode_groups.quantization + mode_groups.deployment + mode_groups.prediction):
     if cfg.operation_mode in (mode_groups.prediction):
-        parse_postprocessing_section(cfg.postprocessing)
+        _parse_postprocessing_section(cfg.postprocessing)
 
     # Quantization section parsing
     if cfg.operation_mode in mode_groups.quantization:
@@ -289,7 +260,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # Evaluation section parsing
     if cfg.operation_mode in mode_groups.evaluation and "evaluation" in cfg:
-        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name","target"]
+        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name","target", 
+                 "profile", "input_type", "output_type", "input_chpos", "output_chpos"]
         parse_evaluation_section(cfg.evaluation,
                                  legal=legal)
 
@@ -300,7 +272,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Tools section parsing
     if cfg.operation_mode in (mode_groups.benchmarking + mode_groups.deployment):
         parse_tools_section(cfg.tools,
-                            cfg.operation_mode)
+                            cfg.operation_mode, 
+                            cfg.hardware_type)
 
     #For MPU, check if online benchmarking is activated
     if cfg.operation_mode in mode_groups.benchmarking:
@@ -322,14 +295,14 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Deployment section parsing
     if cfg.operation_mode in mode_groups.deployment:
         if cfg.hardware_type == "MCU":
-            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup"]
+            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup", "build_conf"]
             legal_hw = ["serie", "board", "stlink_serial_number"]
             parse_deployment_section(cfg.deployment,
                                     legal=legal,
                                     legal_hw=legal_hw)
         else:
-            legal = ["c_project_path", "label_file_path","board_deploy_path", "verbosity", "hardware_setup"]
-            legal_hw = ["serie", "board", "ip_address"]
+            legal = ["c_project_path", "board_deploy_path", "verbosity", "hardware_setup"]
+            legal_hw = ["serie", "board", "ip_address", "stlink_serial_number"]
             if cfg.preprocessing.color_mode != "rgb":
                 raise ValueError("\n Color mode used is not supported for deployment on MPU target \n Please use RGB format")
             if cfg.preprocessing.resizing.aspect_ratio != "fit":

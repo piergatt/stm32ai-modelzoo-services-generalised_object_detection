@@ -12,12 +12,12 @@ from tensorflow.keras.layers import Conv2D, UpSampling2D, ZeroPadding2D, Activat
     GlobalAveragePooling2D, Reshape, Concatenate, Lambda
 from tensorflow.keras.layers import DepthwiseConv2D
 from tensorflow.keras.regularizers import L2
-from anchor_boxes_utils import gen_anchors
-from anchor_boxes_utils import get_sizes_ratios_ssd_v1
+
+from src.utils import gen_anchors, get_sizes_ratios_ssd_v1
 from typing import Tuple
 
 
-def bbox_predictor(layer_in, n_anchors, n_offsets=4, kernel=(3, 3), l2_reg=0.0005, bn=False, dw=False):
+def _bbox_predictor(layer_in, n_anchors, n_offsets=4, kernel=(3, 3), l2_reg=0.0005, bn=False, dw=False):
     """
     Bounding box prediction layer.
 
@@ -66,7 +66,7 @@ def bbox_predictor(layer_in, n_anchors, n_offsets=4, kernel=(3, 3), l2_reg=0.000
     return layer_out
 
 
-def cls_predictor(layer_in, n_anchors, n_classes, kernel=(3, 3), l2_reg=0.0005, bn=False, dw=False):
+def _cls_predictor(layer_in, n_anchors, n_classes, kernel=(3, 3), l2_reg=0.0005, bn=False, dw=False):
     """
     Category prediction layer.
 
@@ -115,7 +115,7 @@ def cls_predictor(layer_in, n_anchors, n_classes, kernel=(3, 3), l2_reg=0.0005, 
     return layer_out
 
 
-def fmap_forward(fmap, img_width, img_height, sizes, ratios, clip_boxes,
+def _fmap_forward(fmap, img_width, img_height, sizes, ratios, clip_boxes,
                  normalize, n_classes, kernel=(3, 3), l2_reg=0.0005, bn=False, dw=False):
     """
     Get predictions from a feature map.
@@ -142,17 +142,17 @@ def fmap_forward(fmap, img_width, img_height, sizes, ratios, clip_boxes,
     n_anchors = len(sizes) + len(ratios) - 1
 
     # Generate anchors using the feature map
-    def fmap_lambda(fmap):
+    def _fmap_lambda(fmap):
         return gen_anchors(fmap, img_width, img_height, sizes, ratios, clip=clip_boxes, normalize=normalize)
 
-    anchors = fmap_lambda(fmap)
+    anchors = _fmap_lambda(fmap)
 
     # Compute class predictions using the feature map
-    cls_preds = cls_predictor(
+    cls_preds = _cls_predictor(
         fmap, n_anchors=n_anchors, n_classes=n_classes, kernel=kernel, l2_reg=l2_reg, bn=bn, dw=dw)
 
     # Compute bounding box predictions using the feature map
-    bbox_preds = bbox_predictor(
+    bbox_preds = _bbox_predictor(
         fmap, n_anchors=n_anchors, n_offsets=4, kernel=kernel, l2_reg=l2_reg, bn=bn, dw=dw)
 
     anchorss = tf.tile(tf.expand_dims(anchors,0),(tf.shape(bbox_preds)[0],1,1,1,1))
@@ -160,7 +160,7 @@ def fmap_forward(fmap, img_width, img_height, sizes, ratios, clip_boxes,
     return anchorss, cls_preds, bbox_preds
 
 
-def dw_conv(layer_in, n_filters, kernel=(3, 3), strides=(1, 1), depth_multiplier=1,
+def _dw_conv(layer_in, n_filters, kernel=(3, 3), strides=(1, 1), depth_multiplier=1,
             padding='same', l2_reg=0.0005, activation='relu', bn=True, dilation_rate=(1, 1)):
     """
     Depth-wise separate convolution block.
@@ -228,7 +228,7 @@ def st_ssd_mobilenet_v1(
     Args:
         l2_reg: L2 regularization factor.
         activation: Activation function.
-        bn_dw: Whether to use Batch Normalization for dw_conv.
+        bn_dw: Whether to use Batch Normalization for _dw_conv.
         bn_pred: Whether to use Batch Normalization for prediction layers.
         dw_pred: Whether to use DepthWise convolution for prediction layers.
         clip_boxes: Whether to clip box coordinates to image boundaries.
@@ -279,10 +279,10 @@ def st_ssd_mobilenet_v1(
                         activation=None, data_format="channels_last")(x)
         fmap_2 = BatchNormalization()(fmap_2)
         ###Add some extra convolution layers for additional feature maps
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
 
@@ -303,7 +303,7 @@ def st_ssd_mobilenet_v1(
         fmap_4 = BatchNormalization(name="fmap_4")(fmap_4)
 
         fmap_4_size = (int(fmap_4.shape[1]), int(fmap_4.shape[2]),)
-        anchors_4, cls_preds_4, bbox_preds_4 = fmap_forward(fmap_4, img_width, img_height, sizes[4], ratios[4],
+        anchors_4, cls_preds_4, bbox_preds_4 = _fmap_forward(fmap_4, img_width, img_height, sizes[4], ratios[4],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -318,7 +318,7 @@ def st_ssd_mobilenet_v1(
         fmap_3 = Add(name='fmap_3')([fmap_3, fmap_4_up_3])  # (3, 3)
 
         fmap_3_size = (int(fmap_3.shape[1]), int(fmap_3.shape[2]),)
-        anchors_3, cls_preds_3, bbox_preds_3 = fmap_forward(fmap_3, img_width, img_height, sizes[3], ratios[3],
+        anchors_3, cls_preds_3, bbox_preds_3 = _fmap_forward(fmap_3, img_width, img_height, sizes[3], ratios[3],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -332,7 +332,7 @@ def st_ssd_mobilenet_v1(
         fmap_2 = Add(name='fmap_2')([fmap_2, fmap_3_up_2])  # (6, 6)
 
         fmap_2_size = (int(fmap_2.shape[1]), int(fmap_2.shape[2]),)
-        anchors_2, cls_preds_2, bbox_preds_2 = fmap_forward(fmap_2, img_width, img_height, sizes[2], ratios[2],
+        anchors_2, cls_preds_2, bbox_preds_2 = _fmap_forward(fmap_2, img_width, img_height, sizes[2], ratios[2],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -346,7 +346,7 @@ def st_ssd_mobilenet_v1(
         fmap_1 = Add(name='fmap_1')([fmap_1, fmap_2_up_1])  # (12, 12)
 
         fmap_1_size = (int(fmap_1.shape[1]), int(fmap_1.shape[2]),)
-        anchors_1, cls_preds_1, bbox_preds_1 = fmap_forward(fmap_1, img_width, img_height, sizes[1], ratios[1],
+        anchors_1, cls_preds_1, bbox_preds_1 = _fmap_forward(fmap_1, img_width, img_height, sizes[1], ratios[1],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -360,7 +360,7 @@ def st_ssd_mobilenet_v1(
         fmap_0 = Add(name='fmap_0')([fmap_0, fmap_1_up_0])  # (24, 24)
 
         fmap_0_size = (int(fmap_0.shape[1]), int(fmap_0.shape[2]),)
-        anchors_0, cls_preds_0, bbox_preds_0 = fmap_forward(fmap_0, img_width, img_height, sizes[0], ratios[0],
+        anchors_0, cls_preds_0, bbox_preds_0 = _fmap_forward(fmap_0, img_width, img_height, sizes[0], ratios[0],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -406,10 +406,10 @@ def st_ssd_mobilenet_v1(
                         activation=None, data_format="channels_last")(x)
         fmap_2 = BatchNormalization()(fmap_2)
         ###Add some extra convolution layers for additional feature maps
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
 
@@ -418,10 +418,10 @@ def st_ssd_mobilenet_v1(
                         activation=None, data_format="channels_last")(x)
         fmap_3 = BatchNormalization()(fmap_3)
         ###Add some extra convolution layers for additional feature maps
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
 
@@ -442,7 +442,7 @@ def st_ssd_mobilenet_v1(
         fmap_5 = BatchNormalization(name="fmap_5")(fmap_5)
 
         fmap_5_size = (int(fmap_5.shape[1]), int(fmap_5.shape[2]),)
-        anchors_5, cls_preds_5, bbox_preds_5 = fmap_forward(fmap_5, img_width, img_height, sizes[5], ratios[5],
+        anchors_5, cls_preds_5, bbox_preds_5 = _fmap_forward(fmap_5, img_width, img_height, sizes[5], ratios[5],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(1, 1), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -456,7 +456,7 @@ def st_ssd_mobilenet_v1(
         fmap_4 = Add(name='fmap_4')([fmap_4, fmap_5_up_4])  # (2, 2)
 
         fmap_4_size = (int(fmap_4.shape[1]), int(fmap_4.shape[2]),)
-        anchors_4, cls_preds_4, bbox_preds_4 = fmap_forward(fmap_4, img_width, img_height, sizes[4], ratios[4],
+        anchors_4, cls_preds_4, bbox_preds_4 = _fmap_forward(fmap_4, img_width, img_height, sizes[4], ratios[4],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -470,7 +470,7 @@ def st_ssd_mobilenet_v1(
         fmap_3 = Add(name='fmap_3')([fmap_3, fmap_4_up_3])  # (4, 4)
 
         fmap_3_size = (int(fmap_3.shape[1]), int(fmap_3.shape[2]),)
-        anchors_3, cls_preds_3, bbox_preds_3 = fmap_forward(fmap_3, img_width, img_height, sizes[3], ratios[3],
+        anchors_3, cls_preds_3, bbox_preds_3 = _fmap_forward(fmap_3, img_width, img_height, sizes[3], ratios[3],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -484,7 +484,7 @@ def st_ssd_mobilenet_v1(
         fmap_2 = Add(name='fmap_2')([fmap_2, fmap_3_up_2])  # (8, 8)
 
         fmap_2_size = (int(fmap_2.shape[1]), int(fmap_2.shape[2]),)
-        anchors_2, cls_preds_2, bbox_preds_2 = fmap_forward(fmap_2, img_width, img_height, sizes[2], ratios[2],
+        anchors_2, cls_preds_2, bbox_preds_2 = _fmap_forward(fmap_2, img_width, img_height, sizes[2], ratios[2],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -498,7 +498,7 @@ def st_ssd_mobilenet_v1(
         fmap_1 = Add(name='fmap_1')([fmap_1, fmap_2_up_1])  # (16, 16)
 
         fmap_1_size = (int(fmap_1.shape[1]), int(fmap_1.shape[2]),)
-        anchors_1, cls_preds_1, bbox_preds_1 = fmap_forward(fmap_1, img_width, img_height, sizes[1], ratios[1],
+        anchors_1, cls_preds_1, bbox_preds_1 = _fmap_forward(fmap_1, img_width, img_height, sizes[1], ratios[1],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -512,7 +512,7 @@ def st_ssd_mobilenet_v1(
         fmap_0 = Add(name='fmap_0')([fmap_0, fmap_1_up_0])  # (32, 32)
 
         fmap_0_size = (int(fmap_0.shape[1]), int(fmap_0.shape[2]),)
-        anchors_0, cls_preds_0, bbox_preds_0 = fmap_forward(fmap_0, img_width, img_height, sizes[0], ratios[0],
+        anchors_0, cls_preds_0, bbox_preds_0 = _fmap_forward(fmap_0, img_width, img_height, sizes[0], ratios[0],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -556,10 +556,10 @@ def st_ssd_mobilenet_v1(
                         activation=None, data_format="channels_last")(x)
         fmap_2 = BatchNormalization()(fmap_2)
         ###Add some extra convolution layers for additional feature maps
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
 
@@ -569,10 +569,10 @@ def st_ssd_mobilenet_v1(
         fmap_3 = BatchNormalization()(fmap_3)
 
         ###Add some extra convolution layers for additional feature maps
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(2, 2),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
-        x = dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
+        x = _dw_conv(x, n_filters=256, kernel=(3, 3), strides=(1, 1),
                     depth_multiplier=1, padding='same', l2_reg=l2_reg, activation=activation, bn=bn_dw,
                     dilation_rate=(1, 1))
 
@@ -593,7 +593,7 @@ def st_ssd_mobilenet_v1(
         fmap_5 = BatchNormalization(name="fmap_5")(fmap_5)
 
         fmap_5_size = (int(fmap_5.shape[1]), int(fmap_5.shape[2]),)
-        anchors_5, cls_preds_5, bbox_preds_5 = fmap_forward(fmap_5, img_width, img_height, sizes[5], ratios[5],
+        anchors_5, cls_preds_5, bbox_preds_5 = _fmap_forward(fmap_5, img_width, img_height, sizes[5], ratios[5],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(1, 1), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -607,7 +607,7 @@ def st_ssd_mobilenet_v1(
         fmap_4 = Add(name='fmap_4')([fmap_4, fmap_5_up_4])  # (2, 2)
 
         fmap_4_size = (int(fmap_4.shape[1]), int(fmap_4.shape[2]),)
-        anchors_4, cls_preds_4, bbox_preds_4 = fmap_forward(fmap_4, img_width, img_height, sizes[4], ratios[4],
+        anchors_4, cls_preds_4, bbox_preds_4 = _fmap_forward(fmap_4, img_width, img_height, sizes[4], ratios[4],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -621,7 +621,7 @@ def st_ssd_mobilenet_v1(
         fmap_3 = Add(name='fmap_3')([fmap_3, fmap_4_up_3])  # (4, 4)
 
         fmap_3_size = (int(fmap_3.shape[1]), int(fmap_3.shape[2]),)
-        anchors_3, cls_preds_3, bbox_preds_3 = fmap_forward(fmap_3, img_width, img_height, sizes[3], ratios[3],
+        anchors_3, cls_preds_3, bbox_preds_3 = _fmap_forward(fmap_3, img_width, img_height, sizes[3], ratios[3],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -635,7 +635,7 @@ def st_ssd_mobilenet_v1(
         fmap_2 = Add(name='fmap_2')([fmap_2, fmap_3_up_2])  # (8, 8)
 
         fmap_2_size = (int(fmap_2.shape[1]), int(fmap_2.shape[2]),)
-        anchors_2, cls_preds_2, bbox_preds_2 = fmap_forward(fmap_2, img_width, img_height, sizes[2], ratios[2],
+        anchors_2, cls_preds_2, bbox_preds_2 = _fmap_forward(fmap_2, img_width, img_height, sizes[2], ratios[2],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -649,7 +649,7 @@ def st_ssd_mobilenet_v1(
         fmap_1 = Add(name='fmap_1')([fmap_1, fmap_2_up_1])  # (16, 16)
 
         fmap_1_size = (int(fmap_1.shape[1]), int(fmap_1.shape[2]),)
-        anchors_1, cls_preds_1, bbox_preds_1 = fmap_forward(fmap_1, img_width, img_height, sizes[1], ratios[1],
+        anchors_1, cls_preds_1, bbox_preds_1 = _fmap_forward(fmap_1, img_width, img_height, sizes[1], ratios[1],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)
@@ -663,7 +663,7 @@ def st_ssd_mobilenet_v1(
         fmap_0 = Add(name='fmap_0')([fmap_0, fmap_1_up_0])  # (32, 32)
 
         fmap_0_size = (int(fmap_0.shape[1]), int(fmap_0.shape[2]),)
-        anchors_0, cls_preds_0, bbox_preds_0 = fmap_forward(fmap_0, img_width, img_height, sizes[0], ratios[0],
+        anchors_0, cls_preds_0, bbox_preds_0 = _fmap_forward(fmap_0, img_width, img_height, sizes[0], ratios[0],
                                                             clip_boxes=clip_boxes, normalize=normalize,
                                                             n_classes=n_classes,
                                                             kernel=(3, 3), l2_reg=l2_reg, bn=bn_pred, dw=dw_pred)

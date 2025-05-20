@@ -10,15 +10,13 @@
 import os
 from munch import DefaultMunch
 from omegaconf import DictConfig
-import numpy as np
 import tensorflow as tf
 
-from cfg_utils import collect_callback_args
-from logs_utils import LRTensorBoard
-import lr_schedulers
+from common.utils import collect_callback_args, LRTensorBoard
+from common.training import lr_schedulers
 
 
-def get_callback_monitoring(args: DictConfig, callback_name: str = None, message: str = None) -> tuple:
+def _get_callback_monitoring(args: DictConfig, callback_name: str = None, message: str = None) -> tuple:
 
     if not args.monitor:
         monitor = "val_loss"
@@ -46,7 +44,7 @@ def get_callback_monitoring(args: DictConfig, callback_name: str = None, message
     return monitor, mode
 
 
-def get_best_model_callback(cfg: DictConfig, 
+def _get_best_model_callback(cfg: DictConfig, 
                             saved_models_dir: str = None,
                             message: str = None) -> tf.keras.callbacks.Callback:
 
@@ -59,7 +57,7 @@ def get_best_model_callback(cfg: DictConfig,
             if k not in ("monitor", "mode"):
                 raise ValueError("\nThe 'ModelCheckpoint' callback is built-in. Only the "
                                 f"`monitor` and `mode` arguments can be specified.{message}")
-        monitor, mode = get_callback_monitoring(args, callback_name="ModelCheckpoint", message=message)
+        monitor, mode = _get_callback_monitoring(args, callback_name="ModelCheckpoint", message=message)
 
     callback = tf.keras.callbacks.ModelCheckpoint(
                     filepath=os.path.join(saved_models_dir, "best_weights.h5"),
@@ -125,7 +123,7 @@ def get_callbacks(cfg: DictConfig,
             raise ValueError(f"\nThe `{name}` callback is built-in and can't be redefined.{message}")
 
         if name in  ("ReduceLROnPlateau", "EarlyStopping"):
-            monitor, mode = get_callback_monitoring(args, callback_name=name, message=message)
+            monitor, mode = _get_callback_monitoring(args, callback_name=name, message=message)
             args.monitor = monitor
             args.mode = mode
     
@@ -153,7 +151,7 @@ def get_callbacks(cfg: DictConfig,
         raise ValueError(f"\nFound more than one learning rate scheduler{message}")
 
     # Add the Keras callback that saves the best model obtained so far
-    callback = get_best_model_callback(cfg, saved_models_dir=saved_models_dir, message=message)
+    callback = _get_best_model_callback(cfg, saved_models_dir=saved_models_dir, message=message)
     callback_list.append(callback)
 
     # Add the Keras callback that saves the model at the end of the epoch

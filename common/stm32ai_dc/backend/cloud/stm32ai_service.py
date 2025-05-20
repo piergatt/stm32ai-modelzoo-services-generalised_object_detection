@@ -11,11 +11,11 @@ import requests
 import os
 import json
 import typing
-from stm32ai_dc.backend.cloud.file_service import FileService
-from stm32ai_dc.errors import ModelNotFoundError, WrongTypeError
-from stm32ai_dc.types import AtonParametersSchema, CliParameterCompression, CliParameterType
-from stm32ai_dc.types import CliParameterVerbosity, CliParameters
-from .helpers import get_ssl_verify_status
+from common.stm32ai_dc.backend.cloud.file_service import FileService
+from common.stm32ai_dc.errors import ModelNotFoundError, WrongTypeError
+from common.stm32ai_dc.types import AtonParametersSchema, CliParameterCompression, CliParameterType
+from common.stm32ai_dc.types import CliParameterVerbosity, CliParameters
+from .helpers import get_main_route_api_version, get_ssl_verify_status
 from .helpers import get_value_or_default, _get_env_proxy
 from .endpoints import get_stm32ai_analyze_ep, get_stm32ai_generate_ep
 from .endpoints import get_stm32ai_run, get_stm32ai_service_ep

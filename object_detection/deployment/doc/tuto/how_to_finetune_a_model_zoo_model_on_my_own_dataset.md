@@ -144,16 +144,16 @@ deployment:
     board: STM32H747I-DISCO
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
   
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 ## Run the script:
 
-Edit the user_config.yaml then open a CMD (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a CMD (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

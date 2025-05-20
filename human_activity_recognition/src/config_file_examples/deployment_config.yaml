@@ -1,5 +1,5 @@
 general:
-   model_path: ../../../model_zoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5     # Path to the model file to deploy
+   model_path: ../../stm32ai-modelzoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5     # Path to the model file to deploy
 
 operation_mode: deployment
 
@@ -20,7 +20,7 @@ tools:
   path_to_cubeIDE: C:/ST/STM32CubeIDE_1.17.0/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-  c_project_path: ../../application_code/sensing_thread_x/STM32U5/
+  c_project_path: ../application_code/sensing_thread_x/STM32U5/
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -28,8 +28,8 @@ deployment:
     board: B-U585I-IOT02A
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

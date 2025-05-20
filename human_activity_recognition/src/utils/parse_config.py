@@ -11,16 +11,16 @@ import os
 from pathlib import Path
 import re
 from hydra.core.hydra_config import HydraConfig
-from cfg_utils import postprocess_config_dict, check_config_attributes, parse_tools_section, parse_benchmarking_section, \
-                      parse_mlflow_section, parse_top_level, parse_general_section, parse_training_section, \
-                      parse_deployment_section, check_hardware_type
+from common.utils import postprocess_config_dict, check_config_attributes, parse_tools_section, parse_benchmarking_section, \
+                         parse_mlflow_section, parse_top_level, parse_general_section, parse_training_section, \
+                         parse_deployment_section, check_hardware_type
 from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
 import tensorflow as tf
 from typing import Dict, List
 
 
-def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None) -> None:
+def _parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None) -> None:
     '''
     parses the dataset section from the configuration dictionary
     args:
@@ -99,7 +99,7 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
                                     f"Received path: {path}{message}")
 
 
-def parse_preprocessing_section(cfg: DictConfig) -> None:
+def _parse_preprocessing_section(cfg: DictConfig) -> None:
     '''
     parses the preprocessing section of the configuration dictionary
     args:
@@ -110,7 +110,7 @@ def parse_preprocessing_section(cfg: DictConfig) -> None:
     check_config_attributes(cfg, specs={"legal": legal, "all": legal}, section="preprocessing")
 
 
-def check_dataset_contents(cfg: DictConfig) -> None:
+def _check_dataset_contents(cfg: DictConfig) -> None:
     '''
     checks if the dataset paths are provided and are correct
     args:
@@ -126,7 +126,7 @@ def check_dataset_contents(cfg: DictConfig) -> None:
             raise ValueError("valid values for training_path or test_path are missing.\n"
                              "Please check the cfg.dataset section")
 
-def get_class_names(dataset_name: str) -> List:
+def _get_class_names(dataset_name: str) -> List:
     '''
     returns the a list of class names in the dataset
     args:
@@ -196,13 +196,13 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Dataset section parsing
     if not cfg.dataset:
         cfg.dataset = DefaultMunch.fromDict({})
-    parse_dataset_section(cfg.dataset, 
+    _parse_dataset_section(cfg.dataset, 
                           mode=cfg.operation_mode, 
                           mode_groups=mode_groups)
     
     # Preprocessing section parsing
     if not cfg.operation_mode in mode_groups.benchmarking:
-        parse_preprocessing_section(cfg.preprocessing)
+        _parse_preprocessing_section(cfg.preprocessing)
 
     # Training section parsing
     if cfg.operation_mode in mode_groups.training:
@@ -246,8 +246,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     if cfg.operation_mode in ['benchmarking', 'deployment']:
         pass
     elif(cds.name.lower() in ['wisdm', 'mobility_v1']):
-        check_dataset_contents(cds)
-        cds.class_names = get_class_names(cds.name)
+        _check_dataset_contents(cds)
+        cds.class_names = _get_class_names(cds.name)
     else:
         raise ValueError("\nOnly \'wisdm\' and \'mobility_v1\' datasets are supproted." 
                          "Please update your configuration file.")

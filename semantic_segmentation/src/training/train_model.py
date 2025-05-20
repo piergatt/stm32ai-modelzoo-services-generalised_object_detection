@@ -1,7 +1,15 @@
+# /*---------------------------------------------------------------------------------------------
+#  * Copyright (c) 2022-2023 STMicroelectronics.
+#  * All rights reserved.
+#  *
+#  * This software is licensed under terms that can be found in the LICENSE file in
+#  * the root directory of this software component.
+#  * If no LICENSE file comes with this software, it is provided AS-IS.
+#  *--------------------------------------------------------------------------------------------*/
 
 import tensorflow as tf
-from loss import segmentation_loss
-from data_augmentation import data_augmentation
+from .loss import segmentation_loss
+from src.data_augmentation import data_augmentation
 
             
 class SegmentationTrainingModel(tf.keras.Model):

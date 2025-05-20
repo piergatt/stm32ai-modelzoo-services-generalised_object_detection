@@ -104,6 +104,8 @@ The `model_type` attribute specifies the type of the model architecture that you
 
 - `yolo_v8` : is an advanced object detection model from Ultralytics that builds upon the strengths of its predecessors in the YOLO series. It is designed for real-time object detection, offering high accuracy and speed. YOLOv8 incorporates state-of-the-art techniques such as improved backbone networks, better feature pyramid networks, and advanced anchor-free detection heads, making it highly efficient for various computer vision tasks. Don't hesitate to check the tuto ["How can I quantize, evaluate and deploy an Ultralytics Yolov8 model?"](../../../object_detection/deployment/doc/tuto/How_to_deploy_yolov8_yolov5_object_detection.md) for more information on Ultralytics Yolov8 model deployment.
 
+- `yolo_v11` : is an advanced object detection model from Ultralytics that builds upon the strengths of its predecessors in the YOLO series. It is designed for real-time object detection, offering high accuracy and speed. YOLOv11 incorporates state-of-the-art techniques such as improved backbone networks, better feature pyramid networks, and advanced anchor-free detection heads, making it highly efficient for various computer vision tasks. Don't hesitate to check the tuto ["How can I quantize, evaluate and deploy an Ultralytics Yolov8 model?"](../../../object_detection/deployment/doc/tuto/How_to_deploy_yolov8_yolov5_object_detection.md) for more information on Ultralytics Yolov11 model deployment.
+
 - `yolo_v5u`: (You Only Look Once version 5 from Ultralytics) is a popular object detection model known for its balance of speed and accuracy. It is part of the YOLO family and is designed to perform real-time object detection. Don't hesitate to check the tuto ["How can I quantize, evaluate and deploy an Ultralytics Yolov5 model?"](../../../object_detection/deployment/doc/tuto/How_to_deploy_yolov8_yolov5_object_detection.md) for more information on Ultralytics Yolov5u model deployment.
  
 - `st_yolo_x`: is an advanced object detection model that builds upon the YOLO (You Only Look Once) series, offering significant improvements in performance and flexibility. Unlike its predecessors, YOLOX can adopt an anchor-free approach, which simplifies the model and enhances its accuracy. It also incorporates advanced techniques such as decoupled head structures for classification and localization, and a more efficient training strategy. YOLOX is designed to achieve high accuracy and speed, making it suitable for real-time applications in various computer vision tasks. This ST variant embeds various tuning capabilities from the yaml configuration file.
@@ -221,7 +223,7 @@ representative data.
 </details></ul>
 <ul><details open><summary><a href="#2-6">2.6 Apply post-processing</a></summary><a id="2-6"></a>
 
-Apply post-processing by modifying the **postprocessing** parameters in **[user_config.yaml](../user_config.yaml)** as follows:
+Apply post-processing by modifying the **postprocessing** parameters in **[user_config.yaml](../../user_config.yaml)** as follows:
 
 - `confidence_thresh` - A *float* between 0.0 and 1.0, the score threshold to filter detections.
 - `NMS_thresh` - A *float* between 0.0 and 1.0, NMS threshold to filter and reduce overlapped boxes.
@@ -304,14 +306,14 @@ they are based on the date and time of the run.
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
@@ -321,7 +323,7 @@ mlflow:
 To launch your model training using a real dataset, run the following command from the **src/** folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name training_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name training_config.yaml
 ```
 
 The trained h5 model can be found in the corresponding **experiments_outputs/** folder.
@@ -407,7 +409,7 @@ However, they may lead to unexpected results.
 In case you want to train and quantize a model, you can either launch the training operation mode followed by the quantization operation on the trained model (please refer to the quantization **[README.md](../quantization/README.md)** that describes in detail the quantization part) or you can use chained services like launching [chain_tqe](../config_file_examples/chain_tqe_config.yaml) example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_tqe_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_tqe_config.yaml
 ```
 
 This specific example trains a MobileNet v2 model with ImageNet pre-trained weights, fine-tunes it by retraining the latest seven layers but the fifth one (this only as an example), and quantizes it to 8-bits using quantization_split (30% in this example) of the train dataset for calibration before evaluating the quantized model.
@@ -415,7 +417,7 @@ This specific example trains a MobileNet v2 model with ImageNet pre-trained weig
 In case you also want to execute a benchmark on top of training and quantize services, it is recommended to launch the chain service called [chain_tqeb](../config_file_examples/chain_tqeb_config.yaml) that stands for train, quantize, evaluate, benchmark like the example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_tqeb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_tqeb_config.yaml
 ```
 
 This specific example uses the "Bring Your Own Model" feature using `model_path`, then fine-tunes the initial model by retraining all the layers but the twenty-first (as an example), benchmarks the float model on the STM32H747I-DISCO board using the STM32Cube.AI developer cloud, quantizes it to 8-bits using quantization_split (30% in this example) of the train dataset for calibration before evaluating the quantized model and benchmarking it.

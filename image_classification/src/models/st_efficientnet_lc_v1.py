@@ -17,7 +17,7 @@ from tensorflow.keras.models import Model
 repeats = [1, 2, 2, 3, 3, 4, 1]
 
 
-def round_expansion(expansion_factor: int, repeats: List[int]) -> List[int] :
+def _round_expansion(expansion_factor: int, repeats: List[int]) -> List[int] :
     exp_ratio = []
     flag = 1
     for r in repeats:
@@ -30,7 +30,7 @@ def round_expansion(expansion_factor: int, repeats: List[int]) -> List[int] :
     return exp_ratio
 
 
-def num_blocks(repeats: List[int]) -> List[int]:
+def _num_blocks(repeats: List[int]) -> List[int]:
     blocks = []
     for r in repeats:
         if (r != 0):
@@ -40,7 +40,7 @@ def num_blocks(repeats: List[int]) -> List[int]:
     return blocks
 
 
-def round_filters(filters: int, width_coefficient: float, depth_divisor: int = 8, min_filters: int = None) -> int:
+def _round_filters(filters: int, width_coefficient: float, depth_divisor: int = 8, min_filters: int = None) -> int:
     """Round number of filters based on depth multiplier."""
     if not width_coefficient:
         return filters
@@ -53,7 +53,7 @@ def round_filters(filters: int, width_coefficient: float, depth_divisor: int = 8
     return int(new_filters)
 
 
-def round_repeats(repeats: List[int], depth_coefficient: float, depth_trunc: str) -> List[int]:
+def _round_repeats(repeats: List[int], depth_coefficient: float, depth_trunc: str) -> List[int]:
     """ Per-stage depth scaling
     Scales the block repeats in each stage. This depth scaling impl maintains
     compatibility with the EfficientNet scaling method, while allowing sensible
@@ -88,11 +88,11 @@ def round_repeats(repeats: List[int], depth_coefficient: float, depth_trunc: str
     return repeats_scaled
 
 
-def swish(x):
+def _swish(x):
     return x * tf.nn.sigmoid(x)
     
 
-def mb_conv_block(inputs: tf.Tensor, in_channels: int, out_channels: int, num_repeat: int, stride: int, expansion_factor: int, se_ratio: float, k: int, drop_rate: float, 
+def _mb_conv_block(inputs: tf.Tensor, in_channels: int, out_channels: int, num_repeat: int, stride: int, expansion_factor: int, se_ratio: float, k: int, drop_rate: float, 
                   prev_block_num: int, activation) -> tf.Tensor:
 
     x = inputs
@@ -146,7 +146,7 @@ def mb_conv_block(inputs: tf.Tensor, in_channels: int, out_channels: int, num_re
     return x
 
 
-def EfficientNet(width_coefficient_list: float = 1.0,
+def _EfficientNet(width_coefficient_list: float = 1.0,
                 depth_coefficient: float = 1.0,
                 input_resolution: int = 224,
                 expansion_factor: int = 6,
@@ -165,49 +165,49 @@ def EfficientNet(width_coefficient_list: float = 1.0,
 
     # Activation
     if activation == 'swish':
-        activation = swish()
+        activation = _swish()
     if activation == 'relu6':
         activation = tf.nn.relu6
 
     # Build stem
-    x = layers.Conv2D(filters=round_filters(32, width_coefficient_list[0]), kernel_size=(3, 3), strides=(2, 2), padding='same')(input)
+    x = layers.Conv2D(filters=_round_filters(32, width_coefficient_list[0]), kernel_size=(3, 3), strides=(2, 2), padding='same')(input)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(activation, name='stem_activation')(x)
 
     # Build blocks
-    repeats_scaled = round_repeats(repeats, depth_coefficient, depth_trunc)
-    exp_ratio = round_expansion(expansion_factor, repeats_scaled)
+    repeats_scaled = _round_repeats(repeats, depth_coefficient, depth_trunc)
+    exp_ratio = _round_expansion(expansion_factor, repeats_scaled)
     
-    block1 = mb_conv_block(inputs=x, in_channels=round_filters(32, width_coefficient_list[0]), out_channels=round_filters(16, width_coefficient_list[1]), 
+    block1 = _mb_conv_block(inputs=x, in_channels=_round_filters(32, width_coefficient_list[0]), out_channels=_round_filters(16, width_coefficient_list[1]), 
                            num_repeat=repeats_scaled[0],stride=1, expansion_factor=exp_ratio[0], se_ratio=se_ratio, k=3, drop_rate=drop_connect_rate, 
                            prev_block_num=0, activation=activation)
 
-    block2 = mb_conv_block(inputs=block1, in_channels=round_filters(16, width_coefficient_list[1]), out_channels=round_filters(24, width_coefficient_list[2]), 
+    block2 = _mb_conv_block(inputs=block1, in_channels=_round_filters(16, width_coefficient_list[1]), out_channels=_round_filters(24, width_coefficient_list[2]), 
                            num_repeat=repeats_scaled[1],stride=2, expansion_factor=exp_ratio[1], se_ratio=se_ratio, k=3, drop_rate=drop_connect_rate, 
                            prev_block_num=sum(repeats_scaled[0:1]), activation=activation)
     
-    block3 = mb_conv_block(inputs=block2, in_channels=round_filters(24, width_coefficient_list[2]), out_channels=round_filters(40, width_coefficient_list[3]), 
+    block3 = _mb_conv_block(inputs=block2, in_channels=_round_filters(24, width_coefficient_list[2]), out_channels=_round_filters(40, width_coefficient_list[3]), 
                            num_repeat=repeats_scaled[2],stride=2, expansion_factor=exp_ratio[2], se_ratio=se_ratio, k=5, drop_rate=drop_connect_rate, 
                            prev_block_num=sum(repeats_scaled[0:2]), activation=activation)
     
-    block4 = mb_conv_block(inputs=block3, in_channels=round_filters(40, width_coefficient_list[3]), out_channels=round_filters(80, width_coefficient_list[4]), 
+    block4 = _mb_conv_block(inputs=block3, in_channels=_round_filters(40, width_coefficient_list[3]), out_channels=_round_filters(80, width_coefficient_list[4]), 
                            num_repeat=repeats_scaled[3], stride=2, expansion_factor=exp_ratio[3], se_ratio=se_ratio, k=3, drop_rate=drop_connect_rate, 
                            prev_block_num=sum(repeats_scaled[0:3]), activation=activation)
     
-    block5 = mb_conv_block(inputs=block4, in_channels=round_filters(80, width_coefficient_list[4]), out_channels=round_filters(112, width_coefficient_list[5]), 
+    block5 = _mb_conv_block(inputs=block4, in_channels=_round_filters(80, width_coefficient_list[4]), out_channels=_round_filters(112, width_coefficient_list[5]), 
                            num_repeat=repeats_scaled[4], stride=1, expansion_factor=exp_ratio[4], se_ratio=se_ratio, k=5, drop_rate=drop_connect_rate, 
                            prev_block_num=sum(repeats_scaled[0:4]), activation=activation)
     
-    block6 = mb_conv_block(inputs=block5, in_channels=round_filters(112, width_coefficient_list[5]), out_channels=round_filters(192, width_coefficient_list[6]),
+    block6 = _mb_conv_block(inputs=block5, in_channels=_round_filters(112, width_coefficient_list[5]), out_channels=_round_filters(192, width_coefficient_list[6]),
                             num_repeat=repeats_scaled[5], stride=2, expansion_factor=exp_ratio[5], se_ratio=se_ratio, k=5, drop_rate=drop_connect_rate, 
                             prev_block_num=sum(repeats_scaled[0:5]), activation=activation)
     
-    block7 = mb_conv_block(inputs=block6, in_channels=round_filters(192, width_coefficient_list[6]), out_channels=round_filters(320, width_coefficient_list[7]),
+    block7 = _mb_conv_block(inputs=block6, in_channels=_round_filters(192, width_coefficient_list[6]), out_channels=_round_filters(320, width_coefficient_list[7]),
                             num_repeat=repeats_scaled[6],stride=1, expansion_factor=exp_ratio[6], se_ratio=se_ratio, k=3, drop_rate=drop_connect_rate, 
                             prev_block_num=sum(repeats_scaled[0:6]), activation=activation)
 
     # Build top
-    x = layers.Conv2D(filters=round_filters(1280, width_coefficient_list[8]), kernel_size=(1, 1), padding='same', name='top_conv')(block7)
+    x = layers.Conv2D(filters=_round_filters(1280, width_coefficient_list[8]), kernel_size=(1, 1), padding='same', name='top_conv')(block7)
     x = layers.BatchNormalization()(x)
     x = layers.Activation(activation, name='top_activation')(x)
 	
@@ -245,7 +245,7 @@ def get_st_efficientnet_lc_v1(input_shape: Tuple[int, int, int] = None, num_clas
     d = 1.
     w = [0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45, 0.45]
     e = 3
-    model = EfficientNet(width_coefficient_list=w, depth_coefficient=d, input_resolution=input_shape[0], expansion_factor=e, depth_trunc='ceil', activation=activation, 
+    model = _EfficientNet(width_coefficient_list=w, depth_coefficient=d, input_resolution=input_shape[0], expansion_factor=e, depth_trunc='ceil', activation=activation, 
 							input_channels=input_shape[2], dropout_rate=dropout, include_top=True, classes=num_classes)
     
     return model

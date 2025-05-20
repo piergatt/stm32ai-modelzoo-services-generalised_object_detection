@@ -16,7 +16,7 @@ import tensorflow as tf
 from typing import Tuple, List
 
 
-def load_cifar_batch(fpath, label_key="labels") -> Tuple:
+def _load_cifar_batch(fpath, label_key="labels") -> Tuple:
     """
     Internal utility for parsing CIFAR data.
 
@@ -46,7 +46,7 @@ def load_cifar_batch(fpath, label_key="labels") -> Tuple:
     return data, labels
 
 
-def load_cifar_10(training_path: str, num_classes: int = None, input_size: list = None,
+def _load_cifar_10(training_path: str, num_classes: int = None, input_size: list = None,
                   interpolation: str = None, aspect_ratio: str = None,
                   batch_size: int = None, seed: int = None, to_cache: bool = False) -> Tuple:
     """
@@ -91,10 +91,10 @@ def load_cifar_10(training_path: str, num_classes: int = None, input_size: list 
         (
             x_train[(i - 1) * 10000: i * 10000, :, :, :],
             y_train[(i - 1) * 10000: i * 10000],
-        ) = load_cifar_batch(fpath)
+        ) = _load_cifar_batch(fpath)
 
     fpath = os.path.join(training_path, "test_batch")
-    x_test, y_test = load_cifar_batch(fpath)
+    x_test, y_test = _load_cifar_batch(fpath)
 
     y_train = np.reshape(y_train, (len(y_train),))
     y_test = np.reshape(y_test, (len(y_test),))
@@ -140,7 +140,7 @@ def load_cifar_10(training_path: str, num_classes: int = None, input_size: list 
     return train_ds, valid_ds
 
 
-def load_cifar_100(training_path: str, num_classes: int = None, input_size: list = None,
+def _load_cifar_100(training_path: str, num_classes: int = None, input_size: list = None,
                    interpolation: str = None, aspect_ratio: str = None,
                    batch_size: int = None, seed: int = None, to_cache: bool = False) -> tuple:
     """
@@ -182,10 +182,10 @@ def load_cifar_100(training_path: str, num_classes: int = None, input_size: list
             f"Received: number of classes={num_classes}.")
 
     fpath = os.path.join(training_path, "train")
-    x_train, y_train = load_cifar_batch(fpath, label_key=label_mode + "_labels")
+    x_train, y_train = _load_cifar_batch(fpath, label_key=label_mode + "_labels")
 
     fpath = os.path.join(training_path, "test")
-    x_test, y_test = load_cifar_batch(fpath, label_key=label_mode + "_labels")
+    x_test, y_test = _load_cifar_batch(fpath, label_key=label_mode + "_labels")
 
     y_train = np.reshape(y_train, (len(y_train),)).astype(np.uint8)
     y_test = np.reshape(y_test, (len(y_test),)).astype(np.uint8)
@@ -227,7 +227,7 @@ def load_cifar_100(training_path: str, num_classes: int = None, input_size: list
     return train_ds, valid_ds
 
 
-def load_emnist_by_class(training_path: str,
+def _load_emnist_by_class(training_path: str,
                          num_classes: int = None,
                          input_size: list[int] = None,
                          interpolation: str = None,
@@ -402,7 +402,7 @@ def check_dataset_integrity(dataset_root_dir: str, check_image_files: bool = Fal
                                  "Supported image file formats are JPEG, PNG, GIF and BMP.")
 
 
-def get_path_dataset(path: str,
+def _get_path_dataset(path: str,
                      class_names: list[str],
                      seed: int,
                      shuffle: bool = True) -> tf.data.Dataset:
@@ -447,7 +447,7 @@ def get_path_dataset(path: str,
     return dataset
 
 
-def preprocess_function(data_x : tf.Tensor,
+def _preprocess_function(data_x : tf.Tensor,
                         data_y : tf.Tensor,
                         image_size: tuple[int],
                         interpolation: str,
@@ -474,7 +474,7 @@ def preprocess_function(data_x : tf.Tensor,
     return image, data_y
 
 
-def get_train_val_ds(training_path: str,
+def _get_train_val_ds(training_path: str,
                      image_size: tuple[int] = None,
                      label_mode: str = None,
                      class_names: list[str] = None,
@@ -535,7 +535,7 @@ def get_train_val_ds(training_path: str,
                          label_mode,
                          len(class_names))
 
-    dataset = get_path_dataset(training_path, class_names, seed=seed)
+    dataset = _get_path_dataset(training_path, class_names, seed=seed)
 
     train_size = int(len(dataset)*(1-validation_split))
     train_ds = dataset.take(train_size)
@@ -544,8 +544,8 @@ def get_train_val_ds(training_path: str,
     if shuffle:
         train_ds = train_ds.shuffle(len(train_ds), reshuffle_each_iteration=True, seed=seed)
     
-    train_ds = train_ds.map(lambda *data : preprocess_function(*data,*preprocess_params))
-    val_ds = val_ds.map(lambda *data : preprocess_function(*data,*preprocess_params))
+    train_ds = train_ds.map(lambda *data : _preprocess_function(*data,*preprocess_params))
+    val_ds = val_ds.map(lambda *data : _preprocess_function(*data,*preprocess_params))
     
     train_ds = train_ds.batch(batch_size)
     val_ds = val_ds.batch(batch_size)
@@ -560,7 +560,7 @@ def get_train_val_ds(training_path: str,
     return train_ds, val_ds
 
 
-def get_ds(data_path: str = None,
+def _get_ds(data_path: str = None,
            label_mode: str = None,
            class_names: list[str] = None,
            image_size: tuple[int] = None,
@@ -617,12 +617,12 @@ def get_ds(data_path: str = None,
                          label_mode,
                          len(class_names))
     
-    dataset = get_path_dataset(data_path, class_names, seed=seed)
+    dataset = _get_path_dataset(data_path, class_names, seed=seed)
 
     if shuffle:
         dataset = dataset.shuffle(len(dataset), reshuffle_each_iteration=True, seed=seed)
     
-    dataset = dataset.map(lambda *data: preprocess_function(*data, *preprocess_params))
+    dataset = dataset.map(lambda *data: _preprocess_function(*data, *preprocess_params))
     dataset = dataset.batch(batch_size)
 
     if to_cache:
@@ -684,7 +684,7 @@ def load_dataset(dataset_name: str = None,
     
     if dataset_name == "cifar10":
         # Load CIFAR-10 dataset
-        train_ds, val_ds = load_cifar_10(
+        train_ds, val_ds = _load_cifar_10(
             training_path,
             num_classes=num_classes,
             input_size=image_size,
@@ -695,7 +695,7 @@ def load_dataset(dataset_name: str = None,
             to_cache=False)
     elif dataset_name == "cifar100":
         # Load CIFAR-100 dataset
-        train_ds, val_ds = load_cifar_100(
+        train_ds, val_ds = _load_cifar_100(
             training_path,
             num_classes=num_classes,
             input_size=image_size,
@@ -706,7 +706,7 @@ def load_dataset(dataset_name: str = None,
             to_cache=False)
     elif dataset_name == "emnist":
         # Load EMNIST-ByClass dataset
-        train_ds, val_ds = load_emnist_by_class(
+        train_ds, val_ds = _load_emnist_by_class(
             training_path,
             num_classes=num_classes,
             input_size=image_size,
@@ -717,7 +717,7 @@ def load_dataset(dataset_name: str = None,
     elif training_path and not validation_path:
         # There is no validation. We split the
         # training set in two to create one.
-        train_ds, val_ds = get_train_val_ds(
+        train_ds, val_ds = _get_train_val_ds(
             training_path,
             class_names=class_names,
             image_size=image_size,
@@ -729,7 +729,7 @@ def load_dataset(dataset_name: str = None,
             shuffle=True,
             seed=seed)
     elif training_path and validation_path:
-        train_ds = get_ds(
+        train_ds = _get_ds(
             training_path,
             class_names=class_names,
             image_size=image_size,
@@ -740,7 +740,7 @@ def load_dataset(dataset_name: str = None,
             shuffle=True,
             seed=seed)
 
-        val_ds = get_ds(
+        val_ds = _get_ds(
             validation_path,
             class_names=class_names,
             image_size=image_size,
@@ -751,7 +751,7 @@ def load_dataset(dataset_name: str = None,
             shuffle=False,
             seed=seed)
     elif validation_path:
-        val_ds = get_ds(
+        val_ds = _get_ds(
             validation_path,
             class_names=class_names,
             image_size=image_size,
@@ -767,7 +767,7 @@ def load_dataset(dataset_name: str = None,
         val_ds = None
 
     if quantization_path:
-        quantization_ds = get_ds(
+        quantization_ds = _get_ds(
             quantization_path,
             class_names=class_names,
             image_size=image_size,
@@ -778,7 +778,7 @@ def load_dataset(dataset_name: str = None,
             shuffle=False,
             seed=seed)
     elif train_ds is not None: 
-        quantization_ds = get_ds(
+        quantization_ds = _get_ds(
             training_path,
             class_names=class_names,
             image_size=image_size,
@@ -792,7 +792,7 @@ def load_dataset(dataset_name: str = None,
         quantization_ds = None
 
     if test_path:
-        test_ds = get_ds(
+        test_ds = _get_ds(
             test_path,
             class_names=class_names,
             image_size=image_size,

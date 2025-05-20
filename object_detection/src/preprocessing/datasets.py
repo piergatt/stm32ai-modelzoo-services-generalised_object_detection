@@ -15,11 +15,10 @@ import random
 import numpy as np
 import tensorflow as tf
 
-from bounding_boxes_utils import bbox_center_to_corners_coords, bbox_abs_to_normalized_coords
-from models_mgt import model_family
+from src.utils import bbox_center_to_corners_coords, bbox_abs_to_normalized_coords
 
 
-def get_example_paths(dataset_root: str = None, shuffle: bool = True, seed: int = None) -> list:
+def _get_example_paths(dataset_root: str = None, shuffle: bool = True, seed: int = None) -> list:
     """
     Gets all the paths to .jpg image files and corresponding .tfs labels
     files under a dataset root directory.
@@ -81,7 +80,7 @@ def get_example_paths(dataset_root: str = None, shuffle: bool = True, seed: int 
     return example_paths
 
 
-def get_image_paths(dataset_root: str = None, shuffle: bool = True, seed: int = None) -> list:
+def _get_image_paths(dataset_root: str = None, shuffle: bool = True, seed: int = None) -> list:
     """
     Gets all the paths to .jpg image files under a dataset root directory.
 
@@ -122,7 +121,7 @@ def get_image_paths(dataset_root: str = None, shuffle: bool = True, seed: int = 
     return jpg_file_paths
 
 
-def split_file_paths(data_paths, split_ratio=None):
+def _split_file_paths(data_paths, split_ratio=None):
     """
     Splits a list in two according to a specified split ratio.
 
@@ -144,7 +143,7 @@ def split_file_paths(data_paths, split_ratio=None):
     return data_paths[:size], data_paths[size:]
         
                     
-def create_image_and_labels_loader(
+def _create_image_and_labels_loader(
             example_paths: list = None,
             image_size: tuple = None,
             batch_size: int = None,
@@ -211,7 +210,7 @@ def create_image_and_labels_loader(
         A tf.data.Dataset data loader.
     """
 
-    def load_with_fit(data_paths):
+    def _load_with_fit(data_paths):
     
         image_path = data_paths[0]
         labels_path = data_paths[1]
@@ -220,7 +219,8 @@ def create_image_and_labels_loader(
         channels = 1 if color_mode == "grayscale" else 3
         data = tf.io.read_file(image_path)
         image_in = tf.io.decode_jpeg(data, channels=channels)
-        
+        if color_mode.lower()=='bgr':
+            image_in = image_in[...,::-1]
         # Resize the input image
         width_out = image_size[0]
         height_out = image_size[1]
@@ -250,7 +250,7 @@ def create_image_and_labels_loader(
         return image_out, labels_out
     
     
-    def load_with_crop_or_pad(data_paths):
+    def _load_with_crop_or_pad(data_paths):
     
         image_path = data_paths[0]
         labels_path = data_paths[1]
@@ -345,16 +345,16 @@ def create_image_and_labels_loader(
         buffer_size = len(example_paths)
         ds = ds.shuffle(buffer_size, reshuffle_each_iteration=True)
     if aspect_ratio == "fit":
-        ds = ds.map(load_with_fit)
+        ds = ds.map(_load_with_fit)
     else:
-        ds = ds.map(load_with_crop_or_pad)
+        ds = ds.map(_load_with_crop_or_pad)
     ds = ds.batch(batch_size)
     if prefetch:
         ds = ds.prefetch(tf.data.AUTOTUNE)
     return ds
 
 
-def create_image_loader(
+def _create_image_loader(
             image_paths: list,
             image_size: tuple = None,
             batch_size: int = None,
@@ -392,12 +392,14 @@ def create_image_loader(
         A tf.data.Dataset data loader.
     """
     
-    def load_image(img_path):
+    def _load_image(img_path):
     
         # Load the input image
         channels = 1 if color_mode == "grayscale" else 3
         data = tf.io.read_file(img_path)
         image_in = tf.io.decode_jpeg(data, channels=channels)
+        if color_mode.lower() == 'bgr':
+            image_in = image_in[...,::-1]
         
         # Resize the input image
         width_out = image_size[0]
@@ -409,12 +411,20 @@ def create_image_loader(
         
         # Rescale the output image
         image_out = tf.cast(image_out, tf.float32)
-        image_out = rescaling[0] * image_out + rescaling[1]
+        # image_out = rescaling[0] * image_out + rescaling[1]
+        if isinstance(rescaling[0], (list, tuple)) or isinstance(rescaling[1], (list, tuple)):
+            # Assuming rescaling[0] and rescaling[1] are lists/tuples of length equal to number of channels
+            variances = tf.constant(rescaling[0], dtype=tf.float32)
+            means = tf.constant(rescaling[1], dtype=tf.float32)
+            image_out = (image_out / variances ) + means
+        else:
+            # Default scalar rescaling
+            image_out = rescaling[0] * image_out + rescaling[1]
         
-        return image_out
+        return image_out, tf.convert_to_tensor(img_path)
         
     ds = tf.data.Dataset.from_tensor_slices(image_paths)
-    ds = ds.map(load_image)
+    ds = ds.map(_load_image)
     ds = ds.batch(batch_size)
     return ds
 
@@ -494,12 +504,12 @@ def get_training_data_loaders(
     if not seed:
         seed = cds.seed
         
-    train_example_paths = get_example_paths(cds.training_path, seed=seed)
+    train_example_paths = _get_example_paths(cds.training_path, seed=seed)
 
     if cds.validation_path:
-        val_example_paths = get_example_paths(cds.validation_path, seed=seed)
+        val_example_paths = _get_example_paths(cds.validation_path, seed=seed)
     else:
-        train_example_paths, val_example_paths = split_file_paths(
+        train_example_paths, val_example_paths = _split_file_paths(
                     train_example_paths, split_ratio=cds.validation_split)
 
     if verbose:
@@ -515,7 +525,7 @@ def get_training_data_loaders(
         print(" size:", len(val_example_paths))
     
     cpp = cfg.preprocessing
-    train_ds = create_image_and_labels_loader(
+    train_ds = _create_image_and_labels_loader(
                     train_example_paths,
                     image_size=image_size,
                     batch_size=train_batch_size,
@@ -528,7 +538,7 @@ def get_training_data_loaders(
                     shuffle_buffer_size=True,
                     prefetch=True)
 
-    val_ds = create_image_and_labels_loader(
+    val_ds = _create_image_and_labels_loader(
                     val_example_paths,
                     image_size=image_size,
                     batch_size=val_batch_size,
@@ -599,12 +609,12 @@ def get_evaluation_data_loader(
         seed = cds.seed
         
     if cds.test_path:
-        example_paths = get_example_paths(cds.test_path, seed=seed)        
+        example_paths = _get_example_paths(cds.test_path, seed=seed)        
     elif cds.validation_path:
-        example_paths = get_example_paths(cds.validation_path, seed=seed)
+        example_paths = _get_example_paths(cds.validation_path, seed=seed)
     else:
-        train_example_paths = get_example_paths(cds.training_path, seed=seed)
-        _, example_paths = split_file_paths(train_example_paths, split_ratio=cds.validation_split)
+        train_example_paths = _get_example_paths(cds.training_path, seed=seed)
+        _, example_paths = _split_file_paths(train_example_paths, split_ratio=cds.validation_split)
 
     if verbose:
         print("Evaluation dataset:")
@@ -618,7 +628,7 @@ def get_evaluation_data_loader(
         print(" size:", len(example_paths))
 
     cpp = cfg.preprocessing
-    test_ds = create_image_and_labels_loader(
+    test_ds = _create_image_and_labels_loader(
                     example_paths,
                     image_size=image_size,
                     batch_size=batch_size,
@@ -691,7 +701,7 @@ def get_quantization_data_loader(
     
     if not seed:
         seed = cds.seed        
-    image_paths = get_image_paths(ds_path, shuffle=True, seed=seed)
+    image_paths = _get_image_paths(ds_path, shuffle=True, seed=seed)
     
     if cds.quantization_split:
         num_images = int(len(image_paths) * cds.quantization_split)
@@ -711,7 +721,7 @@ def get_quantization_data_loader(
 
     if not image_paths_only:
         cpp = cfg.preprocessing
-        quantization_ds = create_image_loader(
+        quantization_ds = _create_image_loader(
                         image_paths,
                         image_size=image_size,
                         batch_size=batch_size,
@@ -759,7 +769,7 @@ def get_prediction_data_loader(
     if not seed:
         seed = cfg.prediction.seed
 
-    image_paths = get_image_paths(cfg.prediction.test_files_path, seed=seed)           
+    image_paths = _get_image_paths(cfg.prediction.test_files_path, seed=seed)           
 
     if verbose:
         print("Prediction dataset:")
@@ -768,7 +778,7 @@ def get_prediction_data_loader(
         print("  sampling seed:", cfg.prediction.seed)
 
     cpp = cfg.preprocessing
-    predict_ds = create_image_loader(
+    predict_ds = _create_image_loader(
                             image_paths,
                             image_size=image_size,
                             batch_size=batch_size,      

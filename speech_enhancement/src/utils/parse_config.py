@@ -16,8 +16,7 @@ from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
 from typing import List
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../common/utils'))
-from cfg_utils import postprocess_config_dict, check_config_attributes, parse_tools_section, \
+from .cfg_utils import postprocess_config_dict, check_config_attributes, parse_tools_section, \
                       parse_benchmarking_section, parse_mlflow_section, parse_top_level, check_hardware_type
 
 

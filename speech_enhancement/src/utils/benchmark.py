@@ -29,11 +29,11 @@ from omegaconf import DictConfig
 
 # Can't use proper imports here because the whole zoo 
 # doesn't have a python package structure, so we unfortunately have to do this
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../common'))
-from stm32ai_dc import (CliLibraryIde, CliLibrarySerie, CliParameters, MpuParameters, MpuEngine,
+#sys.path.append(os.path.join(os.path.dirname(__file__), '../../../common'))
+from common.stm32ai_dc import (CliLibraryIde, CliLibrarySerie, CliParameters, MpuParameters, MpuEngine,
                         CloudBackend, Stm32Ai)
-from stm32ai_dc.errors import BenchmarkServerError
-from stm32ai_dc.types import AtonParameters
+from common.stm32ai_dc.errors import BenchmarkServerError
+from common.stm32ai_dc.types import AtonParameters
 
 
 def log_to_file(dir: str, log: str) -> None:
@@ -307,7 +307,7 @@ def benchmark_model(optimization: str = None, model_path: str = None, path_to_st
         print(f"[INFO] : STM32Cube.AI version {version_line} used.")
 
         # Run generate command locally
-        command = f"{path_to_stm32ai} generate --target stm32 -m {model_path} -v 0 --allocate-inputs --allocate-outputs --output {stm32ai_output} --workspace {stm32ai_output} --optimization {optimization}"
+        command = f"{path_to_stm32ai} generate --target stm32 -m {model_path} -v 0 --output {stm32ai_output} --workspace {stm32ai_output} --optimization {optimization}"
         # command = f"{path_to_stm32ai} generate --target stm32n6 -m {model_path} --st-neural-art user_neuralart.json"
         args = shlex.split(command, posix="win" not in sys.platform)
         subprocess.run(args, env=new_env, check=True)

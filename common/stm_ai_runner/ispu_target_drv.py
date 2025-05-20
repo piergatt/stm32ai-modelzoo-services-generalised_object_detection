@@ -15,6 +15,7 @@ import numpy.ma as ma
 import math
 import ctypes
 import struct
+import json
 
 from .ai_runner import AiRunner, AiRunnerDriver, STAI_INFO_DICT_VERSION
 from .ai_runner import HwIOError, InvalidMsgError, NotInitializedMsgError, AiRunnerError
@@ -59,18 +60,54 @@ class IspuTargetDriver(AiRunnerDriver):
     def _load_ucf(self, ucf):
         ucf_bytes = bytearray()
 
-        fp = open(ucf, 'r')
-        line = fp.readline()
-        while line:
-            if line[0] == 'A' and line[1] == 'c':
-                tmp = line.strip().split()
-                ucf_bytes.append(int(tmp[1], 16))
-                ucf_bytes.append(int(tmp[2], 16))
-            elif line.startswith('WAIT'):
-                tmp = line.strip().split()
-                ucf_bytes.append(0xFF)
-                ucf_bytes.append(int(tmp[1], 16))
+        try:
+            fp = open(ucf, 'r')
+        except OSError:
+            msg = "Cannot open file " + ucf
+            raise AiRunnerError(msg)
+
+        if ucf.endswith(".ucf"):
             line = fp.readline()
+            while line:
+                if line[0] == 'A' and line[1] == 'c':
+                    tmp = line.strip().split()
+                    ucf_bytes.append(int(tmp[1], 16))
+                    ucf_bytes.append(int(tmp[2], 16))
+                elif line.startswith('WAIT'):
+                    tmp = line.strip().split()
+                    ucf_bytes.append(0xFF)
+                    ucf_bytes.append(int(tmp[1], 10))
+                line = fp.readline()
+        elif ucf.endswith(".json"):
+            json_data = json.load(fp)
+
+            supported_reg_config = False
+            json_format = json_data.get("json_format")
+
+            if json_format is not None:
+                format_type = json_format.get("type")
+                format_ver = json_format.get("version")
+
+                if format_type == "reg_config" and format_ver.startswith("2."):
+                    supported_reg_config = True
+
+            if not supported_reg_config:
+                raise AiRunnerError(f"File " + ucf + " is not a supported JSON format.")
+
+            for i in range(0, len(json_data['sensors'])):
+                for j in range(0, len(json_data['sensors'][i]['configuration'])):
+                    op = json_data['sensors'][i]['configuration'][j]
+                    if 'type' in op and op['type'] == 'write':
+                        addr = op['address'].replace('0x', '');
+                        value = op['data'].replace('0x', '');
+                        ucf_bytes.append(int(addr, 16))
+                        ucf_bytes.append(int(value, 16))
+                    elif 'type' in op and op['type'] == 'delay':
+                        value = op['data'];
+                        ucf_bytes.append(0xFF)
+                        ucf_bytes.append(int(value, 10))
+        else:
+            raise AiRunnerError("File " + ucf + " has an unsupported extension")
         fp.close()
 
         cmd = '*ucf' + str(len(ucf_bytes)) + '\n'
@@ -90,9 +127,9 @@ class IspuTargetDriver(AiRunnerDriver):
                 ver = self.ser.readline().decode('utf-8').strip()
                 expected_ver = self.ser.readline().decode('utf-8').strip()
                 if ver == '0.0.0':
-                    msg += "The ucf was built with an old version of the ISPU template"
+                    msg += "The ISPU configuration file was built with an old version of the ISPU template"
                 else:
-                    msg += "The ucf was built with version " + ver + " of the ISPU template"
+                    msg += "The ISPU configuration file was built with version " + ver + " of the ISPU template"
                 msg += ", but a template with version " + expected_ver + ".x is required."
 
             raise AiRunnerError(msg)
@@ -108,7 +145,10 @@ class IspuTargetDriver(AiRunnerDriver):
             port_specified = 0
             available_ports = serial.tools.list_ports.comports()
             for p in sorted(available_ports):
-                ports.append(p.device)
+                if p.vid == 1155:  # give priority if can confirm it is STMicroelectronics
+                    ports.insert(0, p.device)
+                else:
+                    ports.append(p.device)
         else:
             port_specified = 1
             ports.append(port)

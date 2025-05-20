@@ -7,7 +7,7 @@ general:
 
 operation_mode: training
 model:
-  model_type: STFTTCNN # For training
+  model_type: STFTTCNN # For training # Or ConvLSTMDenoiser, see README. NOTE: ConvLSTMDenoiser models cannot be deployed yet
   state_dict_path: # For training and evaluating torch models
   onnx_path: # For quantization, evaluation, benchmarking and deployment only
 
@@ -19,6 +19,13 @@ model_specific:
   tcn_latent_dim: 512
   init_dilation: 2
   mask_activation: "sigmoid"
+
+  # For ConvLSTMDenoiser, see README.md. NOTE: ConvLSTMDenoiser models cannot be deployed yet
+  # lstm_hidden_size: 256
+  # num_lstm_layers: 2
+  # in_channels: 257 # n_fft // 2 + 1
+  # out_channels: 257 # same as in_channels
+  # mask_activation: "sigmoid"
 
 dataset:
   name: valentini # Or "custom"
@@ -98,11 +105,11 @@ training:
  opset_version: 17
 
 mlflow:
-  uri: ./experiment_outputs/mlruns
+  uri: ./src/experiment_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiment_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiment_outputs/${now:%Y_%m_%d_%H_%M_%S}
   
 
 

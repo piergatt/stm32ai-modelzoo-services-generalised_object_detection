@@ -110,8 +110,8 @@ dataset:
   name: esc10
   class_names: ['dog', 'chainsaw', 'crackling_fire', 'helicopter', 'rain', 'crying_baby', 'clock_tick', 'sneezing', 'rooster', 'sea_waves']
   file_extension: '.wav'
-  training_audio_path: ../datasets/ESC-50/audio # Mandatory
-  training_csv_path:   ../datasets/ESC-50/meta/esc50.csv # Mandatory
+  training_audio_path: ./datasets/ESC-50/audio # Mandatory
+  training_csv_path:   ./datasets/ESC-50/meta/esc50.csv # Mandatory
 
   validation_audio_path: # Optional
   validation_csv_path: # Optional
@@ -202,11 +202,11 @@ training:
       patience: 60
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
   
 ```
 
@@ -214,7 +214,7 @@ You can look at user_config.yaml examples for any operation mode [here](https://
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

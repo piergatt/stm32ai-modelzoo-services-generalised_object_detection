@@ -25,7 +25,7 @@ equalize and autocontrast.
 """
 
 import tensorflow as tf
-from random_utils import grayscale_not_supported, check_dataaug_argument, remap_pixel_values_range, apply_change_rate
+from common.data_augmentation import grayscale_not_supported, check_dataaug_argument, remap_pixel_values_range, apply_change_rate
 
 
 def random_contrast(images, factor=None, pixels_range=(0.0, 1.0), change_rate=1.0):

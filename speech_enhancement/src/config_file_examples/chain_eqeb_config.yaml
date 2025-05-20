@@ -102,11 +102,11 @@ benchmarking:
 
 
 mlflow:
-  uri: ./experiment_outputs/mlruns
+  uri: ./src/experiment_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiment_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiment_outputs/${now:%Y_%m_%d_%H_%M_%S}
   
 
 

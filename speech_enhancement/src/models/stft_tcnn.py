@@ -116,7 +116,8 @@ class STFTTCNN(nn.Module):
                  num_layers=6,
                  mask_activation="tanh",
                  layer_activation="relu",
-                 init_dilation=2
+                 init_dilation=2,
+                 **kwargs
                  ):
         '''
         Parameters
@@ -127,6 +128,8 @@ class STFTTCNN(nn.Module):
         n_layers, int : Number of layers per temporal convolutional block
         mask_activation, str : One of "tanh", "sigmoid". Final activation applied to model output.
             "tanh" means output coeffs are in [-1, 1], and "sigmoid" means they are in [0, 1]
+        NOTE : Additional kwargs are discarded, this is for convenience to allow user to pass
+        invalid model-specific kwargs without raising an exceptions
         '''
         super().__init__()
         self.in_channels = in_channels

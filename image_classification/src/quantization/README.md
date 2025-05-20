@@ -67,7 +67,7 @@ As mentioned previously, all the sections of the YAML file must be set in accord
 
 ```yaml
 general:
-   model_path: ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
+   model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
    
 quantization:
   quantizer: TFlite_converter
@@ -111,14 +111,14 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details>
@@ -128,10 +128,10 @@ mlflow:
 <details open>
 <summary><a href="#2"><b>2. Quantize your model</b></a></summary><a id="2"></a>
 
-To launch your model quantization using a real dataset, run the following command from the **src/** folder:
+To launch your model quantization using a real dataset, run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name quantization_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name quantization_config.yaml
 ```
 The quantized TensorFlow Lite model can be found in the corresponding **experiments_outputs/** folder.
 
@@ -140,13 +140,13 @@ The quantized TensorFlow Lite model can be found in the corresponding **experime
 In case you want to evaluate the accuracy of the quantized model, you can either launch the evaluation operation mode on the generated quantized model (please refer to the evaluation **[README.md](../evaluation/README.md)** that describes in detail how to proceed) or you can use chained services like launching the [chain_eqe](../config_file_examples/chain_eqe_config.yaml) example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_eqe_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_eqe_config.yaml
 ```
 
 In case you want to evaluate your quantized model footprints, you can either launch the benchmark operation mode on the generated quantized model (please refer to the benchmarking **[README.md](../benchmarking/README.md)** that describes in detail how to proceed) or you can use chained services like launching the [chain_qb](../config_file_examples/chain_qb_config.yaml) example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_qb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_qb_config.yaml
 ```
 Chained services work whether you specify a quantization dataset or not (random quantization).
 

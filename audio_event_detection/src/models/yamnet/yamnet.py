@@ -14,7 +14,7 @@ from pathlib import Path
 from keras import layers
 from keras import regularizers
 
-from model_utils import add_head
+from src.models import add_head
 
 
 def _check_parameters(embedding_size: int,
@@ -35,7 +35,7 @@ def _check_parameters(embedding_size: int,
     "n_mels parameter must be 64 for Yamnet models \n" \
     ", current value is {}".format(n_mels)
 
-def get_transfer_learning_model(n_classes: int = None,
+def _get_transfer_learning_model(n_classes: int = None,
                                 embedding_size: int = None,
                                 fine_tune: bool = False,
                                 use_garbage_class: bool = False,
@@ -140,7 +140,7 @@ def get_model(n_classes: int = None,
     _check_parameters(embedding_size, patch_length, n_mels)
 
     if pretrained_weights:
-        yamnet = get_transfer_learning_model(n_classes=n_classes,
+        yamnet = _get_transfer_learning_model(n_classes=n_classes,
                                              embedding_size=embedding_size,
                                              fine_tune=fine_tune,
                                              use_garbage_class=use_garbage_class,

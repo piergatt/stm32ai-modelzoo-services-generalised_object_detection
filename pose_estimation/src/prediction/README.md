@@ -5,7 +5,7 @@ Our prediction service is a simple and efficient tool that allows users to uploa
 
 <details open><summary><a href="#1"><b>1. Configure the yaml file</b></a></summary><a id="1"></a>
 
-To use the prediction service, users must fill in the 'prediction' section of the [user_config.yaml](../user_config.yaml) file like the [prediction_config.yaml](../config_file_examples/prediction_config.yaml) or as shown in the example below:
+To use the prediction service, users must fill in the 'prediction' section of the [user_config.yaml](../../user_config.yaml) file like the [prediction_config.yaml](../config_file_examples/prediction_config.yaml) or as shown in the example below:
 
 ```yaml
 general:
@@ -53,28 +53,28 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details>
 <details open><summary><a href="#2"><b>2. Launch the prediction</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml), you can evaluate the model by running the following command from the **src/** folder:
+If you chose to modify the [user_config.yaml](../../user_config.yaml), you can evaluate the model by running the following command from the UC folder:
 
 ```bash
 python stm32ai_main.py 
 ```
-If you chose to update the [prediction_config.yaml](../config_file_examples/prediction_config.yaml) and use it, then run the following command from the **src/** folder:
+If you chose to update the [prediction_config.yaml](../config_file_examples/prediction_config.yaml) and use it, then run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name prediction_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name prediction_config.yaml
 ```
 
 </details>

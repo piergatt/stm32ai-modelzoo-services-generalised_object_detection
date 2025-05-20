@@ -1,12 +1,12 @@
 general:
-   model_path: ../../../model_zoo/pose_estimation/movenet/Public_pretrainedmodel_custom_dataset/custom_dataset_person_17kpts/movenet_lightning_heatmaps_192/movenet_lightning_heatmaps_192.h5
+   model_path: ../../stm32ai-modelzoo/pose_estimation/movenet/Public_pretrainedmodel_custom_dataset/custom_dataset_person_17kpts/movenet_lightning_heatmaps_192/movenet_lightning_heatmaps_192.h5
    model_type: heatmaps_spe
 
 operation_mode: quantization
 
 dataset:
    name: coco_pose
-   quantization_path: ../datasets/coco_train_single_pose
+   quantization_path: ./datasets/coco_train_single_pose
    quantization_split: 0.3
 
 preprocessing:
@@ -28,8 +28,8 @@ quantization:
    # granularity: per_tensor
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

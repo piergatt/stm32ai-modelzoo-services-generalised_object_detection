@@ -35,7 +35,7 @@ The most important parts to define are:
 # user_config.yaml
 
 general:
-   model_path: ../../../model_zoo/image_classification/mobilenetv1/ST_pretrainedmodel_public_dataset/food-101/mobilenet_v1_0.5_224_fft/mobilenet_v1_0.5_224_fft.h5
+   model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv1/ST_pretrainedmodel_public_dataset/food-101/mobilenet_v1_0.5_224_fft/mobilenet_v1_0.5_224_fft.h5
    
 operation_mode: chain_eqe
 
@@ -61,17 +61,17 @@ quantization:
    export_dir: quantized_models
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 When evaluating the model, it is highly recommended to use real data for the quantization.
 
 ## Run the script:
 
-Edit the user_config.yaml then open a CMD (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a CMD (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

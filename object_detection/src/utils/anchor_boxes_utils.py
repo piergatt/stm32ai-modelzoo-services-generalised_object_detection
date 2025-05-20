@@ -46,7 +46,7 @@ def get_sizes_ratios_ssd_v1(input_shape: tuple = None) -> tuple:
 
 def get_sizes_ratios_ssd_v2(input_shape: tuple = None) -> tuple:
 
-    def sizes_creation(target_max_res,base_sizes,t_min_s,res_range,slope):
+    def _sizes_creation(target_max_res,base_sizes,t_min_s,res_range,slope):
 
         # target_max_res : must be in the res_range
         # base_sizes=[[0.26,0.33], [0.42,0.49], [0.58,0.66], [0.74,0.82], [0.9,0.98]]
@@ -54,8 +54,8 @@ def get_sizes_ratios_ssd_v2(input_shape: tuple = None) -> tuple:
         # slope = 2
         # res_range = [24,32,52]
 
-        ab_x = affine_search([base_sizes[0][0],t_min_s[0]],res_range,slope) # [a,b,c]
-        ab_y = affine_search([base_sizes[0][1],t_min_s[1]],res_range,slope) # [a,b,c]
+        ab_x = _affine_search([base_sizes[0][0],t_min_s[0]],res_range,slope) # [a,b,c]
+        ab_y = _affine_search([base_sizes[0][1],t_min_s[1]],res_range,slope) # [a,b,c]
 
         arr_res = np.array([1/(target_max_res**slope),1])
 
@@ -67,7 +67,7 @@ def get_sizes_ratios_ssd_v2(input_shape: tuple = None) -> tuple:
 
         return target_sizes
     
-    def affine_search(s,r,slope):
+    def _affine_search(s,r,slope):
 
         r = np.array(r)
 
@@ -106,7 +106,7 @@ def get_sizes_ratios_ssd_v2(input_shape: tuple = None) -> tuple:
     
     res_range = [fmap_sizes_dict['192'][0],fmap_sizes_dict['416'][0]]
     
-    sizes  = sizes_creation(max_fmap_res, base_sizes, min_sizes_max_res, res_range, slope = 5)
+    sizes  = _sizes_creation(max_fmap_res, base_sizes, min_sizes_max_res, res_range, slope = 5)
 
     ratios = [[1.0, 2.0, 0.5, 1.0 / 3]]*len(sizes)
 
@@ -241,7 +241,7 @@ def gen_anchors(fmap, img_width, img_height, sizes, ratios, normalize=True, clip
     return anchors1
 
 
-def gen_anchors_fmap(fmap_size, img_width, img_height,
+def _gen_anchors_fmap(fmap_size, img_width, img_height,
                      sizes, ratios, normalize=True, clip=False):
     """
     Generate anchor boxes for a given feature map size
@@ -346,7 +346,7 @@ def get_anchor_boxes(fmap_sizes,
 
     anchor_boxes = []
     for i in range(len(fmap_sizes)):
-        bboxes_fmap = gen_anchors_fmap(
+        bboxes_fmap = _gen_anchors_fmap(
             fmap_sizes[i],
             image_size[0],
             image_size[1],

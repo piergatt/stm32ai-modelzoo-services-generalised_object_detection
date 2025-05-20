@@ -19,7 +19,7 @@ The dataset is collected in controlled laboratory conditions using a mobile phon
 - WISDM_ar_v1.1_transformed.arff
 - WISDM_ar_v1.1_trans_about.txt
 
-For the purpose of this tutorial, we only need the `WISDM_ar_v1.1_raw.txt` file. The path to this file is to be provided to the variable, `dataset.training_path` in the [user_config.yaml](../user_config.yaml) configuration file (the details will be provided in section 2). The file `WISDM_ar_v1.1_raw.txt` contains data like below:
+For the purpose of this tutorial, we only need the `WISDM_ar_v1.1_raw.txt` file. The path to this file is to be provided to the variable, `dataset.training_path` in the [user_config.yaml](../../user_config.yaml) configuration file (the details will be provided in section 2). The file `WISDM_ar_v1.1_raw.txt` contains data like below:
 ```bash
 33,Jogging,49105962326000,-0.6946377,12.680544,0.50395286;
 33,Jogging,49106062271000,5.012288,11.264028,0.95342433;
@@ -68,7 +68,7 @@ In the case of the custom dataset `mobility_v1` from STMicroelectronics, the dat
 <details open><summary><a href="#2"><b>2. Create your training configuration file</b></a></summary><a id="2"></a>
 <ul><details open><summary><a href="#2-1">2.1 Overview</a></summary><a id="2-1"></a>
 
-All the proposed services like the `training`, `evaluation` etc. of the model are driven by a [user_config.yaml](../user_config.yaml) configuration file written in the YAML language. 
+All the proposed services like the `training`, `evaluation` etc. of the model are driven by a [user_config.yaml](../../user_config.yaml) configuration file written in the YAML language. 
 
 For training, the configuration file should include at least the following sections:
 
@@ -115,7 +115,7 @@ The `logs_dir` attribute is the name of the directory where the MLFlow and Tenso
 </details></ul>
 <ul><details open><summary><a href="#2-3">2.3 Dataset specification</a></summary><a id="2-3"></a>
 
-Information about the dataset that you want to use, (path to it, the classes available, the train_test_split etc.) is provided in the `dataset` section of the [user_config.yaml](../user_config.yaml) file, as shown in the YAML code below.
+Information about the dataset that you want to use, (path to it, the classes available, the train_test_split etc.) is provided in the `dataset` section of the [user_config.yaml](../../user_config.yaml) file, as shown in the YAML code below.
 
 ```yaml
 dataset:
@@ -213,24 +213,24 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#3"><b>3. Train your model</b></a></summary><a id="3"></a>
 
-To launch your model training using a real dataset, run the following command from the **src/** folder:
+To launch your model training using a real dataset, run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name training_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name training_config.yaml
 ```
 The trained h5 model can be found in the [model zoo here](https://github.com/STMicroelectronics/stm32ai-modelzoo/human_activity_recognition/) or ../experiments_outputs folders.
 

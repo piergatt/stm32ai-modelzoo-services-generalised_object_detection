@@ -12,7 +12,7 @@ import json
 import sys
 from typing import Dict
 
-from models_utils import get_model_name_and_its_input_shape
+from common.utils import get_model_name_and_its_input_shape
 
 
 def update_activation_c_code(c_project_path: str, path_network_c_info: str, available_AXIRAM: int, cfg = None, custom_objects: Dict = None):

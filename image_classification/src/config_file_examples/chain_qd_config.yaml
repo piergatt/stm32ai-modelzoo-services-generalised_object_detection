@@ -1,5 +1,5 @@
 general:
-   model_path: ../../../model_zoo/image_classification/squeezenetv1.1/ST_pretrainedmodel_public_dataset/plant-village/squeezenetv1.1_128_tfs/squeezenetv1.1_128_tfs.h5
+   model_path: ../../stm32ai-modelzoo/image_classification/squeezenetv1.1/ST_pretrainedmodel_public_dataset/food-101/squeezenetv1.1_128_tfs/squeezenetv1.1_128_tfs.h5
 
 operation_mode: chain_qd
 
@@ -44,7 +44,7 @@ dataset:
   - Tomato___Target_Spot
   - Tomato___Tomato_mosaic_virus
   - Tomato___Tomato_Yellow_Leaf_Curl_Virus
-  quantization_path: ../datasets/Plant_leave_diseases_dataset_without_augmentation
+  quantization_path: ./datasets/Plant_leave_diseases_dataset_without_augmentation
   quantization_split: 0.5
 
 preprocessing:
@@ -71,7 +71,7 @@ tools:
    path_to_cubeIDE: C:/ST/STM32CubeIDE_1.17.0/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-   c_project_path: ../../application_code/image_classification/STM32H7/
+   c_project_path: ../application_code/image_classification/STM32H7/
    IDE: GCC
    verbosity: 1
    hardware_setup:
@@ -81,8 +81,8 @@ deployment:
       output: DISPLAY_INTERFACE_USB
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

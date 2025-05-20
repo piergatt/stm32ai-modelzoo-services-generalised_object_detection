@@ -15,7 +15,7 @@ import numpy as np
 import tensorflow as tf
 from typing import Tuple
 # from tensorflow.keras import layers # Don't think this one is needed
-from data_loader import load_dataset
+from .data_loader import load_dataset
 
 def preprocess(cfg: DictConfig = None) -> tuple: # OK
     """

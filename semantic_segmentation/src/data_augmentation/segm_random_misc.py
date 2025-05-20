@@ -8,11 +8,11 @@
 #  *--------------------------------------------------------------------------------------------*/
 
 import tensorflow as tf
-from random_utils import check_dataaug_argument
-from segm_random_utils import segm_apply_change_rate
+from common.data_augmentation import check_dataaug_argument
+from .segm_random_utils import segm_apply_change_rate
 
 
-def check_segm_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation):
+def _check_segm_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation):
 
     def check_value_range(arg_value, arg_name):
         if isinstance(arg_value, (tuple, list)):
@@ -101,7 +101,7 @@ def segm_random_crop(
     """
     
     # Check the function arguments
-    check_segm_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation)
+    _check_segm_random_crop_arguments(crop_center_x, crop_center_y, crop_width, crop_height, interpolation)
 
     if not isinstance(crop_width, (tuple, list)):
         crop_width = (crop_width, crop_width)

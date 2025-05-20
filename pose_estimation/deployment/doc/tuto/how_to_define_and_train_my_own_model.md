@@ -100,10 +100,10 @@ operation_mode: training
 dataset:
   name: COCO2017_pose
   keypoints: 17
-  training_path: ../datasets/coco_train_single_pose
-  # validation_path: ../datasets/coco_val_single_pose
+  training_path: ./datasets/coco_train_single_pose
+  # validation_path: ./datasets/coco_val_single_pose
   validation_split: 0.1
-  test_path: ../datasets/coco_val_single_pose
+  test_path: ./datasets/coco_val_single_pose
   # quantization_path: ../datasets/coco_train_single_pose
   quantization_split: 0.3
 
@@ -155,11 +155,11 @@ training:
       patience: 10
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
   
 ```
 
@@ -167,7 +167,7 @@ You can also find example of user_config.yaml for any operation mode [here](http
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

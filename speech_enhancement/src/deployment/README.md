@@ -39,7 +39,7 @@ The detailed instructions on installation are available in this [wiki article](h
 </details>
 <details open><summary><a href="#2"><b>2. YAML file configuration</b></a></summary><a id="2"></a>
 
-The deployment of the model is driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../user_config.yaml) and is located in the [src/](../) directory.
+The deployment of the model is driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../../user_config.yaml) and is located in the [UC](../../) directory.
 
 This tutorial only describes enough settings for you to be able to deploy a pretrained model from the model zoo. Please refer to the [main README](../README.md) for more information on the configuration file.
 
@@ -170,7 +170,7 @@ deployment:
   output_silence_threshold: -50
   # Change this to the path on your machine.
    
-  c_project_path:  ../../application_code/audio/STM32N6/
+  c_project_path:  ../application_code/audio/STM32N6/
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -214,7 +214,7 @@ To build the project and flash the target board, connect an STM32N6570-DK to you
 </details></ul>
 <ul><details open><summary><a href="#3-2">3.2 Run stm32ai_main.py</a></summary><a id="3-2"></a>
 
-Then, once your configuration file is properly configured, run the following command from [src/](../):
+Then, once your configuration file is properly configured, run the following command from [UC](../../):
 Make sure you properly set `operation_mode` to `"deployment"`.
 
 ```bash

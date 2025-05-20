@@ -13,7 +13,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 
-def conv_block(inputs: tf.Tensor, filters: int, alpha: float, kernel: Tuple[int, int] = (3, 3),
+def _conv_block(inputs: tf.Tensor, filters: int, alpha: float, kernel: Tuple[int, int] = (3, 3),
                 strides: Tuple[int, int] = (1, 1)) -> tf.Tensor:
     """
     Adds a convolutional block to the model.
@@ -38,7 +38,7 @@ def conv_block(inputs: tf.Tensor, filters: int, alpha: float, kernel: Tuple[int,
     return layers.Activation('relu', name='conv1_relu')(x)
 
 
-def depthwise_conv_block(inputs: tf.Tensor, pointwise_conv_filters: int, alpha: float, depth_multiplier: int = 1,
+def _depthwise_conv_block(inputs: tf.Tensor, pointwise_conv_filters: int, alpha: float, depth_multiplier: int = 1,
                          strides: Tuple[int, int] = (1, 1), block_id: int = 1) -> tf.Tensor:
     """
     Adds a depthwise convolutional block to the model.
@@ -68,30 +68,30 @@ def depthwise_conv_block(inputs: tf.Tensor, pointwise_conv_filters: int, alpha: 
     return layers.Activation('relu', name='conv_pw_%d_relu' % block_id)(x)
 
                         
-def create_st_fdmobilenet_v1(input_shape: list[int] = [224, 224, 3], alpha: list[float] = [1.0],
+def _create_st_fdmobilenet_v1(input_shape: list[int] = [224, 224, 3], alpha: list[float] = [1.0],
                                     depth_multiplier: int = 1, dropout: float = 1e-3,
                                     input_tensor: Optional[tf.Tensor] = None, classes: int = 101) -> tf.keras.Model:
 
     img_input = input_tensor
 
-    x = conv_block(img_input, 32, alpha[0], strides=(2, 2))
-    x = depthwise_conv_block(x, 64, alpha[1], depth_multiplier, strides=(2, 2), block_id=1)
+    x = _conv_block(img_input, 32, alpha[0], strides=(2, 2))
+    x = _depthwise_conv_block(x, 64, alpha[1], depth_multiplier, strides=(2, 2), block_id=1)
 
-    x = depthwise_conv_block(x, 128, alpha[2], depth_multiplier, strides=(2, 2), block_id=2)
-    x = depthwise_conv_block(x, 128, alpha[3], depth_multiplier, block_id=3)
+    x = _depthwise_conv_block(x, 128, alpha[2], depth_multiplier, strides=(2, 2), block_id=2)
+    x = _depthwise_conv_block(x, 128, alpha[3], depth_multiplier, block_id=3)
 
-    x = depthwise_conv_block(x, 256, alpha[4], depth_multiplier, strides=(2, 2), block_id=4)
-    x = depthwise_conv_block(x, 256, alpha[5], depth_multiplier, block_id=5)
+    x = _depthwise_conv_block(x, 256, alpha[4], depth_multiplier, strides=(2, 2), block_id=4)
+    x = _depthwise_conv_block(x, 256, alpha[5], depth_multiplier, block_id=5)
 
-    x = depthwise_conv_block(x, 512, alpha[6], depth_multiplier, strides=(2, 2), block_id=6)
+    x = _depthwise_conv_block(x, 512, alpha[6], depth_multiplier, strides=(2, 2), block_id=6)
 
     # block of 4
-    x = depthwise_conv_block(x, 512, alpha[7], depth_multiplier, block_id=7)
-    x = depthwise_conv_block(x, 512, alpha[8], depth_multiplier, block_id=8)
-    x = depthwise_conv_block(x, 512, alpha[9], depth_multiplier, block_id=9)
-    x = depthwise_conv_block(x, 512, alpha[10], depth_multiplier, block_id=10)
+    x = _depthwise_conv_block(x, 512, alpha[7], depth_multiplier, block_id=7)
+    x = _depthwise_conv_block(x, 512, alpha[8], depth_multiplier, block_id=8)
+    x = _depthwise_conv_block(x, 512, alpha[9], depth_multiplier, block_id=9)
+    x = _depthwise_conv_block(x, 512, alpha[10], depth_multiplier, block_id=10)
 
-    x = depthwise_conv_block(x, 1024, alpha[11], depth_multiplier, block_id=11)
+    x = _depthwise_conv_block(x, 1024, alpha[11], depth_multiplier, block_id=11)
 
     shape = (1, 1, int(1024 * alpha[11]))
     x = layers.GlobalAveragePooling2D()(x)
@@ -125,6 +125,6 @@ def get_st_fdmobilenet_v1(input_shape: Tuple[int, int, int] = None, num_classes:
     alpha_list = [0.5, 0.75, 0.625, 0.5, 0.375, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
 
     # Create model
-    model = create_st_fdmobilenet_v1(input_shape=input_shape, alpha=alpha_list, depth_multiplier=1,
+    model = _create_st_fdmobilenet_v1(input_shape=input_shape, alpha=alpha_list, depth_multiplier=1,
                                      dropout=dropout, input_tensor=inputs, classes=num_classes)
     return model

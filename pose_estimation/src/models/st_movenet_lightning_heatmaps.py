@@ -13,7 +13,7 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, UpSampling2D, Activ
 from tensorflow.keras.regularizers import L2
 
 
-def mobileNetV2(shape=(192,192,3), alpha=1.0, pretrained_weights=None, trainable=True):
+def _mobileNetV2(shape=(192,192,3), alpha=1.0, pretrained_weights=None, trainable=True):
 
     backBone = tf.keras.applications.MobileNetV2(weights     = pretrained_weights,
                                                  alpha       = alpha, 
@@ -25,7 +25,7 @@ def mobileNetV2(shape=(192,192,3), alpha=1.0, pretrained_weights=None, trainable
 
 def st_movenet_lightning_heatmaps(input_shape, nb_keypoints, alpha, pretrained_weights, backbone_trainable=True):
 
-    backbone = mobileNetV2(input_shape,alpha,pretrained_weights,backbone_trainable)
+    backbone = _mobileNetV2(input_shape,alpha,pretrained_weights,backbone_trainable)
 
     conv_0 = Conv2D(24, kernel_size=1, padding='SAME', use_bias=False)(backbone.get_layer(name='block_2_add').output) #index = 19).output) # block_2_add
     conv_1 = Conv2D(32, kernel_size=1, padding='SAME', use_bias=False)(backbone.get_layer(name='block_5_add').output) #index = 37).output) # block_5_add

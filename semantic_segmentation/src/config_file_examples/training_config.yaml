@@ -14,13 +14,13 @@ dataset:
                 "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
                 "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
 
-  training_path: ../datasets/VOC2012_train_val/JPEGImages
-  training_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  training_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
+  training_path: ./datasets/VOC2012_train_val/JPEGImages
+  training_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  training_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
 
-  validation_path: ../datasets/VOC2012_train_val/JPEGImages
-  validation_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  validation_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt
+  validation_path: ./datasets/VOC2012_train_val/JPEGImages
+  validation_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  validation_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt
   validation_split: 
   
 preprocessing:
@@ -30,18 +30,19 @@ preprocessing:
     interpolation: bilinear 
   color_mode: rgb
 
-data_augmentation:   
+data_augmentation:
+  random_flip:
+    mode: horizontal_and_vertical
+  random_crop:
+    crop_center_x: (0.25, 0.75)
+    crop_center_y: (0.25, 0.75)
+    crop_width: (0.6, 0.9)
+    crop_height: (0.6, 0.9)
+    change_rate: 0.6
   random_contrast:
     factor: 0.4
-    change_rate: 1.0
-  random_gaussian_noise:
-    stddev: (0.0001, 0.005)
-  random_posterize:
-    bits: (4, 8)
-    change_rate: 0.025
   random_brightness:
-    factor: 0.05
-    change_rate: 1.0
+    factor: 0.3
 
 training:
   model: 
@@ -72,8 +73,8 @@ training:
       patience: 60
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

@@ -33,9 +33,9 @@ Detailed instructions on installation are available in this [wiki article](https
 </details>
 <details open><summary><a href="#2"><b>2. Configure the YAML File</b></a></summary><a id="2"></a>
 
-You can use the deployment service by using a model zoo pre-trained model from the [STM32 model zoo on GH](../pretrained_models/README.md) or your own Hand Posture model. Please refer to the YAML file [deployment_config.yaml](../src/config_file_examples/deployment_config.yaml), which is a ready YAML file with all the necessary sections ready to be filled, or you can update the [user_config.yaml](../src/user_config.yaml) to use it.
+You can use the deployment service by using a model zoo pre-trained model from the [STM32 model zoo on GH](../pretrained_models/README.md) or your own Hand Posture model. Please refer to the YAML file [deployment_config.yaml](../src/config_file_examples/deployment_config.yaml), which is a ready YAML file with all the necessary sections ready to be filled, or you can update the [user_config.yaml](../user_config.yaml) to use it.
 
-As an example, we will show how to deploy the model [CNN2D_ST_HandPosture_8classes.h5](https://github.com/STMicroelectronics/stm32ai-modelzoo/tree/master/hand_posture/CNN2D_ST_HandPosture/ST_pretrainedmodel_custom_dataset/ST_VL53L8CX_handposture_dataset/CNN2D_ST_HandPosture_8classes/) pre-trained on the [ST_VL53L8CX_handposture_dataset](../datasets/) dataset .
+As an example, we will show how to deploy the model [CNN2D_ST_HandPosture_8classes.h5](https://github.com/STMicroelectronics/stm32ai-modelzoo/tree/master/hand_posture/CNN2D_ST_HandPosture/ST_pretrainedmodel_custom_dataset/ST_VL53L8CX_handposture_dataset/CNN2D_ST_HandPosture_8classes/) pre-trained on the [ST_VL53L8CX_handposture_dataset](../datasets/README.md) dataset .
 
 <ul><details open><summary><a href="#2-1">2.1 Setting the Model and the Operation Mode</a></summary><a id="2-1"></a>
 
@@ -43,7 +43,7 @@ The first section of the configuration file is the `general` section that provid
 
 ```yaml
 general:
-   model_path: ../../../model_zoo/hand_posture/CNN2D_ST_HandPosture/ST_pretrainedmodel_custom_dataset/ST_VL53L8CX_handposture_dataset/CNN2D_ST_HandPosture_8classes/CNN2D_ST_HandPosture_8classes.h5
+   model_path: ../../stm32ai-modelzoo/hand_posture/CNN2D_ST_HandPosture/ST_pretrainedmodel_custom_dataset/ST_VL53L8CX_handposture_dataset/CNN2D_ST_HandPosture_8classes/CNN2D_ST_HandPosture_8classes.h5
     # Path to the model file to deploy
 
 operation_mode: deployment
@@ -81,7 +81,7 @@ tools:
    path_to_cubeIDE: C:/ST/STM32CubeIDE_1.17.0/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-   c_project_path: ../../application_code/hand_posture/STM32F4/
+   c_project_path: ../application_code/hand_posture/STM32F4/
    IDE: GCC
    verbosity: 1
    hardware_setup:
@@ -107,7 +107,7 @@ The model zoo uses MLFlow to record logs when running. You'll want to configure 
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 You'll then be able to access the logs by going to `src/experiments_outputs` in your favorite shell, using the command `mlflow ui`, and accessing the provided IP address in your browser.
@@ -122,16 +122,16 @@ The picture below shows the complete setup:
 
 ![plot](doc/img/hardware_setup.JPG)
 
-If you chose to modify the [user_config.yaml](../src/user_config.yaml), you can deploy the model by running the following command from the **src/** folder to build and flash the application on your board:
+If you chose to modify the [user_config.yaml](../user_config.yaml), you can deploy the model by running the following command from the UC folder to build and flash the application on your board:
 
 ```bash
 python stm32ai_main.py 
 ```
 
-If you chose to update the [deployment_config.yaml](../src/config_file_examples/deployment_config.yaml) and use it, then run the following command from the **src/** folder to build and flash the application on your board:
+If you chose to update the [deployment_config.yaml](../src/config_file_examples/deployment_config.yaml) and use it, then run the following command from the UC  folder to build and flash the application on your board:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name deployment_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name deployment_config.yaml
 ```
 
 </details>

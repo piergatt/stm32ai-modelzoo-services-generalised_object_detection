@@ -24,15 +24,15 @@ Link to the source code:
 import math
 import numpy as np
 import tensorflow as tf
-from random_utils import grayscale_not_supported, check_dataaug_argument
-from random_affine_utils import \
-            check_fill_and_interpolation, transform_images, \
+
+from common.data_augmentation import \
+            check_fill_and_interpolation, transform_images, check_dataaug_argument, \
             get_flip_matrix, get_translation_matrix, get_rotation_matrix, \
             get_shear_matrix, get_zoom_matrix
-from pose_random_utils import objdet_apply_change_rate, pose_apply_change_rate
+from .pose_random_utils import objdet_apply_change_rate, pose_apply_change_rate
+from src.data_augmentation import swap_list_dict
 
-
-def xywh_to_xy1xy2(boxes):
+def _xywh_to_xy1xy2(boxes):
     """
     This function convert xywh coordinates of boxes into xy1xy2
     
@@ -56,7 +56,7 @@ def xywh_to_xy1xy2(boxes):
 
     return xy1xy2
 
-def xy1xy2_to_xywh(boxes):
+def _xy1xy2_to_xywh(boxes):
     """
     
     This function convert xy1xy2 coordinates of boxes into xywh
@@ -80,7 +80,7 @@ def xy1xy2_to_xywh(boxes):
 
     return xywh
 
-def transform_boxes(boxes, transforms, image_width, image_height, scale=1.):
+def _transform_boxes(boxes, transforms, image_width, image_height, scale=1.):
     """
     This function applies affine transformations to a batch of boxes.
     The transformation matrices are independent from each other
@@ -102,7 +102,7 @@ def transform_boxes(boxes, transforms, image_width, image_height, scale=1.):
     image_width = tf.cast(image_width, tf.float32)
     image_height = tf.cast(image_height, tf.float32)
 
-    boxes = xywh_to_xy1xy2(boxes)
+    boxes = _xywh_to_xy1xy2(boxes)
     
     boxes_shape = tf.shape(boxes)
 
@@ -182,12 +182,12 @@ def transform_boxes(boxes, transforms, image_width, image_height, scale=1.):
     # may have resulted in some non-zeros coordinates.
     trd_boxes *= padding_mask
 
-    trd_boxes = xy1xy2_to_xywh(trd_boxes)
+    trd_boxes = _xy1xy2_to_xywh(trd_boxes)
     
     return trd_boxes
 
 
-def transform_keypoints(kpts, transforms, image_width, image_height):
+def _transform_keypoints(kpts, transforms, image_width, image_height):
     """
     This function applies affine transformations to a batch of boxes.
     The transformation matrices are independent from each other
@@ -271,7 +271,7 @@ def transform_keypoints(kpts, transforms, image_width, image_height):
 
 #------------------------- Random flip -------------------------
 
-def keypoints_rightleft_swap(kpts):
+def _keypoints_rightleft_swap(kpts):
     """
     This function swaps right and left keypoints based on a dictionnary provided in swap_list_dict.py
     Right and left keypoints must be swapped if the image is flipped.
@@ -285,7 +285,7 @@ def keypoints_rightleft_swap(kpts):
         The swapped keypoints.
     """
 
-    from swap_list_dict import swap_list_dict
+#    from swap_list_dict import swap_list_dict
 
     sh = tf.shape(kpts)
     nb_kpts = sh[2]//3
@@ -357,13 +357,13 @@ def pose_random_flip(images, labels, mode=None, change_rate=0.5):
     boxes = labels[..., 1:5]
     keypoints = labels[...,5:]
     flipped_images = transform_images(images, im_matrix)
-    flipped_boxes = transform_boxes(boxes, lb_matrix, image_width=1., image_height=1.)
-    flipped_keypoints = transform_keypoints(keypoints, lb_matrix, image_width=1., image_height=1.)
+    flipped_boxes = _transform_boxes(boxes, lb_matrix, image_width=1., image_height=1.)
+    flipped_keypoints = _transform_keypoints(keypoints, lb_matrix, image_width=1., image_height=1.)
 
 
     if mode in ["horizontal","vertical"]:
-        # because the keypoints have been flipped, right/left must be swapped
-        flipped_keypoints = keypoints_rightleft_swap(flipped_keypoints)
+        # because the keypoints have been flipped, if the pose is symmetric then right/left must be swapped
+        flipped_keypoints = _keypoints_rightleft_swap(flipped_keypoints)
 
     # Apply the change rate to images and labels
     images_aug, boxes_aug, kpts_aug = pose_apply_change_rate(
@@ -476,7 +476,7 @@ def objdet_random_translation(
             fill_mode=fill_mode,
             fill_value=fill_value)
 
-    translated_boxes = transform_boxes(
+    translated_boxes = _transform_boxes(
             boxes,
             translation_matrix,
             image_width,
@@ -493,7 +493,7 @@ def objdet_random_translation(
 
 #------------------------- Random rotation -------------------------
 
-def get_3Drotation_matrix(phi, theta, psi, width, height):
+def _get_3Drotation_matrix(phi, theta, psi, width, height):
     """
     This function creates a batch of rotation matrices given a batch of angles.
     Angles are independent from each other and may be different from
@@ -593,8 +593,8 @@ def pose_random_rotation(
         phi   = tf.random.uniform([batch_size], minval=min_angle, maxval=max_angle)
         theta = tf.random.uniform([batch_size], minval=min_angle, maxval=max_angle)
         psi   = tf.random.uniform([batch_size], minval=min_angle, maxval=max_angle)
-        im_rotation_matrix = get_3Drotation_matrix(phi, theta, psi, image_width, image_height)
-        lb_rotation_matrix = get_3Drotation_matrix(phi, theta, psi, 2., 2.)
+        im_rotation_matrix = _get_3Drotation_matrix(phi, theta, psi, image_width, image_height)
+        lb_rotation_matrix = _get_3Drotation_matrix(phi, theta, psi, 2., 2.)
 
 
     classes = labels[..., 0:1]
@@ -602,8 +602,8 @@ def pose_random_rotation(
     keypoints = labels[...,5:]
 
     rotated_images = transform_images(images,im_rotation_matrix,fill_mode=fill_mode,fill_value=fill_value,interpolation=interpolation)
-    rotated_boxes = transform_boxes(boxes,lb_rotation_matrix,1.,1.) #,scale=0.1)
-    rotated_keypoints = transform_keypoints(keypoints, lb_rotation_matrix, image_width=1., image_height=1.)
+    rotated_boxes = _transform_boxes(boxes,lb_rotation_matrix,1.,1.) #,scale=0.1)
+    rotated_keypoints = _transform_keypoints(keypoints, lb_rotation_matrix, image_width=1., image_height=1.)
 
     # Apply the change rate to images and labels
     images_aug, boxes_aug, kpts_aug = pose_apply_change_rate(
@@ -695,7 +695,7 @@ def objdet_random_shear(
                         fill_value=fill_value,
                         interpolation=interpolation)
  
-    sheared_boxes = transform_boxes(
+    sheared_boxes = _transform_boxes(
                         boxes,
                         shear_matrix,
                         image_width,
@@ -825,7 +825,7 @@ def objdet_random_zoom(
                 fill_value=fill_value,
                 interpolation=interpolation)
 
-    zoomed_boxes = transform_boxes(
+    zoomed_boxes = _transform_boxes(
                 boxes,
                 zoom_matrix,
                 image_width,

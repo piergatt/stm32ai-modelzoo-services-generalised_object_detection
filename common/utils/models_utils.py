@@ -19,7 +19,7 @@ from pathlib import Path
 from onnx import ModelProto
 import onnxruntime
 import mlflow
-from logs_utils import log_to_file
+from common.utils import log_to_file
 
 
 def ai_interp_input_quant(ai_interp, data: np.array, data_scale: float, data_offset: float, file_extension: str):
@@ -64,10 +64,10 @@ def ai_runner_interp(target: str, name_model: str):
         ai_runner_input_details : Dictionnary with details about the inputs of the model
         ai_runner_output_details : Dictionnary with details about the outputs of the model
     """
-    from stm_ai_runner import AiRunner
+    from common.stm_ai_runner import AiRunner
     if target == 'stedgeai_host' or target == 'stedgeai_n6':
         print(f"Loading {target} for ST Edge AI inference of {name_model}")
-        from stm_ai_runner import AiRunner
+        from common.stm_ai_runner import AiRunner
         if target == 'stedgeai_host':
             ai_runner_desc = 'st_ai_ws'
         if target == 'stedgeai_n6':

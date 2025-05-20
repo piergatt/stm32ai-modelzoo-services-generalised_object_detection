@@ -215,10 +215,11 @@ class FvpHwDriver(AiHwDriver):
         #self._iris_cpu.write_memory(target_add, bytearray(data), size=1, count=len(data))
         return len(data)
 
-    def short_desc(self):
+    def short_desc(self, full: bool = True):
         """Report a human description of the connection state"""  # noqa: DAR101,DAR201,DAR401
         desc = 'FVP:' + str(self._hostname) + ':' + str(self._port)
-        desc += ':connected' if self.is_connected else ':not connected'
+        if full:
+          desc += ':connected' if self.is_connected else ':not connected'
         return desc
 
 

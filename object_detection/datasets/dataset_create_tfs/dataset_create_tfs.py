@@ -22,6 +22,7 @@ from statistics import mean
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '../dataset_analysis'))
 from dataset_analysis import num_labels_above_percentage
 
@@ -53,7 +54,8 @@ def parse_label_file(txt_file_path):
     return labels
 
 
-def add_tfs_files_to_dataset(dataset_path : str=None, 
+def add_tfs_files_to_dataset(dataset_path : str=None,
+                             exclude_unlabeled_images : bool=False, 
                              padded_labels_size : int=0) -> None: 
     """
     Creates .tfs files filtering images with the number of detections above the padded_labels_size value.
@@ -61,6 +63,7 @@ def add_tfs_files_to_dataset(dataset_path : str=None,
     Args:
         dataset_path (str): Path of the dataset to analyze
         padded_labels_size (int) : The max number of detection allowed per image 
+
 
     Returns:
         None
@@ -92,15 +95,19 @@ def add_tfs_files_to_dataset(dataset_path : str=None,
         base_path = os.path.join(Path(jpg_path).parent, Path(jpg_path).stem)
         txt_path = base_path + ".txt"
 
-        if not os.path.isfile(txt_path):
+        """if not os.path.isfile(txt_path) and exclude_unlabeled_images==True:
             missing_txt += 1
             print(f"[INFO] Skipping example, no .txt labels file for image {jpg_path}")
-            continue
+            continue"""
 
         labels = parse_label_file(txt_path)
         if not labels:
             background += 1
-            labels = [[0.,0.,0.,0.,0.]]
+            if exclude_unlabeled_images==False:
+                labels = [[0.,0.,0.,0.,0.]]
+            else:
+                print(f"[INFO] Skipping background image {jpg_path}")
+                continue
 
         # Discard examples with a number of labels
         # that is greater than the padding size
@@ -122,14 +129,14 @@ def add_tfs_files_to_dataset(dataset_path : str=None,
         tf.io.write_file(base_path + ".tfs", data)
 
     print("Number of image files:", num_images)
-    print("Discarded examples due to missing .txt file: {}  ({:.1f}%)"
-                   .format(missing_txt, 100*missing_txt/num_images))
-    remaining = num_images - missing_txt
-    print("Discarded examples due to number of labels greater than padding size: {}  ({:.1f}%)"
-                   .format(discarded, 100*discarded/remaining))
+    if exclude_unlabeled_images == True:
+        remaining = num_images - background
+    else:
+        remaining = num_images
+    print("Discarded examples due to number of labels greater than padding size: {}  ({:.1f}%)".format(discarded, 100*discarded/remaining))
     remaining -= discarded
     print("Remaining examples: {}   ({:.1f}%)".format(remaining, 100*remaining/num_images))
-    print("Background images: {}   ({:.1f}%)".format(background, 100*background/remaining))
+    print("Background images: {}   ({:.1f}%)".format(background, 100*background/num_images))
 
 
 @hydra.main(version_base=None, config_path="", config_name="dataset_config")
@@ -144,6 +151,7 @@ def main(configs: DictConfig) -> None:
         None
     """
     cfg = get_config(configs)
+    print((cfg.settings.exclude_unlabeled_images))
     cfg.output_dir = HydraConfig.get().run.dir
     if not "training_path" in cfg.dataset:
         print("Please make sure that you provided at least a dataset training path")
@@ -162,17 +170,20 @@ def main(configs: DictConfig) -> None:
                                                      target_percentage = 0.0)
 
     # Add tfs files to the training dataset
-    add_tfs_files_to_dataset(dataset_path = cfg.dataset.training_path, 
+    add_tfs_files_to_dataset(dataset_path = cfg.dataset.training_path,
+                             exclude_unlabeled_images = cfg.settings.exclude_unlabeled_images,
                              padded_labels_size = max_detections)
 
     # Add tfs files to the validation dataset if present
     if "validation_path" in cfg.dataset and (cfg.dataset.validation_path != None) :
-        add_tfs_files_to_dataset(dataset_path = cfg.dataset.validation_path, 
+        add_tfs_files_to_dataset(dataset_path = cfg.dataset.validation_path,
+                                 exclude_unlabeled_images = cfg.settings.exclude_unlabeled_images,
                                  padded_labels_size = max_detections)
 
     # Add tfs files to the test dataset if present
     if "test_path" in cfg.dataset and (cfg.dataset.test_path != None) :
-        add_tfs_files_to_dataset(dataset_path = cfg.dataset.test_path, 
+        add_tfs_files_to_dataset(dataset_path = cfg.dataset.test_path,
+                                 exclude_unlabeled_images = cfg.settings.exclude_unlabeled_images,
                                  padded_labels_size = max_detections)
 
 

@@ -7,30 +7,22 @@
 #  * If no LICENSE file comes with this software, it is provided AS-IS.
 #  *--------------------------------------------------------------------------------------------*/
 
-import io
-import sys
 import os
 import cv2
-import time
-import math
-import tqdm
-import mlflow
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import tensorflow.keras.backend as K
-import onnx
 import onnxruntime
 from hydra.core.hydra_config import HydraConfig
 
-from models_utils import get_model_name_and_its_input_shape, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from models_mgt   import ai_runner_invoke
-from postprocess  import spe_postprocess, heatmaps_spe_postprocess, yolo_mpe_postprocess, hand_landmarks_postprocess, head_landmarks_postprocess
-from connections  import skeleton_connections_dict
+from common.utils import get_model_name_and_its_input_shape, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
+from src.utils import ai_runner_invoke, skeleton_connections_dict
+from src.postprocessing  import spe_postprocess, heatmaps_spe_postprocess, yolo_mpe_postprocess, hand_landmarks_postprocess, head_landmarks_postprocess
 
 
-def load_test_data(directory: str):
+def _load_test_data(directory: str):
     """
     Parse the training data and return a list of paths to annotation files.
     
@@ -61,6 +53,7 @@ def predict(cfg):
     output_dir = HydraConfig.get().runtime.output_dir
     model_path = cfg.general.model_path
     model_type = cfg.general.model_type
+    class_name = cfg.dataset.class_names[0] if cfg.dataset.class_names is not None else 'None'
     if cfg.prediction and cfg.prediction.target:
         target = cfg.prediction.target
     else:
@@ -100,7 +93,7 @@ def predict(cfg):
 
     if cfg.prediction.test_files_path:
         test_set_path = cfg.prediction.test_files_path
-        test_annotations =  load_test_data(test_set_path)
+        test_annotations =  _load_test_data(test_set_path)
     else:
         print("no test set found")
 
@@ -114,7 +107,8 @@ def predict(cfg):
             
             print('Inference on image : ',image_file)
 
-            image = cv2.imread(os.path.join(test_set_path, image_file))
+#            image = cv2.imread(os.path.join(test_set_path, image_file))
+            image = cv2.imread(image_file)
             if len(image.shape) != 3:
                 image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -196,9 +190,11 @@ def predict(cfg):
                 print('No post-processing found for the model type : '+model_type)
 
             try:
-                skeleton_connections = skeleton_connections_dict[kpts_nbr]
+                skeleton_connections = skeleton_connections_dict[class_name][kpts_nbr]
             except:
-                print('Skeleton for this number of keypoints is not supported -> use 21, 17 or 13')
+                print('Skeleton for the class [{}] & number of keypoints [{}] is unknown -> use [hand] & [21] or [person] & ([17] or [13])'.format(class_name,kpts_nbr))
+                print('You can add your own in the utils/connections.py file')
+                skeleton_connections = []
 
             threshSkeleton = cfg.postprocessing.kpts_conf_thresh
 
@@ -241,9 +237,9 @@ def predict(cfg):
                             cv2.line(image,(int(xx[k]*width),int(yy[k]*height)),(int(xx[l]*width),int(yy[l]*height)),(0, 255, 0))
 
                 if model_type=='yolo_mpe':
-                    btext = '{}-{:.2f}'.format('person',conf)
+                    btext = '{}-{:.2f}'.format(class_name,conf)
                 elif model_type=='hand_spe':
-                    btext = '{}'.format(['left','right'][htype[ids]>0.5])
+                    btext = '{}'.format(['left_hand','right_hand'][htype[ids]>0.5])
 
                 if model_type in ['yolo_mpe','hand_spe']:
                     cv2.rectangle(image,(x1,y1), (x2, y2),(255, 0, 255),1)

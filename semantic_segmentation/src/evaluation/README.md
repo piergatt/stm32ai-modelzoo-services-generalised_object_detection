@@ -8,7 +8,7 @@ The evaluation service is designed to be fast, efficient, and accurate, making i
 
 <details open><summary><a href="#1"><b>1. Configure the YAML file</b></a></summary><a id="1"></a>
 
-To use this service and achieve your goals, you can use the [user_config.yaml](../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
+To use this service and achieve your goals, you can use the [user_config.yaml](../../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
 
 Alternatively, you can follow the tutorial below, which shows how to evaluate your pre-trained semantic segmentation model using our evaluation service.
 
@@ -38,9 +38,12 @@ Information about the dataset you want to use for evaluation is provided in the 
 ```yaml
 dataset:
    name: pascal_voc   # Dataset name. Mandatory. Only 'pascal_voc' is supported for the time being
-   test_path: ../datasets/VOC2012_train_val/JPEGImages                              # Path to directory containing the images of the test set.
-   test_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug             # Path to directory containing the masks of the test set
-   test_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt    # Path to file containing the list of images names to be considered in 'test_path' and 'test_mask_path' for test set 
+   class_names: ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
+               "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
+               "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
+   test_path: ./datasets/VOC2012_train_val/JPEGImages                              # Path to directory containing the images of the test set.
+   test_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug             # Path to directory containing the masks of the test set
+   test_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt    # Path to file containing the list of images names to be considered in 'test_path' and 'test_mask_path' for test set 
    check_image_files: False   # Enable/disable image file checking.
 ```
 The state machine below describes the rules to follow when handling dataset paths for the evaluation.
@@ -51,6 +54,8 @@ The state machine below describes the rules to follow when handling dataset path
 
 When working with a dataset for the first time, we suggest setting the `check_image_files` attribute to True. This will enable the system to load each image file and identify any corrupt, unsupported, 
 or non-image files. The path to any problematic files will be reported.
+
+The `class_names` attribute specifies the classes in the dataset. This information must be provided in the YAML file. If the `class_names` attribute is absent, the `classes_name_file` argument can be used as an alternative, pointing to a text file containing the class names.
 
 The service first seeks a test set specification defined by `test_path`, `test_masks_path`, and `test_files_path` parameters. If no test set is specified, the data loader checks if a validation set is specified either by the parameters `validation_path`, `validation_masks_path`, `validation_files_path` or alternatively by `training_path`, `training_masks_path`, `validation_files_path`. In the latter, it has to be verified that no images in the `validation_files_path` list of names belong to the set of images used for training, otherwise, there will be an over-estimation of accuracy and IoU.
 
@@ -64,9 +69,9 @@ dataset:
    class_names: ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
                 "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
                 "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
-   training_path: ../datasets/VOC2012_train_val/JPEGImages                                 # Path to train jpeg images
-   training_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug                 # Path to train masks files
-   training_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt  # Path to file listing the images names for training
+   training_path: ./datasets/VOC2012_train_val/JPEGImages                                 # Path to train jpeg images
+   training_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug                 # Path to train masks files
+   training_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt  # Path to file listing the images names for training
    validation_path:
    validation_split: 0.20
    test_path:
@@ -104,34 +109,34 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#2"><b>2. Evaluate your model</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml) you can evaluate the model by running the following command from the **src/** folder:
+If you chose to modify the [user_config.yaml](../../user_config.yaml) you can evaluate the model by running the following command from the UC folder:
 
 ```bash
 python stm32ai_main.py 
 ```
-If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it then run the following command from the **src/** folder: 
+If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it then run the following command from the UC folder: 
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name evaluation_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name evaluation_config.yaml
 ```
 In case you want to evaluate the accuracy of the quantized model then benchmark it, you can either launch the evaluation operation mode followed by the [benchmark service](../benchmarking/README.md) that describes in detail how to proceed or you can use chained services like launching **[chain_eqeb](../config_file_examples/chain_eqeb_config.yaml)** example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_eqeb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_eqeb_config.yaml
 ```
 
 </details>

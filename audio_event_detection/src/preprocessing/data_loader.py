@@ -21,12 +21,12 @@ from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
 from pathlib import Path
 
-from time_domain_preprocessing import load_and_reformat
-from feature_extraction import get_patches
-from dataset_utils.fsd50k.unsmear_labels import unsmear_labels, make_model_zoo_compatible
+from .time_domain_preprocessing import load_and_reformat
+from .feature_extraction import get_patches
+from .dataset_utils.fsd50k.unsmear_labels import unsmear_labels, make_model_zoo_compatible
 
 
-def _load_audio_sample(filepath,
+def load_audio_sample(filepath,
                        patch_length: int,
                        n_mels: int,
                        target_rate: int,
@@ -385,7 +385,7 @@ def _get_ds(df: pd.DataFrame,
 
         label = df['category'].iloc[i]
         filepath = Path(audio_path, fname)
-        patches = _load_audio_sample(
+        patches = load_audio_sample(
             filepath=filepath,
             patch_length=patch_length,
             n_mels=n_mels,
@@ -454,7 +454,7 @@ def _get_ds(df: pd.DataFrame,
         return ds
     
 
-def load_ESC_10(csv: str,
+def _load_ESC_10(csv: str,
                 audio_path: str,
                 class_names: List[str],
                 patch_length: int,
@@ -636,7 +636,7 @@ def load_ESC_10(csv: str,
 
     return train_ds, val_ds, val_clip_labels
 
-def load_custom_multiclass(csv: str,
+def _load_custom_multiclass(csv: str,
                         audio_path: str,
                         class_names: List[str],
                         patch_length: int,
@@ -877,7 +877,7 @@ def _prepare_fsd50k_csvs(csv_folder: str,
 
     print("Done preparing FSD50K csv files !")
 
-def load_FSD50K(dev_audio_folder: str ,
+def _load_FSD50K(dev_audio_folder: str ,
                 eval_audio_folder: str ,
                 audioset_ontology_path: str, 
                 csv_folder: str,
@@ -1142,8 +1142,8 @@ def load_dataset(dataset_name: str = None,
         If None, no test dataset is returned.
     test_audio_path : str, posixpath or pathlib.Path object. Path to the folder containing 
         test audio files.
-    For other args, see the docstrings of load_ESC_10(), load_custom_multiclass() 
-        or load_FSD50K() respectively
+    For other args, see the docstrings of _load_ESC_10(), _load_custom_multiclass() 
+        or _load_FSD50K() respectively
     
     Outputs
     -------
@@ -1161,7 +1161,7 @@ def load_dataset(dataset_name: str = None,
 
     if dataset_name.lower() == "fsd50k":
         # Load FSD50K
-        train_ds, val_ds, val_clip_labels= load_FSD50K(
+        train_ds, val_ds, val_clip_labels= _load_FSD50K(
             dev_audio_folder=fsd50k_dev_audio_folder,
             eval_audio_folder=fsd50k_eval_audio_folder,
             audioset_ontology_path=fsd50k_audioset_ontology_path, 
@@ -1203,7 +1203,7 @@ def load_dataset(dataset_name: str = None,
     elif training_csv_path:
         if dataset_name.lower() == "esc10":
             # Load ESC-10
-            train_ds, val_ds, val_clip_labels = load_ESC_10(
+            train_ds, val_ds, val_clip_labels = _load_ESC_10(
                 csv=training_csv_path,
                 audio_path=training_audio_path,
                 class_names=class_names,
@@ -1246,7 +1246,7 @@ def load_dataset(dataset_name: str = None,
 
         elif dataset_name.lower() == "custom":
             # Load custom dataset with ESC format
-            train_ds, val_ds, val_clip_labels = load_custom_multiclass(
+            train_ds, val_ds, val_clip_labels = _load_custom_multiclass(
                 csv=training_csv_path,
                 audio_path=training_audio_path,
                 class_names=class_names,

@@ -19,11 +19,12 @@ import warnings
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from preprocess import preprocess_input
-from data_loader import _load_audio_sample
-from evaluate import _aggregate_predictions
-from onnx_evaluation import predict_onnx, model_is_quantized
-from models_utils import ai_runner_interp
+from common.utils import ai_runner_interp
+from common.evaluation import predict_onnx, model_is_quantized
+from src.preprocessing import preprocess_input, load_audio_sample 
+from src.evaluation import aggregate_predictions
+
+
 
 def predict(cfg: DictConfig = None) -> None:
     """
@@ -97,7 +98,7 @@ def predict(cfg: DictConfig = None) -> None:
         if os.path.isdir(filepath): continue
         filenames.append(fn)
         # Load the audio sample and split into patches
-        patches = _load_audio_sample(
+        patches = load_audio_sample(
             filepath=filepath,
             patch_length=patch_length,
             n_mels=n_mels,
@@ -211,12 +212,12 @@ def predict(cfg: DictConfig = None) -> None:
     else:
         raise TypeError(f"Unknown or unsupported model type. Received path {model_path}")
 
-    aggregated_probas = _aggregate_predictions(preds,
+    aggregated_probas = aggregate_predictions(preds,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=False,
                                                 return_proba=True)
-    aggregated_preds = _aggregate_predictions(preds,
+    aggregated_preds = aggregate_predictions(preds,
                                                 clip_labels=clip_labels,
                                                 multi_label=multi_label,
                                                 is_truth=False,

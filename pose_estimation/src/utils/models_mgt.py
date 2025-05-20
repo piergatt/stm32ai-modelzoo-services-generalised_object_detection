@@ -15,10 +15,9 @@ import onnxruntime
 from omegaconf import DictConfig
 import numpy as np
 
-from cfg_utils import check_attributes
-from models_utils import check_model_support, check_attribute_value 
-from st_movenet_lightning_heatmaps import st_movenet_lightning_heatmaps
-from custom import custom
+from common.utils import check_model_support, check_attributes
+from src.models import st_movenet_lightning_heatmaps, custom
+
 
 def ai_runner_invoke(image_processed,ai_runner_interpreter):
     def reduce_shape(x):  # reduce shape (request by legacy API)
@@ -37,7 +36,7 @@ def ai_runner_invoke(image_processed,ai_runner_interpreter):
         predictions.append(x.copy())
     return predictions
 
-def get_zoo_model(cfg: DictConfig):
+def _get_zoo_model(cfg: DictConfig):
     """
     Returns a Keras model object based on the specified configuration and parameters.
 
@@ -108,7 +107,7 @@ def load_model_for_training(cfg: DictConfig) -> tuple:
     # Train a model from the Model Zoo
     if cfg.training.model:
         print("[INFO] : Loading Model Zoo model:", model_type)        
-        model = get_zoo_model(cfg)
+        model = _get_zoo_model(cfg)
         
         cft = cfg.training.model
         if cft.pretrained_weights:

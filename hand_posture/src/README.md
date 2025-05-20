@@ -25,7 +25,7 @@ Remember that minimalistic yaml files are available [here](./config_file_example
 
 The hand posture model zoo provides a collection of independent services that can be used to perform various functions related to machine learning for hand posture detection. The individual services include tasks such as training the model or evaluating the model.
 
-To use the services in the hand posture model zoo, you can utilize the model zoo [stm32ai_main.py](stm32ai_main.py) along with the [user_config.yaml](user_config.yaml) file as input. The YAML file specifies the service and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
+To use the services in the hand posture model zoo, you can utilize the model zoo [stm32ai_main.py](../stm32ai_main.py) along with the [user_config.yaml](../user_config.yaml) file as input. The YAML file specifies the service and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
 
 More information about the different services and their configuration options can be found in the <a href="#2">next section</a>.
 
@@ -63,7 +63,7 @@ A dedicated documentation is available for this tool and to know how to create y
 
 This tutorial demonstrates how to use the `training` services to train the model. We chose to use the `CNN2D_ST_HandPosture` model and the [ST_VL53L8CX_handposture_dataset](../datasets) dataset as an example to demonstrate the workflow.
 
-To get started, you will need to update the [user_config.yaml](user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](user_config.yaml) file is explained in detail in the following sections.
+To get started, you will need to update the [user_config.yaml](../user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](../user_config.yaml) file is explained in detail in the following sections.
 
 <ul><details open><summary><a href="#2-1">2.1 Choose the operation mode</a></summary><a id="2-1"></a>
 

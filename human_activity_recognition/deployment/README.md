@@ -37,12 +37,12 @@ The detailed instructions on installation are available in this [wiki article](h
 </details>
 <details open><summary><a href="#2"><b>2. YAML file configuration</b></a></summary><a id="2"></a>
 
-The deployment of the model is driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../src/user_config.yaml) and is located in the [src/](../src/) directory.
+The deployment of the model is driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../user_config.yaml) and is located in the Use Case directory.
 
 This tutorial only describes enough settings for you to be able to deploy a pretrained model from the model zoo. Please refer to the [human_activity_recognition/README.md](../src/README.md) file for more information on the configuration file.
 
 In this tutorial, we will be deploying a pretrained model from the STM32 model zoo.
-Pretrained models can be found under the [model zoo on GH](https://github.com/STMicroelectronics/stm32ai-modelzoo/tree/master/human_activity_recognition/) folder. Each of the pretrained models has its own subfolder. These subfolders contain a copy of the configuration file used to train this model. Copy the `preprocessing` section from the given model to your own configuration file [user_config.yaml](../src/user_config.yaml), to ensure you have the correct preprocessing parameters for the given model.
+Pretrained models can be found under the [model zoo on GH](https://github.com/STMicroelectronics/stm32ai-modelzoo/tree/master/human_activity_recognition/) folder. Each of the pretrained models has its own subfolder. These subfolders contain a copy of the configuration file used to train this model. Copy the `preprocessing` section from the given model to your own configuration file [user_config.yaml](../user_config.yaml), to ensure you have the correct preprocessing parameters for the given model.
 
 In this tutorial, we will deploy an [ign_wl_24.h5](https://github.com/STMicroelectronics/stm32ai-modelzoo/blob/master/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5) that has been trained on mobility_v1, a proprietary dataset collected by STMicroelectronics.
 
@@ -75,7 +75,7 @@ general:
    project_name: human_activity_recognition           # Project name. Optional, defaults to "<unnamed>".
    logs_dir: logs                    # Name of the directory where log files are saved. Optional, defaults to "logs".
    saved_models_dir: saved_models    # Name of the directory where model files are saved. Optional, defaults to "saved_models".
-   model_path: ../../../model_zoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5         # Path to the model you want to deploy
+   model_path: ../../stm32ai-modelzoo/human_activity_recognition/ign/ST_pretrainedmodel_custom_dataset/mobility_v1/ign_wl_24/ign_wl_24.h5         # Path to the model you want to deploy
    global_seed: 123                  # Seed used to seed random generators (an integer). Optional, defaults to 123.
    deterministic_ops: False          # Enable/disable deterministic operations (a boolean). Optional, defaults to False.
    display_figures: True             # Enable/disable the display of figures (training learning curves and confusion matrices).
@@ -95,7 +95,7 @@ dataset:
                     # Use 'WISDM' for pretrained models trained on the public datasets provided in pretrained_models
   class_names: [Stationary, Walking, Jogging, Biking] # Names of the classes your model was trained on
                                                      # Must be included when deploying as well in the exact same order.
-  training_path: ..\datasets\mobility_v1\test.pkl    # Not mandatory for deployment
+  training_path: ./datasets/mobility_v1/test.pkl    # Not mandatory for deployment
   
   validation_path: # Optional
   validation_split: 0.2  # Optional, float value between 0 and 1, default value is 0.2
@@ -164,7 +164,7 @@ Finally, you need to configure the `deployment` section of your configuration fi
 
 ```yaml
 deployment:
-  c_project_path: ../../application_code/sensing_thread_x/STM32U5/
+  c_project_path: ../application_code/sensing_thread_x/STM32U5/
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -198,7 +198,7 @@ To run the deployment, which will build the project and flash the built binary f
 </details></ul>
 <ul><details open><summary><a href="#3-2">3.2 Run stm32ai_main.py</a></summary><a id="3-2"></a>
 
-Make sure that you have configured your configuration file properly as explained in the sections below, then, navigate to [human_activity_recognition/src/](../src/).
+Make sure that you have configured your configuration file properly as explained in the sections below, then, navigate to [human_activity_recognition/](../) folder.
 Do a final check to verify that you have properly set `operation_mode` to `deployment`, and paths to the tools are properly set also, then launch the following command in the command prompt:
 
 ```bash

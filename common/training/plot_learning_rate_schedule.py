@@ -15,11 +15,11 @@ from omegaconf import DictConfig
 from munch import DefaultMunch
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from cfg_utils import postprocess_config_dict, collect_callback_args
-import lr_schedulers
+from common.utils import postprocess_config_dict, collect_callback_args
+from common.training import lr_schedulers
 
 
-def get_learning_rate_scheduler(cfg: DictConfig) -> tf.keras.callbacks.Callback:
+def _get_learning_rate_scheduler(cfg: DictConfig) -> tf.keras.callbacks.Callback:
     """
     Extracts the learning rate callback and attributes.
 
@@ -69,7 +69,7 @@ def get_learning_rate_scheduler(cfg: DictConfig) -> tf.keras.callbacks.Callback:
     return scheduler_name, scheduler
 
 
-def get_initial_learning_rate(cfg: DictConfig) -> float:
+def _get_initial_learning_rate(cfg: DictConfig) -> float:
     """
     The learning rate scheduler may need the initial learning rate provided
     in the optimizer. If the learning_rate attribute is present in the optimizer section, we get its value.
@@ -94,7 +94,7 @@ def get_initial_learning_rate(cfg: DictConfig) -> float:
     return optimizer_lr
 
 
-def plot_lr_schedule(scheduler_name: str,
+def _plot_lr_schedule(scheduler_name: str,
                      scheduler: tf.keras.callbacks.Callback,
                      epochs: int = None,
                      initial_lr: float = None,
@@ -162,8 +162,8 @@ def plot_learning_rate_schedule(config_file_path : str=None,
     if cfg.training.callbacks is None:
         cfg.training.callbacks = {}
 
-    scheduler_name, scheduler = get_learning_rate_scheduler(cfg.training.callbacks)
+    scheduler_name, scheduler = _get_learning_rate_scheduler(cfg.training.callbacks)
     
-    initial_lr = get_initial_learning_rate(cfg.training.optimizer)
-    plot_lr_schedule(scheduler_name, scheduler, epochs=cfg.training.epochs, initial_lr=initial_lr, fname=fname)
+    initial_lr = _get_initial_learning_rate(cfg.training.optimizer)
+    _plot_lr_schedule(scheduler_name, scheduler, epochs=cfg.training.epochs, initial_lr=initial_lr, fname=fname)
 

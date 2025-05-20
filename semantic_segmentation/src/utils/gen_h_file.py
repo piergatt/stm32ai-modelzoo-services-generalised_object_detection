@@ -12,18 +12,13 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import os
-import glob
-import re
-
-
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
-import numpy as np
 import tensorflow as tf
 import onnxruntime
 
-from cfg_utils import aspect_ratio_dict
-from cfg_utils import color_mode_n6_dict
+from common.utils import aspect_ratio_dict, color_mode_n6_dict
+
 
 def gen_h_user_file_n6(config: DictConfig = None, quantized_model_path: str = None) -> None:
     """
@@ -94,29 +89,18 @@ def gen_h_user_file_n6(config: DictConfig = None, quantized_model_path: str = No
         f.write('#include "arm_math.h"\n\n')
         f.write("#define USE_DCACHE\n\n")
         f.write("/*Defines: CMW_MIRRORFLIP_NONE; CMW_MIRRORFLIP_FLIP; CMW_MIRRORFLIP_MIRROR; CMW_MIRRORFLIP_FLIP_MIRROR;*/\n")
-        f.write("#define CAMERA_FLIP CMW_MIRRORFLIP_NONE\n")
-        f.write("\n\n")
-        f.write("#define ASPECT_RATIO_CROP       (2)\n")
-        f.write("#define ASPECT_RATIO_FIT        (1)\n")
-        f.write("#define ASPECT_RATIO_FULLSCREEN (3)\n")
+        f.write("#define CAMERA_FLIP CMW_MIRRORFLIP_NONE\n\n")
+        f.write("")
+        f.write("#define ASPECT_RATIO_CROP (1) /* Crop both pipes to nn input aspect ratio; Original aspect ratio kept */\n")
+        f.write("#define ASPECT_RATIO_FIT (2) /* Resize both pipe to NN input aspect ratio; Original aspect ratio not kept */\n")
+        f.write("#define ASPECT_RATIO_FULLSCREEN (3) /* Resize camera image to NN input size and display a fullscreen image */\n")
+        f.write("#define ASPECT_RATIO_MODE {}\n".format(aspect_ratio_dict[params.preprocessing.resizing.aspect_ratio]))
         f.write("\n")
-        f.write("#define ASPECT_RATIO_MODE    {}\n".format(aspect_ratio_dict[params.preprocessing.resizing.aspect_ratio]))
-        f.write("\n")
-
-        f.write("#define CAPTURE_FORMAT DCMIPP_PIXEL_PACKER_FORMAT_RGB565_1\n")
-        f.write("#define CAPTURE_BPP 2\n")
-        f.write("/* Leave the driver use the default resolution */\n")
-        f.write("#define CAMERA_WIDTH 0\n")
-        f.write("#define CAMERA_HEIGHT 0\n\n")
-
-        f.write("#define LCD_FG_WIDTH             800\n")
-        f.write("#define LCD_FG_HEIGHT            480\n")
-        f.write("#define LCD_FG_FRAMEBUFFER_SIZE  (LCD_FG_WIDTH * LCD_FG_HEIGHT * 2)\n")
 
         f.write("/* Postprocessing type configuration */\n")
 
         if params.general.model_type == "deeplab_v3":
-            f.write("#define POSTPROCESS_TYPE    POSTPROCESS_SSEG_DEEPLAB_V3_UF\n\n")
+            f.write("#define POSTPROCESS_TYPE POSTPROCESS_SSEG_DEEPLAB_V3_UF\n\n")
         else:
             raise TypeError("please select one of this supported post processing options [ deeplab_v3 ]")
 
@@ -141,8 +125,10 @@ def gen_h_user_file_n6(config: DictConfig = None, quantized_model_path: str = No
             f.write("#define AI_SSEG_DEEPLABV3_PP_HEIGHT             (NN_HEIGHT)\n\n")
 
         f.write('#define WELCOME_MSG_1     "{}"\n'.format(os.path.basename(params.general.model_path)))
-        # @Todo retieve info from stedgeai output
-        f.write('#define WELCOME_MSG_2       "{}"\n'.format("Model Running in STM32 MCU internal memory"))
+        if config.deployment.hardware_setup.board == 'NUCLEO-N657X0-Q':
+            f.write('#define WELCOME_MSG_2         ((char *[2]) {"Model Running in STM32 MCU", "internal memory"})')
+        else:
+            f.write('#define WELCOME_MSG_2       "{}"\n'.format("Model Running in STM32 MCU internal memory"))
 
         f.write("\n")
         f.write("#endif      /* APP_CONFIG */\n")

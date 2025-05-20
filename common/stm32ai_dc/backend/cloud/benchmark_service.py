@@ -8,10 +8,10 @@
 
 import json
 import typing
-from stm32ai_dc.backend.cloud.file_service import FileService
-from stm32ai_dc.errors import BenchmarkFailure, BenchmarkParameterError
-from stm32ai_dc.errors import ModelNotFoundError, WrongTypeError
-from stm32ai_dc.types import LOGGER_NAME, AtonParametersSchema, CliParameters, MpuParameters
+from common.stm32ai_dc.backend.cloud.file_service import FileService
+from common.stm32ai_dc.errors import BenchmarkFailure, BenchmarkParameterError
+from common.stm32ai_dc.errors import ModelNotFoundError, WrongTypeError
+from common.stm32ai_dc.types import LOGGER_NAME, AtonParametersSchema, CliParameters, MpuParameters
 from .helpers import send_get, send_post
 from .endpoints import get_benchmark_boards_ep, get_benchmark_openapi_ep
 from .endpoints import get_benchmark_service_ep
@@ -143,7 +143,6 @@ class BenchmarkService:
         if resp.status_code == 200:
             return resp.json()
         else:
-            logger.error("Error server reply with non 200 HTTP code")
             return None
 
     def wait_for_run(self, benchmarkId: str, timeout=300, pooling_delay=2):

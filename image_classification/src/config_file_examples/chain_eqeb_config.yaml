@@ -1,12 +1,12 @@
 general:
-   model_path: ../../../model_zoo/image_classification/mobilenetv1/ST_pretrainedmodel_public_dataset/food-101/mobilenet_v1_0.5_224_fft/mobilenet_v1_0.5_224_fft.h5
+   model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/food-101/mobilenet_v2_0.35_224_fft/mobilenet_v2_0.35_224_fft.h5
    
 operation_mode: chain_eqeb
 
 dataset:
-   training_path: ../datasets/food_net_101/train
+   training_path: ./datasets/food_net_101/train
    validation_split: 0.1
-   quantization_path: ../datasets/food_net_101/train
+   quantization_path: ./datasets/food_net_101/train
    quantization_split: 0.05
 
 preprocessing:
@@ -36,8 +36,8 @@ benchmarking:
    board: STM32H747I-DISCO
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

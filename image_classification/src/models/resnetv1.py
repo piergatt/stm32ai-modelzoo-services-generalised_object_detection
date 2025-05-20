@@ -13,7 +13,7 @@ from tensorflow.keras import layers
 from typing import Tuple
 
 
-def resnet_layer(inputs: layers.Input, num_filters: int = 16, kernel_size: int = 3, strides: int = 1,
+def _resnet_layer(inputs: layers.Input, num_filters: int = 16, kernel_size: int = 3, strides: int = 1,
                  activation: str = 'relu', batch_normalization: bool = True,
                  conv_first: bool = True) -> layers.Activation:
     """
@@ -81,7 +81,7 @@ def get_resnetv1(num_classes: int = None, input_shape: Tuple[int, int, int] = No
     num_res_blocks = int((depth - 2) / 6)
 
     inputs = keras.Input(shape=input_shape)
-    x = resnet_layer(inputs=inputs)
+    x = _resnet_layer(inputs=inputs)
 
     # Instantiate the stack of residual units
     for stack in range(3):
@@ -89,15 +89,15 @@ def get_resnetv1(num_classes: int = None, input_shape: Tuple[int, int, int] = No
             strides = 1
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # down sample
-            y = resnet_layer(inputs=x,
+            y = _resnet_layer(inputs=x,
                              num_filters=num_filters,
                              strides=strides)
-            y = resnet_layer(inputs=y,
+            y = _resnet_layer(inputs=y,
                              num_filters=num_filters,
                              activation=None)
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 # linear projection residual shortcut connection to match changed dims
-                x = resnet_layer(inputs=x,
+                x = _resnet_layer(inputs=x,
                                  num_filters=num_filters,
                                  kernel_size=1,
                                  strides=strides,

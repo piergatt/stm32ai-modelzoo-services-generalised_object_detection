@@ -6,7 +6,7 @@
 #   If no LICENSE file comes with this software, it is provided AS-IS.
 ###################################################################################
 """
-ST AI runner - Entry point
+ST AI runner - Unified interface for ST.AI delpoyed models
 """
 
 import sys
@@ -21,10 +21,12 @@ import numpy as np
 
 from .utils import get_logger, TableWriter, truncate_name
 from .stm_ai_utils import IOTensor
+from .__version__ import __version__
 
 
 LEGACY_INFO_DICT_VERSION = (1, 2)
 STAI_INFO_DICT_VERSION = (2, 0)
+_LOGGER_FILE_NAME_ = 'ai_runner.log'
 
 
 class AiRunnerError(Exception):
@@ -203,7 +205,6 @@ class AiRunnerDriver(ABC):
             raise InvalidParamError('Invalid parent type, get_logger() attr is expected')
         self._parent = parent
         self._logger = parent.get_logger()
-        self._logger.debug(f'creating {self.__class__.__name__} object')
 
     def get_logger(self):
         """
@@ -259,28 +260,69 @@ class AiRunnerDriver(ABC):
         return False
 
 
+class AiTensorType(Enum):
+    """AiTensor type"""
+    UNDEFINED = 0
+    INPUT = 1
+    OUTPUT = 2
+    INTERNAL = 3
+
+    def __repr__(self):
+        """."""  # noqa: DAR201
+        return self.name
+
+    def __str__(self):
+        """."""  # noqa: DAR201
+        return self.name
+
+
+class AiTensorDesc(NamedTuple):
+    """Class to describe the IO tensor"""
+    iotype: AiTensorType = AiTensorType.UNDEFINED
+    name: str = ''
+    shape: Tuple = (0,)
+    dtype: Any = 0
+    scale: List[np.float32] = []
+    zero_point: List[np.int32] = []
+
+    def __str__(self):
+        """."""  # noqa: DAR201
+        desc_ = f'{self.iotype} \'{self.name}\' {np.dtype(self.dtype)}{self.shape}'
+        if self.scale and self.scale[0] != 0:
+            desc_ += f' {self.scale} {self.zero_point}'
+        return desc_
+
+
 class AiRunnerSession:
     """
     Interface to use a model
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         """Constructor"""  # noqa: DAR101,DAR201,DAR401
-        self._parent = None
-        self._name = name
+        self._parent: AiRunner = None
+        self._name: str = name
 
     def __str__(self):
         """Return c-name of the associated c-model"""  # noqa: DAR101,DAR201,DAR401
         return self.name
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         """Indicate if the session is active"""
         # noqa: DAR101,DAR201,DAR401
-        return bool(self._parent)
+        return self._parent is not None
 
     @property
-    def name(self):
+    def is_connected(self) -> bool:
+        """Indicate if the underlying driver/stack is connected"""
+        # noqa: DAR101,DAR201,DAR401
+        if self._parent:
+            return self._parent.is_connected
+        return False
+
+    @property
+    def name(self) -> Optional[str]:
         """Return the name of the model"""
         # noqa: DAR101,DAR201,DAR401
         return self._name
@@ -322,6 +364,12 @@ class AiRunnerSession:
         if self._parent:
             return self._parent.get_info(self.name)
         return dict()
+
+    def generate_rnd_inputs(self, batch_size=4, rng=np.random.RandomState(42), val=None):
+        """Generate input data with random values"""  # noqa: DAR101,DAR201,DAR401
+        if self._parent:
+            return self._parent.generate_rnd_inputs(self.name, batch_size, rng, val)
+        return []
 
     def invoke(self, inputs, **kwargs):
         """Invoke the c-network"""  # noqa: DAR101,DAR201,DAR401
@@ -423,55 +471,22 @@ class AiRunnerCallback:
         """
 
 
-class AiTensorType(Enum):
-    """AiTensor type"""
-    UNDEFINED = 0
-    INPUT = 1
-    OUTPUT = 2
-    INTERNAL = 3
-
-    def __repr__(self):
-        """."""  # noqa: DAR201
-        return self.name
-
-    def __str__(self):
-        """."""  # noqa: DAR201
-        return self.name
-
-
-class AiTensorDesc(NamedTuple):
-    """Class to describe the IO tensor"""
-    iotype: AiTensorType = AiTensorType.UNDEFINED
-    name: str = ''
-    shape: Tuple = (0,)
-    dtype: Any = 0
-    scale: List[float] = []
-    zero_point: List[int] = []
-
-    def __str__(self):
-        """."""  # noqa: DAR201
-        desc_ = f'{self.iotype}: \'{self.name}\' {np.dtype(self.dtype)}{self.shape}'
-        if self.scale and self.scale[0] != 0:
-            desc_ += f' {self.scale} {self.zero_point}'
-        return desc_
-
-
 def _io_details_to_desc(details: List, iotype: AiTensorType = AiTensorType.INPUT) -> List[AiTensorDesc]:
     """Convert IO detail info to AiTensorDesc object"""  # noqa: DAR101,DAR201,DAR401
     res_ = []
     for detail_ in details:
         if detail_.get('scale', None):
-            scale = detail_['scale']
-            zp = detail_['zero_point']
+            scale: List[np.float32] = [np.float32(detail_['scale'])]
+            zp: List[np.int32] = [detail_['zero_point']]
         else:
-            scale, zp = 0.0, 0
+            scale, zp = [np.float32(0.0)], [np.int32(0)]
         item = AiTensorDesc(
             iotype=iotype,
             name=detail_['name'],
             shape=tuple(detail_['shape']),
             dtype=detail_['type'],
-            scale=[scale],
-            zero_point=[zp],
+            scale=scale,
+            zero_point=zp,
         )
         res_.append(item)
     return res_
@@ -526,12 +541,18 @@ class AiRunner:
         self._names = []
         self._drv = None
         if logger is None:
-            lvl = logging.DEBUG if debug else logging.INFO if verbosity else logging.WARNING
-            logger = get_logger(self.__class__.__name__, lvl, with_prefix=True)
+            lvl = logging.DEBUG if debug else logging.INFO if verbosity else logging.INFO  # WARNING
+            logger = get_logger(self.__class__.__name__, lvl, filename=_LOGGER_FILE_NAME_)  # , with_prefix=True)
         self._logger = logger
-        self._logger.debug('creating %s object', str(self.__class__.__name__))
+        self._logger.debug('creating "%s" object (v%s)', str(self.__class__.__name__), __version__)
         self._debug = debug
         self._last_err = None
+
+    @staticmethod
+    def version():
+        """Return the version of the AiRunner module"""
+        # noqa: DAR101,DAR201,DAR401
+        return __version__
 
     def get_logger(self):
         """Return the logger object"""  # noqa: DAR101,DAR201,DAR401
@@ -762,6 +783,7 @@ class AiRunner:
         mode = self._align_requested_mode(kwargs.pop('mode', AiRunner.Mode.IO_ONLY))
         disable_pb = kwargs.pop('disable_pb', False) or self._debug
         io_extra_bytes = kwargs.pop('io_extra_bytes', False)
+        option = kwargs.pop('option', 0)
 
         m_outputs = kwargs.pop('m_outputs', None)
 
@@ -802,7 +824,8 @@ class AiRunner:
             s_outputs, s_dur = self._drv.invoke_sample(s_inputs, name=name_,
                                                        profiler=profiler, mode=mode,
                                                        io_extra_bytes=io_extra_bytes,
-                                                       first_sample=(batch == 0),
+                                                       sample_idx=batch,
+                                                       option=option,
                                                        callback=callback, ms_outputs=ms_outputs)
             if batch == 0:
                 outputs = s_outputs
@@ -867,29 +890,36 @@ class AiRunner:
         """Connect to a given runtime defined by desc"""  # noqa: DAR101,DAR201,DAR401
         from .ai_resolver import ai_runner_resolver
 
-        self._logger.debug("connect(desc='%s')", str(desc))
+        self._logger.debug("resolving('desc' parameter: '%s')..", str(desc))
         self._release_all()
 
         self._drv, desc_ = ai_runner_resolver(self, desc)
-        self._logger.debug("desc for the driver: '%s'", str(desc_))
 
         if self._drv is None:
             self._last_err = desc_
             self._logger.debug(desc_)
             return False
 
-        self._drv.connect(desc_, **kwargs)
+        self._logger.debug("'desc' parameter for '%s' driver: '%s'", str(self._drv.__class__.__name__), str(desc_))
+        self._logger.debug('connecting..')
+
+        try:
+            self._drv.connect(desc_, **kwargs)
+        except Exception as e:
+            self._last_err = str(e)
+            return False
+
         if not self._drv.is_connected:
-            self._logger.debug('Connection failed')
+            self._logger.debug('connection failed')
             self._release_all()
         else:
-            self._logger.debug('Connection successful')
+            self._logger.debug('connection successful')
             self._names = self._drv.discover(flush=True)
             for name_ in self._names:
                 self._sessions.append(AiRunnerSession(name_))
         return self.is_connected
 
-    def session(self, name=None):
+    def session(self, name: Optional[str] = None) -> Optional[AiRunnerSession]:
         """Return session handler for the given model name/idx"""  # noqa: DAR101,DAR201,DAR401
         if not self.is_connected:
             return None
@@ -901,7 +931,7 @@ class AiRunner:
                     return ses_
         return None
 
-    def disconnect(self, force_all=True):
+    def disconnect(self, force_all: bool =True) -> bool:
         """Close the connection with the run-time"""  # noqa: DAR101,DAR201,DAR401
         if not force_all:
             # check is a session is on-going
@@ -978,7 +1008,7 @@ class AiRunner:
             attr = f'{dict_info["weights"]} {_ext}'
             table_w.add_row(['weights', ':', attr])
 
-        if dict_info.get('macc', 0) > 0:
+        if dict_info.get('macc', None) is not None:
             macc_ = dict_info['macc']
             table_w.add_row(['macc', ':', macc_])
 
@@ -1028,7 +1058,7 @@ class AiRunner:
         """Prints a summary of the stat/profiling informations"""  # noqa: DAR101,DAR201,DAR401
 
         indent = kwargs.pop('indent', 1)
-        tens_info = kwargs.pop('tensor_info', False)
+        tensor_info = kwargs.pop('tensor_info', False)
         debug = kwargs.pop('debug', False)
         no_details = kwargs.pop('no_details', False)
 
@@ -1101,12 +1131,12 @@ class AiRunner:
         table_w.add_row(['duration', ':',
                          f'{c_dur_.mean():.03f} ms by sample ({c_dur_.min():.03f}/'
                          + f'{c_dur_.max():.03f}/{c_dur_.std():.03f})'])
-        if profiler['info'].get('macc', 0) > 1:
+        if profiler['info'].get('macc', None) is not None:
             table_w.add_row(['macc', ':', profiler['info']['macc']])
             dev_type_ = profiler['info']['device']['dev_type'].upper()
-            if dev_type_ not in ('SIMULATOR', 'HOST'):
+            if dev_type_ not in ('SIMULATOR', 'HOST') and profiler['info']['macc'] > 0:
                 n_cycles = (c_dur_.mean() * profiler['info']['device']['sys_clock']) / 1000
-                n_cycles_per_macc = n_cycles / profiler['info']['macc']
+                n_cycles_per_macc = n_cycles / profiler['info']['macc'] 
                 table_w.add_row(['cycles/MACC', ':', f'{n_cycles_per_macc:.2f}'])
         if perf_counters_cumul:
             rep_values_ = ' '.join([f'{val:,}' for val in perf_counters_cumul])
@@ -1228,7 +1258,7 @@ class AiRunner:
         else:
             print_drv('')
 
-        if tens_info:  # display detailed info of each tensor
+        if tensor_info:  # display detailed info of each tensor
 
             def build_row_table(tens: IOTensor, with_data: str) -> List:
                 desc_ = tens.to_str('all+no-name+no-loc', short=False)

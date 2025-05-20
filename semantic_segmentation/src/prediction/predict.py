@@ -11,10 +11,8 @@ import os
 import numpy as np
 import tensorflow as tf
 import onnxruntime
-import argparse
 from matplotlib import gridspec, pyplot as plt
 import warnings
-import sys
 from pathlib import Path
 from omegaconf import DictConfig
 from tabulate import tabulate
@@ -22,14 +20,15 @@ from tabulate import tabulate
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from models_utils    import get_model_name_and_its_input_shape, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from models_mgt      import ai_runner_invoke
-from preprocess      import preprocess_image, preprocess_input, postprocess_output_values
-from onnx_evaluation import predict_onnx
-from utils           import vis_segmentation
+from common.utils import get_model_name_and_its_input_shape, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
+from common.evaluation import predict_onnx
+from src.utils import ai_runner_invoke, vis_segmentation
+from src.preprocessing import preprocess_image, preprocess_input, postprocess_output_values
+import onnxruntime
 
 
-def generate_output_image(image_path: str = None, output: np.ndarray = None, cfg: DictConfig = None,
+
+def _generate_output_image(image_path: str = None, output: np.ndarray = None, cfg: DictConfig = None,
                           input_size: list = None):
     """
     Post-processing to convert raw output to segmentation output and then display input image with segmentation overlay
@@ -127,7 +126,7 @@ def predict(cfg: DictConfig = None) -> None:
             output = postprocess_output_values(output=raw_prediction, output_details=None)
 
             # generation of output images
-            generate_output_image(image_path=image_filenames[i], output=output, cfg=cfg, input_size=[height, width])
+            _generate_output_image(image_path=image_filenames[i], output=output, cfg=cfg, input_size=[height, width])
 
     elif file_extension == ".tflite":
         # Load the Tflite model and allocate tensors
@@ -153,7 +152,7 @@ def predict(cfg: DictConfig = None) -> None:
                 output = ai_interp_outputs_dequant(ai_runner_interpreter,output)[0]
 
             # generation of output images
-            generate_output_image(image_path=image_filenames[i], output=output, cfg=cfg, input_size=[height, width])
+            _generate_output_image(image_path=image_filenames[i], output=output, cfg=cfg, input_size=[height, width])
 
     elif file_extension == ".onnx":
         images = np.stack(images, axis=0)
@@ -176,7 +175,7 @@ def predict(cfg: DictConfig = None) -> None:
                 output = ai_interp_outputs_dequant(ai_runner_interpreter,output)[0]
 
             # generation of output images
-            generate_output_image(image_path=image_filenames[i], output=output, cfg=cfg, input_size=[height, width])
+            _generate_output_image(image_path=image_filenames[i], output=output, cfg=cfg, input_size=[height, width])
 
     else:
         raise TypeError(f"Unknown or unsupported model type. Received path {model_path}")

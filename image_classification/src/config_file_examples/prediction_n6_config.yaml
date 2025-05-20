@@ -1,7 +1,16 @@
 general:
-   model_path: ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
+   model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft_int8.tflite
 
 operation_mode: prediction
+
+prediction:
+   test_files_path: ./datasets/flowers_predict
+   profile: profile_O3
+   input_type: uint8     # int8 / uint8 / float32
+   output_type: int8     # int8 / uint8 / float32
+   input_chpos: chlast   # chlast / chfirst
+   output_chpos: chlast  # chlast / chfirst
+   target: stedgeai_n6 # host, stedgeai_host, stedgeai_n6
 
 dataset:
    class_names: [daisy, dandelion, roses, sunflowers, tulips]
@@ -15,13 +24,13 @@ preprocessing:
       aspect_ratio: fit
    color_mode: rgb
 
-prediction:
-   test_files_path: ../datasets/flower_photos/daisy
-   target: stedgeai_n6 # host, stedgeai_host, stedgeai_n6
+tools:
+   stedgeai:
+      path_to_stedgeai: C:/ST/STEdgeAI/2.1/Utilities/windows/stedgeai.exe
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

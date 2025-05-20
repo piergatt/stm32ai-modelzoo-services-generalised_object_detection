@@ -59,8 +59,8 @@ dataset:
   name: custom # ESC-50 format dataset
   class_names: ['dog', 'chainsaw', 'crackling_fire', 'helicopter', 'rain', 'crying_baby', 'clock_tick', 'sneezing', 'rooster', 'sea_waves'] # your classes
   file_extension: '.wav'
-  training_audio_path: ../datasets/ESC-50/audio # Mandatory
-  training_csv_path:   ../datasets/ESC-50/meta/esc50.csv # Mandatory
+  training_audio_path: ./datasets/ESC-50/audio # Mandatory
+  training_csv_path:   ./datasets/ESC-50/meta/esc50.csv # Mandatory
 
   validation_audio_path: # Optional
   validation_csv_path: # Optional
@@ -153,11 +153,11 @@ training:
 #  trained_model_path: trained.h5   # Optional, use it if you want to save the best model at the end of the training to a path of your choice
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/yamnet_256_esc_10_second_run
+    dir: ./src/experiments_outputs/yamnet_256_esc_10_second_run
   
 ```
 
@@ -204,12 +204,12 @@ dataset_specific:
   # Currently only supports fsd50k.
   # These parameters only need to be filled out IF the dataset name is set to 'fsd50K'
   fsd50k:
-    csv_folder: ../datasets/FSD50K/FSD50K.ground_truth
-    dev_audio_folder: ../datasets/FSD50K/FSD50K.dev_audio
-    eval_audio_folder: ../datasets/FSD50K/FSD50K.eval_audio
+    csv_folder: ./datasets/FSD50K/FSD50K.ground_truth
+    dev_audio_folder: ./datasets/FSD50K/FSD50K.dev_audio
+    eval_audio_folder: ./datasets/FSD50K/FSD50K.eval_audio
     # Change this next line to the ontology path on your machine. 
     # Download the ontology at https://github.com/audioset/ontology
-    audioset_ontology_path: preprocessing/dataset_utils/fsd50k/audioset_ontology.json 
+    audioset_ontology_path: src/preprocessing/dataset_utils/fsd50k/audioset_ontology.json 
     only_keep_monolabel: True
 
 preprocessing:
@@ -288,11 +288,11 @@ training:
 #  trained_model_path: trained.h5   # Optional, use it if you want to save the best model at the end of the training to a path of your choice
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/whatever
+    dir: ./src/experiments_outputs/whatever
 ```
 
 You can look at user_config.yaml examples for any operation mode [here](https://github.com/STMicroelectronics/stm32ai-modelzoo-services/tree/main/audio_event_detection/src/config_file_examples)
@@ -303,7 +303,7 @@ You can also look at the configuration files used to obtain the pretrained yamne
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

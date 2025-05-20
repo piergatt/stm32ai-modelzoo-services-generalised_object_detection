@@ -11,9 +11,9 @@ The evaluation on the target requires installation and configuration of ST Edge 
 - [ST Edge AI Core](https://www.st.com/en/development-tools/stedgeai-core.html)
 - [STM32CubeIDE](https://www.st.com/en/development-tools/stm32cubeide.html)
 
-A few configurations are required, please find below an example following a standard installation of STEdgeAI_Core v2.0.
+A few configurations are required, please find below an example following a standard installation of STEdgeAI_Core v2.x.
 
-- The 'C:/ST/STEdgeAI_Core/2.0/scripts/N6_scripts/config_n6.json' file should be updated to configure the N6 loader.
+- The 'C:/ST/STEdgeAI_Core/2.x/scripts/N6_scripts/config_n6.json' file should be updated to configure the N6 loader.
 ```json
 {
 	// The 2lines below are _only used if you call n6_loader.py ALONE (memdump is optional and will be the parent dir of network.c by default)
@@ -28,7 +28,7 @@ A few configurations are required, please find below an example following a stan
 	"skip_ram_data_programming": false
 }
 ```
-- The 'C:/ST/STEdgeAI_Core/2.0/scripts/N6_scripts/config.json' file should be updated to indicate the paths to find the external tools.
+- The 'C:/ST/STEdgeAI_Core/2.x/scripts/N6_scripts/config.json' file should be updated to indicate the paths to find the external tools.
 ```json
 {
 	// Set Compiler_type to either gcc or iar
@@ -49,67 +49,85 @@ Please refer to [stedge ai core getting started on how to evaluate a model on ST
 
 
 ## Before launching the stm32ai_eval_on_target.py script:
-The script to be used for the evaluation on target is taking as parameter a configuration file. The one to use and to adapt is [evaluation_on_target_config.yaml](../../../src/config_file_examples/evaluation_on_target_config.yaml) in config_file_examples folder.
-Below are the main parameters to define.
-In the general section:
-* The `model_path` : path to the model you want to evaluate.
-* The `config_path` : yaml configurationof the model you want to evaluate as it contains some information of the model itself, on the pre-processing or other required informations.
-* The `dataset_path` : path to the representative dataset for the evaluation. When running on the target, it should be of reasonable size because the inputs are transfered from the host to the target so the evaluation could take time.
+The script to be used for the evaluation on target is taking as parameter a configuration file. The one to use and to adapt is [evaluation_n6_config.yaml](../../../src/config_file_examples/evaluation_n6_config.yaml) in config_file_examples folder.
+It is using a standard configuration file used for evaluation, with a few more parameters to define.
+Below are the main parameters to set.
+* The `model_path` in the general section : path to the model you want to evaluate.
+* The `operation_mode` must be set to `evaluation`
 
-In the parameters section:
+In the evaluation section:
 * `profile` : This relates to the user_neuralart.json file that contains various profiles the memory mapping and the compiler options. This is for advanced users and `profile_O3` is very good to start with. More information in [this article](https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart_neural_art_compiler.html#ref_built_in_tool_profiles).
 * `input_type` : This is the input type provided by the pipeline, before entering the model. In this use case, this can be set to uint8 as this is the expected camera pipeline output format.
 * `output_type` : This is the output type expected for the post processing, after model execution. This can be set to int8 here.
 * `input_chpos` : This refers to the input data layout (NHWC vs NCHW). As the camera pipeline present data channel last, for standard .tflite and .onnx models (no transpose at the start of the model), this should be set to chlast.
 * `output_chpos` : This refers to the output data layout (NHWC vs NCHW). Here as well, for consistency this should be set to chlast.
-* `evaluation_target` : This is to set the type of evaluation (host, STM32 emulated on host, or on STM32N6 HW)
+* `target` : This is to set the type of evaluation (host, STM32 emulated on host, or on STM32N6 HW)
+
+In the dataset section:
+* The `test_path` must be set to the dataset folder used for the evaluation
+
+The `preprocessing` section must be set as usual to align the preprocessing with the same configuration used during the model training.
 
 Please refer to the online documentation on the [I/O data type or layout changes](https://stedgeai-dc.st.com/assets/embedded-docs/how_to_change_io_data_type_format.html) for more information.
 In the Tools section:
 * `path_to_stedgeai` : This the path of the stedgeai core executable
-* `path_to_loader` : This is the path to the loader in charge of initializing the memories and loading the model and FW on the N6 device.
+
+In the Tools section:
+* `path_to_stedgeai` : This the path of the stedgeai core executable
 
 ```yaml
 general:
-  model_path: ../../stm32ai-modelzoo/pose_estimation/movenet/ST_pretrainedmodel_public_dataset/custom_dataset_person_13kpts/st_movenet_lightning_heatmaps_192/st_movenet_lightning_heatmaps_192_int8_pc.tflite 
-  config_path: ../../stm32ai-modelzoo/pose_estimation/movenet/ST_pretrainedmodel_public_dataset/custom_dataset_person_13kpts/st_movenet_lightning_heatmaps_192/st_movenet_lightning_heatmaps_192_config.yaml
-  dataset_path: ../../stm32ai-modelzoo-services/pose_estimation/datasets/coco2017_single_13kpts
+   model_path: ../../stm32ai-modelzoo/pose_estimation/movenet/Public_pretrainedmodel_custom_dataset/custom_dataset_person_17kpts/movenet_lightning_heatmaps_192/movenet_lightning_heatmaps_192_int8_pc.tflite
+   model_type: heatmaps_spe  # spe
 
-parameters:
-  profile: profile_O3
-  input_type: uint8     # int8 / uint8 / float32
-  output_type: int8     # int8 / uint8 / float32
-  input_chpos: chlast   # chlast / chfirst
-  output_chpos: chlast  # chlast / chfirst
-  evaluation_target: stedgeai_n6 # host, stedgeai_host, stedgeai_n6
+operation_mode: evaluation
+
+evaluation:
+   profile: profile_O3
+   input_type: uint8     # int8 / uint8 / float32
+   output_type: int8     # int8 / uint8 / float32
+   input_chpos: chlast   # chlast / chfirst
+   output_chpos: chlast  # chlast / chfirst
+   target: stedgeai_n6 # host, stedgeai_host, stedgeai_n6
+
+dataset:
+   keypoints: 17
+   test_path: ./datasets/coco_val_single_pose
+
+preprocessing:
+   rescaling:
+      scale: 1/127.5
+      offset: -1
+   resizing:
+      interpolation: bilinear
+      aspect_ratio: fit
+   color_mode: rgb
 
 tools:
    stedgeai:
-      path_to_stedgeai: C:/ST/STEdgeAI_Core/2.0/Utilities/windows/stedgeai.exe
-      path_to_loader: C:/ST/STEdgeAI_Core/2.0/scripts/N6_scripts/n6_loader.py
+      path_to_stedgeai: C:/ST/STEdgeAI_Core/2.1/Utilities/windows/stedgeai.exe
+
+mlflow:
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
-  verbose: false
-  job_logging:
-    level: ERROR
-  output_subdir: null
-  run:
-    dir: ./experiments_outputs
+   run:
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 
 ## Run the script:
-Edit the evaluation_on_target_config.yaml as explained above then open a CMD (make sure to be in the application folder containing the stm32ai_eval_on_target.py script). Finally, run the command:
+Edit the evaluation_n6_config.yaml as explained above then open a CMD (make sure to be in the application folder containing the stm32ai_main.py script). Finally, run the command:
 
 ```powershell
-python stm32ai_eval_on_target.py --config-path ./src/config_file_examples --config-name evaluation_on_target_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples --config-name evaluation_n6_config.yaml
 ```
 You can also use any .yaml file using command below:
 ```powershell
-python stm32ai_eval_on_target.py --config-path=path_to_the_folder_of_the_yaml --config-name=name_of_your_yaml_file
+python stm32ai_main.py --config-path=path_to_the_folder_of_the_yaml --config-name=name_of_your_yaml_file
 ```
 
 ## Script outcome:
 Close to the end of the log, you will see mAP or OKS results depending on the model_type for the evaluation of your model, based on the dataset you used.
-
+Please remember that evaluation on target may take time mainly because of data transfers between the host and the target, so a appropriate number of samples should be used for this task. Not less than 100 for a representative statistics and no more than 1000 for a reasonable evaluation time sounds a good tradeoff.
 

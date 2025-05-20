@@ -40,7 +40,7 @@ The detailed instructions on installation are available in this [wiki article](h
 </details>
 <details open><summary><a href="#2"><b>2. YAML file configuration</b></a></summary><a id="2"></a>
 
-The deployment of the model is driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../src/user_config.yaml) and is located in the [src/](../src/) directory.
+The deployment of the model is driven by a configuration file written in the YAML language. This configuration file is called [user_config.yaml](../user_config.yaml) and is located in the Use Case directory.
 
 This tutorial only describes enough settings for you to be able to deploy a pretrained model from the model zoo. Please refer  to the [main README](../src/README.md) for more information on the configuration file.
 
@@ -295,7 +295,7 @@ To run build the project and flash the target board, connect a B-U585I-IOT02A to
 </details></ul>
 <ul><details open><summary><a href="#4-2">4.2 Run stm32ai_main.py</a></summary><a id="4-2"></a>
 
-Then, once your configuration file is properly configured run the following command from [src/](../src/):
+Then, once your configuration file is properly configured run the following command from the UC :
 Make sure you properly set `operation_mode` to `"deployment"`.
 
 ```bash

@@ -61,7 +61,7 @@ def spe_postprocess(tensor:tf.Tensor):
 
     return detection
 
-def padded_nms(tensor:tf.Tensor,max_output_size:int,iou_threshold:float,score_threshold:float):
+def _padded_nms(tensor:tf.Tensor,max_output_size:int,iou_threshold:float,score_threshold:float):
     '''
     Function used to apply NMS on each image of the batch independently
 
@@ -129,7 +129,7 @@ def yolo_mpe_postprocess(tensor:tf.Tensor,max_output_size:int=20,iou_threshold:f
             'iou_threshold':iou_threshold,
             'score_threshold':score_threshold}
 
-    detections = tf.map_fn(lambda x : padded_nms(x,**args),tensor)
+    detections = tf.map_fn(lambda x : _padded_nms(x,**args),tensor)
 
     return detections # shape : (batch, max_output_size, 5+keypoints*3)
 

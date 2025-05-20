@@ -6,8 +6,8 @@ operation_mode: chain_eqe
 dataset:
   name: coco_2017_person
   class_names: [person]
-  test_path: ../datasets/coco_2017_person/test
-  quantization_path: ../datasets/coco_2017_person/train
+  test_path: ./datasets/coco_2017_person/test
+  quantization_path: ./datasets/coco_2017_person/train
   quantization_split: 0.01
 
 preprocessing:
@@ -22,7 +22,7 @@ preprocessing:
 postprocessing:
   confidence_thresh: 0.001
   NMS_thresh: 0.5
-  IoU_eval_thresh: 0.4
+  IoU_eval_thresh: 0.5
   plot_metrics: True   # Plot precision versus recall curves. Default is False.
   max_detection_boxes: 100
 
@@ -36,8 +36,8 @@ quantization:
   export_dir: quantized_models
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

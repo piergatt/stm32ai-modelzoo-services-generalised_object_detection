@@ -8,13 +8,13 @@
     
 import tensorflow as tf
 
-from ssd_anchor_matching import match_gt_anchors
-from ssd_loss import ssd_focal_loss
+from src.utils import bbox_normalized_to_abs_coords, \
+         ObjectDetectionMetricsData, bbox_abs_to_normalized_coords
+from src.data_augmentation import data_augmentation
+from src.postprocessing import decode_ssd_predictions, nms_box_filtering
+from .ssd_anchor_matching import match_gt_anchors
+from .ssd_loss import ssd_focal_loss
 
-from bounding_boxes_utils import bbox_normalized_to_abs_coords, bbox_abs_to_normalized_coords
-from data_augmentation import data_augmentation
-from postprocess import decode_ssd_predictions, nms_box_filtering
-from objdet_metrics import ObjectDetectionMetricsData
 
 
 class SSDTrainingModel(tf.keras.Model):

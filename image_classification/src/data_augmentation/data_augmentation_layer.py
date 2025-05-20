@@ -13,7 +13,7 @@ from keras import backend
 from keras.engine import base_layer
 from keras.engine import base_preprocessing_layer
 from keras.utils import control_flow_util
-import data_augmentation
+from src.data_augmentation import data_augmentation
 
 
 class DataAugmentationLayer(base_layer.Layer):

@@ -15,13 +15,10 @@ import onnxruntime
 from omegaconf import DictConfig
 import numpy as np
 
-from cfg_utils import check_attributes
-from models_utils import check_model_support, check_attribute_value 
-from st_ssd_mobilenet_v1 import st_ssd_mobilenet_v1
-from ssd_mobilenet_v2_fpnlite import ssd_mobilenet_v2_fpnlite
-from tiny_yolo_v2 import tiny_yolo_v2
-from st_yolo_lc_v1 import st_yolo_lc_v1
-from st_yolo_x import st_yolo_x
+from common.utils import check_model_support, check_attributes
+from src.models import st_ssd_mobilenet_v1, ssd_mobilenet_v2_fpnlite, tiny_yolo_v2, st_yolo_lc_v1, \
+                   st_yolo_x
+
 
 def ai_runner_invoke(image_processed,ai_runner_interpreter):
     def reduce_shape(x):  # reduce shape (request by legacy API)
@@ -45,15 +42,17 @@ def model_family(model_type: str) -> str:
         return "ssd"
     elif model_type in ("tiny_yolo_v2", "st_yolo_lc_v1"):
         return "yolo"
-    elif model_type in ("yolo_v8", "yolo_v5u"):
+    elif model_type in ("yolo_v8", "yolo_v11", "yolo_v5u"):
         return "yolo_v8"
     elif model_type in ("st_yolo_x"):
         return "st_yolo_x"
+    elif model_type in ("yolo_v4_tiny", "yolo_v4"):
+        return "yolo_v4"
     else:
         raise ValueError(f"Internal error: unknown model type {model_type}")
 
 
-def check_ssd_mobilenet(cft, model_type, alpha_values=None, random_resizing=None):
+def _check_ssd_mobilenet(cft, model_type, alpha_values=None, random_resizing=None):
 
     check_attributes(cft, expected=["alpha", "input_shape"], optional=["pretrained_weights"], section="training.model")
                           
@@ -66,7 +65,7 @@ def check_ssd_mobilenet(cft, model_type, alpha_values=None, random_resizing=None
         raise ValueError(f"\nrandom_periodic_resizing is not supported for model `{model_type}`.\n"
                          "Please check the 'data_augmentation' section of your configuration file.")
 
-def check_st_yolo_x(cft, model_type, random_resizing=None):
+def _check_st_yolo_x(cft, model_type, random_resizing=None):
 
     check_attributes(cft, expected=["input_shape"], optional=["depth_mul", "width_mul"], section="training.model")
                           
@@ -76,7 +75,7 @@ def check_st_yolo_x(cft, model_type, random_resizing=None):
                          "Please check the 'data_augmentation' section of your configuration file.")
 
 
-def get_zoo_model(cfg: DictConfig):
+def _get_zoo_model(cfg: DictConfig):
     """
     Returns a Keras model object based on the specified configuration and parameters.
 
@@ -112,13 +111,13 @@ def get_zoo_model(cfg: DictConfig):
     model = None
 
     if model_name == "st_ssd_mobilenet_v1":
-        check_ssd_mobilenet(cft, "st_ssd_mobilenet_v1",
+        _check_ssd_mobilenet(cft, "st_ssd_mobilenet_v1",
                             alpha_values=[0.25, 0.50, 0.75, 1.0],
                             random_resizing=random_resizing)
         model = st_ssd_mobilenet_v1(input_shape, num_classes, cft.alpha, pretrained_weights=cft.pretrained_weights)
         
     elif model_name == "ssd_mobilenet_v2_fpnlite":
-        check_ssd_mobilenet(cft, "ssd_mobilenet_v2_fpnlite",
+        _check_ssd_mobilenet(cft, "ssd_mobilenet_v2_fpnlite",
                             alpha_values=[0.35, 0.50, 0.75, 1.0],
                             random_resizing=random_resizing)
         model = ssd_mobilenet_v2_fpnlite(input_shape, num_classes, cft.alpha, pretrained_weights=cft.pretrained_weights)
@@ -134,7 +133,7 @@ def get_zoo_model(cfg: DictConfig):
         model = st_yolo_lc_v1(input_shape, num_anchors, num_classes)
 
     elif model_name == "st_yolo_x":
-        check_st_yolo_x(cft, "st_yolo_x",random_resizing=random_resizing)
+        _check_st_yolo_x(cft, "st_yolo_x",random_resizing=random_resizing)
         num_anchors = len(cfg.postprocessing.yolo_anchors)
         if not cft.depth_mul and not cft.width_mul:
             cft.depth_mul = 0.33
@@ -171,7 +170,7 @@ def load_model_for_training(cfg: DictConfig) -> tuple:
     # Train a model from the Model Zoo
     if cfg.training.model:
         print("[INFO] : Loading Model Zoo model:", model_type)        
-        model = get_zoo_model(cfg)
+        model = _get_zoo_model(cfg)
         
         cft = cfg.training.model
         if cft.pretrained_weights:

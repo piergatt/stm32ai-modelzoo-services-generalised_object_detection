@@ -28,7 +28,7 @@ Remember that minimalistic YAML files are available [here](./config_file_example
 
 The semantic segmentation model zoo provides a collection of independent services and pre-built chained services that can be used to perform various functions related to machine learning for semantic segmentation. The individual services include tasks such as training the model or quantizing the model, while the chained services combine multiple services to perform more complex functions, such as training the model, quantizing it, and evaluating the quantized model successively.
 
-To use the services in the semantic segmentation model zoo, you can utilize the model zoo [stm32ai_main.py](stm32ai_main.py) along with the [user_config.yaml](user_config.yaml) file as input. The YAML file specifies the service or the chained services and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
+To use the services in the semantic segmentation model zoo, you can utilize the model zoo [stm32ai_main.py](../stm32ai_main.py) along with the [../user_config.yaml](../user_config.yaml) file as input. The YAML file specifies the service or the chained services and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
 
 More information about the different services and their configuration options can be found in the <a href="#2">next section</a>.
 
@@ -39,7 +39,7 @@ To date, the only dataset structure supported is the PASCAL VOC. It means that e
 
 This tutorial demonstrates how to use the `chain_tqeb` services to train, quantize, evaluate, and benchmark the model. Among the various available [models](../pretrained_models/) in the model zoo.
 
-To get started, you will need to update the [user_config.yaml](user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](user_config.yaml) file is explained in detail in the following sections.
+To get started, you will need to update the [user_config.yaml](../user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](../user_config.yaml) file is explained in detail in the following sections.
 
 <ul><details open><summary><a href="#2-1">2.1 Choose the operation mode</a></summary><a id="2-1"></a>
 
@@ -133,23 +133,22 @@ dataset:
   class_names: ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
                 "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
                 "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
-  training_path: ../datasets/VOC2012_train_val/JPEGImages                                 # Path to train JPEG images
-  training_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug                 # Path to train masks files
-  training_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt  # Path to file listing the images names for training
-  validation_path: ../datasets/VOC2012_train_val/JPEGImages
-  validation_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  validation_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt     # Path to file listing the images names for validation
+  training_path: ./datasets/VOC2012_train_val/JPEGImages                                 # Path to train JPEG images
+  training_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug                 # Path to train masks files
+  training_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt  # Path to file listing the images names for training
+  validation_path: ./datasets/VOC2012_train_val/JPEGImages
+  validation_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  validation_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt     # Path to file listing the images names for validation
   validation_split: 
-  test_path: ../datasets/VOC2012_test/JPEGImages                                          # Path to test JPEG images
-  test_masks_path: ../datasets/VOC2012_test/SegmentationMasks                             # Path to test masks files
-  test_files_path: ../datasets/VOC2012_test/ImageSets/Segmentation/test.txt               # Path to file listing the images names for test
+  test_path: ./datasets/VOC2012_test/JPEGImages                                          # Path to test JPEG images
+  test_masks_path: ./datasets/VOC2012_test/SegmentationMasks                             # Path to test masks files
+  test_files_path: ./datasets/VOC2012_test/ImageSets/Segmentation/test.txt               # Path to file listing the images names for test
   quantization_path:        # Optional: path to quantization JPEG images
   quantization_masks_path:  # Optional: path to quantization masks images
   quantization_files_path:  # Optional: path to file listing the images names for quantization
   quantization_split: 0.003 # Quantization split ratio.
   seed: 123 # Random generator seed used when splitting a dataset.
 ```
-The `name` attribute is mandatory. To date, the unique accepted values without the `class_names`: `pascal_voc`, `indoor_pascal_voc`, `person_pascal_voc`, `outdoor_pascal_voc`. However, if using a different dataset and naming convention, the `class_name` attribute should be provided.
 
 The `name` attribute is mandatory. To date, a unique value is accepted: `pascal_voc`. This parameter is used in the data_loader in order to correctly construct each dataset expecting [PASCAL VOC 2012](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) structure. In the future, it could be extended to other dataset types.
 
@@ -235,7 +234,7 @@ Please refer to [the data augmentation documentation](data_augmentation/README.m
 A 'training' section is required in all the operation modes that include training, namely 'training', 'chain_tqeb' and 'chain_tqe'.
 
 In this tutorial, we consider the training of deeplab_v3 (with ASPP head) as defined in [models](./models/deeplabv3.py). It uses a MobileNet V2 model as backbone, pre-trained on the ImageNet dataset, a large dataset consisting of 1.4M images and 1000 classes. 
-As an example, we will use a MobileNet V2 with alpha = 0.5. To do so, we will need to configure the model section in [user_config.yaml](user_config.yaml) as follows:
+As an example, we will use a MobileNet V2 with alpha = 0.5. To do so, we will need to configure the model section in [user_config.yaml](../user_config.yaml) as follows:
 
 ```yaml
 training:
@@ -304,7 +303,7 @@ Make sure not to use the 'best_augmentation_model.h5' file as it includes the re
 </details></ul>
 <ul><details open><summary><a href="#2-7">2.7 Model quantization</a></summary><a id="2-7"></a>
 
-Configure the quantization section in [user_config.yaml](user_config.yaml) as follows:
+Configure the quantization section in [user_config.yaml](../user_config.yaml) as follows:
 
 ```yaml
 
@@ -376,7 +375,7 @@ The `path_to_cubeIDE` attribute is for the [deployment](../deployment/README.md)
 <ul><details open><summary><a href="#2-9">2.9 Deploy the model</a></summary><a id="2-9"></a>
 
 In this tutorial, we are using the `chain_tqeb` toolchain, which does not include the deployment service. 
-However, if you want to deploy the model after running the chain, you can do so by referring to the [README](../deployment/README.md) and modifying the `deployment_config.yaml` file 
+However, if you want to deploy the model after running the chain, you can do so by referring to the [README](../deployment/README.md) and modifying the `deployment_mpu_config.yaml` or file `deployment_n6_config.yaml`,
 or by setting the `operation_mode` to `deploy` and modifying the `user_config.yaml` file as described below:
 
 ```yaml
@@ -397,7 +396,7 @@ tools:
    path_to_cubeIDE: C:/ST/STM32CubeIDE_1.17.0/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-  c_project_path: ../../application_code/semantic_segmentation/STM32MP-LINUX/
+  c_project_path: ../application_code/semantic_segmentation/STM32MP-LINUX/
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -428,20 +427,20 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 </details></ul>
 </details>
 <details open><summary><a href="#3"><b>3. Run the semantic segmentation chained service</b></a></summary><a id="3"></a>
 
-After updating the [user_config.yaml](user_config.yaml) file, please run the following command:
+After updating the [user_config.yaml](../user_config.yaml) file, please run the following command:
 
 ```bash
 python stm32ai_main.py

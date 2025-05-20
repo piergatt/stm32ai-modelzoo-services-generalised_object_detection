@@ -57,13 +57,13 @@ dataset:
                 "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
                 "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
   # path for data to be use for the training of the model
-  training_path: ../datasets/VOC2012_train_val/JPEGImages
-  training_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  training_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
+  training_path: ./datasets/VOC2012_train_val/JPEGImages
+  training_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  training_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
   # path for data to be use for the validation of the model
-  validation_path: ../datasets/VOC2012_train_val/JPEGImages
-  validation_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  validation_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt
+  validation_path: ./datasets/VOC2012_train_val/JPEGImages
+  validation_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  validation_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt
   validation_split: 
   
 # preprocessing to rescale and resize the data to the model input size define below
@@ -120,11 +120,11 @@ training:
       patience: 60
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 For the Chain_tqe and Chain_tqeb operation modes, you need to edit the config file to add parts related to the quantization and benchmark.
@@ -134,7 +134,7 @@ You can also find examples of user_config.yaml for any operation mode [here](htt
 
 ## Run the script:
 
-Edit the user_config.yaml then open a terminal (make sure to be in the folder /src). Finally, run the command:
+Edit the user_config.yaml then open a terminal (make sure to be in the UC folder). Finally, run the command:
 
 ```powershell
 python stm32ai_main.py

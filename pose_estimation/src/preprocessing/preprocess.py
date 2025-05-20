@@ -14,8 +14,8 @@ from typing import Tuple
 import sys
 import os
 
-from models_utils import get_model_name_and_its_input_shape
-from data_loader import load_dataset
+from common.utils import get_model_name_and_its_input_shape
+from .data_loader import load_dataset
 
 
 def preprocess(cfg: DictConfig = None) -> Tuple:
@@ -92,51 +92,6 @@ def apply_rescaling(dataset: tf.data.Dataset = None, scale: float = None, offset
     return rescaled_dataset
 
 
-def apply_normalization(dataset: tf.data.Dataset = None, mean: float = None, variance: float = None):
-    """
-    Applies normalization to a dataset using a tf.keras.Sequential model.
-
-    Args:
-        dataset (tf.data.Dataset): The dataset to be rescaled.
-        mean (float): The mean of the three channels.
-        variance (float): The vairance of the three channels.
-
-    Returns:
-        The rescaled dataset.
-    """
-    # Define the rescaling model
-    normalization = tf.keras.Sequential([
-        tf.keras.layers.Normalization(mean=mean, variance=variance)
-    ])
-
-    # Apply the rescaling to the dataset
-    normalized_dataset = dataset.map(lambda x, y: (normalization(x), y))
-
-    return normalized_dataset
-
-
-def apply_rescaling_on_image(image: tf.Tensor = None, scale: float = None, offset: float = None) -> tf.Tensor:
-    """
-    Applies rescaling to an image using a tf.keras.Sequential model.
-
-    Args:
-        image (tf.Tensor): The image to be rescaled.
-        scale (float): The scaling factor.
-        offset (float): The offset factor.
-
-    Returns:
-        The rescaled image.
-    """
-    # Define the rescaling model
-    rescaling = tf.keras.Sequential([
-        tf.keras.layers.Rescaling(scale, offset)
-    ])
-
-    # Apply the rescaling to the image
-    rescaled_image = rescaling(image)
-
-    return rescaled_image
-
 
 def preprocess_input(image: np.ndarray, input_details: dict) -> tf.Tensor:
     """
@@ -164,23 +119,3 @@ def preprocess_input(image: np.ndarray, input_details: dict) -> tf.Tensor:
     image_processed = tf.expand_dims(image_processed, 0)
     return image_processed
 
-
-def postprocess_output(output: np.ndarray, output_details: dict) -> np.ndarray:
-    """
-    Postprocesses the model output to obtain the predicted label.
-
-    Args:
-        output (np.ndarray): The output tensor from the model.
-        output_details: Dictionary containing output details, including quantization and dtype.
-
-    Returns:
-        np.ndarray: The predicted label.
-    """
-    if output_details['dtype'] in [np.uint8, np.int8]:
-        # Convert the output data to float32 data type and perform the inverse quantization operation
-        predicted_label = (output - output_details['quantization'][1]) * output_details['quantization'][0]
-    if output.shape[1] > 1:
-        predicted_label = np.argmax(output, axis=1)
-    else:
-        predicted_label = np.where(output < 0.5, 0, 1)
-    return predicted_label

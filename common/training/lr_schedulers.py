@@ -31,7 +31,7 @@ import tensorflow as tf
 from tensorflow.keras import backend
 
       
-def check_scheduler_arguments(args, arg_names, scheduler_name):      
+def _check_scheduler_arguments(args, arg_names, scheduler_name):      
     for i in range(len(args)):
         if args[i] is None:
             raise ValueError(
@@ -92,7 +92,7 @@ class LRLinearDecay(tf.keras.callbacks.Callback):
                  verbose=0):
         super().__init__()
         self.name = "LRLinearDecay"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                     [initial_lr, hold_steps, decay_steps, end_lr],
                     ["initial_lr", "hold_steps", "decay_steps", "end_lr"],
                     self.name)  
@@ -168,7 +168,7 @@ class LRExponentialDecay(tf.keras.callbacks.Callback):
                  verbose=0):
         super().__init__()
         self.name = "LRExponentialDecay"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                     [initial_lr, hold_steps, decay_rate, min_lr],
                     ["initial_lr", "hold_steps", "decay_rate", "min_lr"],
                     self.name)
@@ -236,7 +236,7 @@ class LRStepDecay(tf.keras.callbacks.Callback):
     def __init__(self, initial_lr=None, step_size=None, decay_rate=None, min_lr=0.0, verbose=0):
         super().__init__()
         self.name = "LRStepDecay"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                 [initial_lr, step_size, decay_rate, min_lr],
                 ["initial_lr", "step_size", "decay_rate", "min_lr"],
                 self.name)
@@ -315,7 +315,7 @@ class LRCosineDecay(tf.keras.callbacks.Callback):
     def __init__(self, initial_lr=None, hold_steps=None, decay_steps=None, end_lr=None, verbose=0):
         super().__init__()
         self.name = "LRCosineDecay"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                     [initial_lr, hold_steps, decay_steps, end_lr],
                     ["initial_lr", "hold_steps", "decay_steps", "end_lr"],
                     self.name)
@@ -427,7 +427,7 @@ class LRWarmupCosineDecay(tf.keras.callbacks.Callback):
                  verbose=0):
         super().__init__()
         self.name = "LRWarmupCosineDecay"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                     [initial_lr, warmup_steps, max_lr, hold_steps, decay_steps, end_lr],
                     ["initial_lr", "warmup_steps", "max_lr", "hold_steps", "decay_steps", "end_lr"],
                     self.name)
@@ -539,7 +539,7 @@ class LRCosineDecayRestarts(tf.keras.callbacks.Callback):
     def __init__(self, initial_lr=None, first_decay_steps=None, end_lr=None, t_mul=2, m_mul=1.0, verbose=0):
         super().__init__()
         self.name = "LRCosineDecayRestarts"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                     [initial_lr, first_decay_steps, end_lr, t_mul, m_mul],
                     ["initial_lr", "first_decay_steps", "end_lr", "t_mul", "m_mul"],
                     self.name)
@@ -631,7 +631,7 @@ class LRPolynomialDecay(tf.keras.callbacks.Callback):
     def __init__(self, initial_lr=None, hold_steps=None, decay_steps=None, end_lr=None, power=0.5, verbose=0):
         super().__init__()
         self.name = "LRPolynomialDecay"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                     [initial_lr, hold_steps, decay_steps, end_lr, power],
                     ["initial_lr", "hold_steps", "decay_steps", "end_lr", "power"],
                     self.name)
@@ -706,7 +706,7 @@ class LRPolynomialDecayRestarts(tf.keras.callbacks.Callback):
     def __init__(self, initial_lr=None, hold_steps=None, decay_steps=None, end_lr=None, power=0.7, verbose=0):
         super().__init__()
         self.name = "LRPolynomialDecayRestarts"
-        check_scheduler_arguments(
+        _check_scheduler_arguments(
                     [initial_lr, hold_steps, decay_steps, end_lr, power],
                     ["initial_lr", "hold_steps", "decay_steps", "end_lr", "power"],
                     self.name)
@@ -776,7 +776,7 @@ class LRPiecewiseConstantDecay(tf.keras.callbacks.Callback):
     def __init__(self, boundaries=None, values=None, verbose=0):
         super().__init__()
         self.name = "LRPiecewiseConstantDecay"
-        check_scheduler_arguments([boundaries, values], ["boundaries", "values"], self.name)
+        _check_scheduler_arguments([boundaries, values], ["boundaries", "values"], self.name)
         if len(boundaries) != len(values) - 1:
             raise ValueError(
                 "The length of boundaries should be 1 less than the length of "

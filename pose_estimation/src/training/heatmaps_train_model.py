@@ -8,9 +8,10 @@
 #  *--------------------------------------------------------------------------------------------*/
     
 import tensorflow as tf
-from data_augmentation import data_augmentation
+from src.data_augmentation import data_augmentation
 
-def change_model_input_shape(model,new_inp_shape):
+
+def _change_model_input_shape(model,new_inp_shape):
 
     conf = model.get_config()
     conf['layers'][0]['config']['batch_input_shape'] = new_inp_shape
@@ -45,7 +46,7 @@ class HMTrainingModel(tf.keras.Model):
         self.pixels_range = pixels_range
 
         if self.data_augmentation_cfg.random_periodic_resizing is not None:
-            self.model, self.original_inp_shape = change_model_input_shape(model,(None,None,None,3))
+            self.model, self.original_inp_shape = _change_model_input_shape(model,(None,None,None,3))
             self.resolutions = self.data_augmentation_cfg.random_periodic_resizing.image_sizes
         else:
             self.model, self.original_inp_shape = model, (None,) + image_size + (3,)

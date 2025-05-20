@@ -21,7 +21,7 @@ class PaletteManager:
             "CCED00", "00F344", "BD00FF", "00B4FF", "DD00BA", "00FFFF", "26C000",
             "01FFB3", "7D24FF", "7B0068", "FF1B6C", "FC6D2F", "A2FF0B"
         )
-        self.colors: List[Tuple[int, int, int]] = [self.hex_to_rgb(f"#{code}") for code in hex_codes]
+        self.colors: List[Tuple[int, int, int]] = [self._hex_to_rgb(f"#{code}") for code in hex_codes]
         self.color_count: int = len(self.colors)
         self.pose_colors: np.ndarray = np.array(
             [
@@ -49,7 +49,7 @@ class PaletteManager:
         return (color[2], color[1], color[0]) if as_bgr else color
 
     @staticmethod
-    def hex_to_rgb(hex_code: str) -> Tuple[int, int, int]:
+    def _hex_to_rgb(hex_code: str) -> Tuple[int, int, int]:
         """
         Convert a hex color code to an RGB tuple.
 
@@ -80,11 +80,11 @@ class PaletteManager:
         Args:
             hex_code (str): The hex color code of the custom color to add.
         """
-        self.colors.append(self.hex_to_rgb(hex_code))
+        self.colors.append(self._hex_to_rgb(hex_code))
         self.color_count = len(self.colors)
 
 
-def load_classes(file_path: str) -> List[str]:
+def _load_classes(file_path: str) -> List[str]:
     """
     Load class names from a file.
 
@@ -116,7 +116,7 @@ def custom_draw(image: np.ndarray, boxes: List[Tuple[float, float, float, float,
         None
     """
     # Load class names if class_file is provided
-    class_names = load_classes(class_file) if class_file else None
+    class_names = _load_classes(class_file) if class_file else None
 
     overlay_image = image.copy()
     for (*box, conf, cls_), mask in zip(boxes, masks):

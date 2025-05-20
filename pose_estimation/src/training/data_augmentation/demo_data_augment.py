@@ -17,17 +17,12 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/data_augmentation'))
-sys.path.append(os.path.abspath('../../utils'))
-sys.path.append(os.path.abspath('../../preprocessing'))
-sys.path.append(os.path.abspath('../../data_augmentation'))
-sys.path.append(os.path.abspath('../../models'))
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-from data_loader import load_dataset
-from preprocess import apply_rescaling
-import random_color, random_erasing, pose_random_affine, pose_random_misc
-from random_utils import remap_pixel_values_range
+from src.preprocessing import apply_rescaling, load_dataset
+from common.data_augmentation import random_color, random_erasing, remap_pixel_values_range
+from src.data_augmentation import pose_random_affine, pose_random_misc
 
 
 def plot_keypoints(ax, keypoints, image_width, image_height):

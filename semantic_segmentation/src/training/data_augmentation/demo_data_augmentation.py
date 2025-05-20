@@ -15,21 +15,16 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/data_augmentation'))
-sys.path.append(os.path.abspath('../../utils'))
-sys.path.append(os.path.abspath('../../preprocessing'))
-sys.path.append(os.path.abspath('../../data_augmentation'))
-sys.path.append(os.path.abspath('../../models'))
-
-from data_loader import get_ds
-import random_color, random_misc, segm_random_affine, segm_random_misc
-from random_utils import remap_pixel_values_range
-from data_augmentation import data_augmentation
+from src.preprocessing import get_ds
+from common.data_augmentation import random_color, random_misc, remap_pixel_values_range
+from src.data_augmentation import segm_random_affine, segm_random_misc
 
 
-def plot_images_and_labels(image, label, image_aug, label_aug, grayscale=None, legend=None):
+
+def _plot_images_and_labels(image, label, image_aug, label_aug, grayscale=None, legend=None):
     """
     Displays side by side the original and augmented image
     with their groundtruth bounding boxes.
@@ -86,7 +81,7 @@ def plot_images_and_labels(image, label, image_aug, label_aug, grayscale=None, l
     plt.close()
     
     
-def augment_images(images, labels, fn_name=None):
+def _augment_images(images, labels, fn_name=None):
 
     if fn_name == "random_contrast":
         images_aug = random_color.random_contrast(images, factor=0.7)
@@ -178,7 +173,7 @@ def augment_images(images, labels, fn_name=None):
         return segm_random_affine.segm_random_zoom(images, labels, width_factor=0.3)
         
 
-def demo_data_augmentation(images_path, masks_path, sets_path, grayscale=None, num_images=None):
+def _demo_data_augmentation(images_path, masks_path, sets_path, grayscale=None, num_images=None):
     """
     Samples a batch of images with their groundtruth labels from 
     the training set, applies to them the data augmentation functions
@@ -239,11 +234,11 @@ def demo_data_augmentation(images_path, masks_path, sets_path, grayscale=None, n
         images, labels = data
         batch_size = tf.shape(images)[0]
 
-        images_aug, labels_aug = augment_images(images, labels, fn_name=function_names[i])
+        images_aug, labels_aug = _augment_images(images, labels, fn_name=function_names[i])
         
         # Plot the images and labels
         for k in range(batch_size):
-            plot_images_and_labels(images[k], labels[k], images_aug[k], labels_aug[k], 
+            _plot_images_and_labels(images[k], labels[k], images_aug[k], labels_aug[k], 
                                    grayscale=grayscale, legend=function_names[i])
 
         # Stop when all the data augmentation functions have been demo'ed
@@ -276,7 +271,7 @@ def main():
     if not os.path.isfile(args.sets):
         raise ValueError(f"\nCould not find sets file: {args.sets}")
     
-    demo_data_augmentation(args.images, args.masks, args.sets,
+    _demo_data_augmentation(args.images, args.masks, args.sets,
                            grayscale=args.grayscale, num_images=args.num_images)
 
 if __name__ == '__main__':

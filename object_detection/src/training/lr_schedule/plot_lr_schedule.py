@@ -11,9 +11,9 @@ import os
 import sys
 import argparse
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils/'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/training/'))
-from plot_learning_rate_schedule import plot_learning_rate_schedule
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+from common.training import plot_learning_rate_schedule
 
 
 def main():

@@ -43,6 +43,12 @@ enum EnumLowLevelIO { // HOST point of view definition
 	IO_OUT_SYNC = 170;         // Byte sync for SW control flow (READ mode) - 0xAA	
 }
 
+// rtid field (32b) - EnumAiRuntime | EnumAiApiRuntime << AI_RT_API_POS | EnumTools << AI_TOOLS_POS
+//   0..7	  EnumAiRuntime
+//   8..15    EnumAiApiRuntime (AI_RT_API_POS = 8)
+//   16..23   EnumTools        (AI_TOOLS_POS = 16)
+//   24..31   reserved
+
 // AI Runtime - RT ID 8b: 0..255
 enum EnumAiRuntime {
 	AI_RT_STM_AI = 1;        // STM.AI/X-CUBE-AI runtime

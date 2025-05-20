@@ -8,10 +8,8 @@
 #  *--------------------------------------------------------------------------------------------*/
 
 import os
-import sys
 from pathlib import Path
 import warnings
-import sklearn
 import mlflow
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
@@ -20,13 +18,11 @@ import numpy as np
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
-import tqdm
 from typing import Optional
 
-from models_utils import compute_confusion_matrix, count_h5_parameters
-from visualize_utils import plot_confusion_matrix
-from models_mgt import get_loss
-from logs_utils import log_to_file
+from common.utils import compute_confusion_matrix, count_h5_parameters, plot_confusion_matrix, log_to_file
+from src.utils import get_loss
+
 
 
 def evaluate_h5_model(model_path: str = None,

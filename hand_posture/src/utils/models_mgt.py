@@ -17,10 +17,9 @@ from typing import Tuple, Dict, Optional, List
 import tensorflow as tf
 from omegaconf import DictConfig
 
-from cfg_utils import check_attributes
-from models_utils import check_model_support
-from CNN2D_ST_HandPosture import get_ST_CNN2D_model
-from custom_model import get_custom_model
+from common.utils import check_attributes, check_model_support
+from src.models import get_ST_CNN2D_model, get_custom_model
+
 
 
 def get_model(cfg: DictConfig = None, num_classes: int = None, dropout: float = None,

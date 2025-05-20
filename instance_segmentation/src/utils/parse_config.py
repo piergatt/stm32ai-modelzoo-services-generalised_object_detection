@@ -10,15 +10,14 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf, DictConfig
 from munch import DefaultMunch
 
-from cfg_utils import aspect_ratio_dict, postprocess_config_dict, check_config_attributes, \
+from common.utils import aspect_ratio_dict, postprocess_config_dict, check_config_attributes, \
                       parse_tools_section, parse_benchmarking_section, parse_mlflow_section, \
                       parse_general_section, parse_top_level, parse_prediction_section, \
                       parse_deployment_section, check_hardware_type, get_class_names_from_file
 
 
 
-
-def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None, hardware_type: str = None) -> None:
+def _parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictConfig = None, hardware_type: str = None) -> None:
 
 
     legal = ["name", "class_names", "classes_file_path", "training_path", "validation_path", "validation_split", "test_path",
@@ -26,12 +25,18 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None, mode_groups: DictCo
 
     required = []
     one_or_more = []
-    if mode in ["deploymenet", "prediction"]:
+    if mode in ["deployment", "prediction"]:
         one_or_more += ["class_names", "classes_file_path"]
     check_config_attributes(cfg, specs={"legal": legal, "all": required, "one_or_more": one_or_more},
                             section="dataset")
-    
-def parse_preprocessing_section(cfg: DictConfig,
+        # Check that all datasets have the required directory structure
+    if cfg.class_names: 
+        print("[INFO] : Using provided class names from dataset.class_names")
+    elif not cfg.class_names and mode not in ("benchmarking"):
+        cfg.class_names = get_class_names_from_file(cfg)
+        print("[INFO] : Found {} classes in label file {}".format(len(cfg.class_names), cfg.classes_file_path))
+
+def _parse_preprocessing_section(cfg: DictConfig,
                                 mode: str = None) -> None:
     """
             This function checks the preprocessing section of the config file.
@@ -86,7 +91,7 @@ def parse_preprocessing_section(cfg: DictConfig,
         raise ValueError(f"\nUnknown value for `color_mode` attribute. Received {cfg.color_mode}\n"
                          f"Supported values: {color_modes}\n"
                          "Please check the 'preprocessing' section of your configuration file.")
-    
+
 
 def get_config(config_data: DictConfig) -> DefaultMunch:
 
@@ -95,7 +100,7 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Restore booleans, numerical expressions and tuples
     # Expand environment variables
     postprocess_config_dict(config_dict)
-    
+
     # Top level section parsing
     cfg = DefaultMunch.fromDict(config_dict)
 
@@ -136,14 +141,14 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Dataset section parsing
     if not cfg.dataset:
         cfg.dataset = DefaultMunch.fromDict({})
-    parse_dataset_section(cfg.dataset,
+    _parse_dataset_section(cfg.dataset,
                           mode=cfg.operation_mode,
                           mode_groups=mode_groups,
                           hardware_type=cfg.hardware_type)
 
     # Preprocessing section parsing
-    if cfg.operation_mode in ["prediction", "deploymenet"]:
-        parse_preprocessing_section(cfg.preprocessing,
+    if cfg.operation_mode in ["prediction", "deployment"]:
+        _parse_preprocessing_section(cfg.preprocessing,
                                     mode=cfg.operation_mode)
 
     # Prediction section parsing
@@ -155,7 +160,7 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
         parse_tools_section(cfg.tools,
                             cfg.operation_mode,
                             cfg.hardware_type)
-        
+
     # Benchmarking section parsing
     if cfg.operation_mode in mode_groups.benchmarking:
         parse_benchmarking_section(cfg.benchmarking)
@@ -168,11 +173,11 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Deployment section parsing
     if cfg.operation_mode in mode_groups.deployment:
         if cfg.hardware_type == "MCU":
-            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup"]
+            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup", "build_conf"]
             legal_hw = ["serie", "board", "stlink_serial_number"]
         else:
             legal = ["c_project_path", "board_deploy_path", "verbosity", "hardware_setup"]
-            legal_hw = ["serie", "board", "ip_address"]
+            legal_hw = ["serie", "board", "ip_address", "stlink_serial_number"]
             if cfg.preprocessing.color_mode != "rgb":
                 raise ValueError("\n Color mode used is not supported for deployment on MPU target \n Please use RGB format")
             if cfg.preprocessing.resizing.aspect_ratio != "fit":
@@ -183,11 +188,4 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # MLFlow section parsing
     parse_mlflow_section(cfg.mlflow)
-
-    # Check that all datasets have the required directory structure
-    cds = cfg.dataset
-    if not cds.class_names and cfg.operation_mode not in ("benchmarking"):
-        cds.class_names = get_class_names_from_file(cfg)
-        print("[INFO] : Found {} classes in label file {}".format(len(cds.class_names), cfg.dataset.classes_file_path))
-
     return cfg

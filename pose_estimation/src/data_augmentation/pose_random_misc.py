@@ -9,8 +9,7 @@
 
 import numpy as np
 import tensorflow as tf
-from random_utils import check_dataaug_argument, remap_pixel_values_range, apply_change_rate
-from pose_random_utils import objdet_apply_change_rate
+from common.data_augmentation import check_dataaug_argument, remap_pixel_values_range, apply_change_rate
 
 
 def objdet_random_blur(images, filter_size=None, padding="reflect",

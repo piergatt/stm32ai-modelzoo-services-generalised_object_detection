@@ -20,9 +20,9 @@ import shutil
 from typing import Optional
 
 
-from stm32ai_local.session import STMAiSession
-from stm32ai_local.utils import run_shell_cmd, _LOGGER_NAME_
-from stm32ai_local.stm_ai_tools import STMAiTools
+from common.stm32ai_local.session import STMAiSession
+from common.stm32ai_local.utils import run_shell_cmd, _LOGGER_NAME_
+from common.stm32ai_local.stm_ai_tools import STMAiTools
 
 
 logger = logging.getLogger(_LOGGER_NAME_)

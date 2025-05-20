@@ -18,19 +18,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/data_augmentation'))
-sys.path.append(os.path.abspath('../../utils'))
-sys.path.append(os.path.abspath('../../preprocessing'))
-sys.path.append(os.path.abspath('../../data_augmentation'))
-sys.path.append(os.path.abspath('../../models'))
 
-from cfg_utils import postprocess_config_dict
-from parse_config import parse_dataset_section, parse_preprocessing_section, parse_data_augmentation_section
-from random_utils import remap_pixel_values_range
-from datasets import get_training_data_loaders
-from bounding_boxes_utils import bbox_normalized_to_abs_coords, bbox_abs_to_normalized_coords, plot_bounding_boxes
-from data_augmentation import data_augmentation
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+
+from common.data_augmentation import remap_pixel_values_range
+from common.utils import postprocess_config_dict
+from src.data_augmentation import data_augmentation
+from src.utils import plot_bounding_boxes, parse_data_augmentation_section, parse_preprocessing_section, parse_dataset_section
+from src.preprocessing import get_training_data_loaders
+
 
 
 def plot_image_and_labels(image: np.array, labels: np.array,

@@ -8,7 +8,7 @@ The evaluation service is designed to be fast, efficient, and accurate, making i
 
 <details open><summary><a href="#1"><b>1. Configure the YAML file</b></a></summary><a id="1"></a>
 
-To use this service and achieve your goals, you can use the [user_config.yaml](../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
+To use this service and achieve your goals, you can use the [user_config.yaml](../../user_config.yaml) or directly update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) file and use it. This file provides an example of how to configure the evaluation service to meet your specific needs.
 
 Alternatively, you can follow the tutorial below, which shows how to evaluate your pre-trained object detection model using our evaluation service.
 
@@ -18,7 +18,7 @@ As mentioned previously, all the sections of the YAML file must be set in accord
 
 ```yaml
 general:
-  model_path: ../../../model_zoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256_int8.tflite
+  model_path: ../../stm32ai-modelzoo/object_detection/st_ssd_mobilenet_v1/ST_pretrainedmodel_public_dataset/coco_2017_person/st_ssd_mobilenet_v1_025_256/st_ssd_mobilenet_v1_025_256_int8.tflite
 
 operation_mode: evaluation
 ```
@@ -61,7 +61,7 @@ If you want to use a different split ratio, you need to specify the percentage t
 dataset:
   name: COCO_2017_person
   class_names: [ person ]
-  training_path: ../datasets/COCO_2017_person/
+  training_path: ./datasets/COCO_2017_person/
   validation_path:
   validation_split: 0.20
   test_path:
@@ -95,7 +95,7 @@ When you define the preprocessing parameter in the configuration file, the annot
 </details></ul>
 <ul><details open><summary><a href="#1-4">1.4 Apply post-processing</a></summary><a id="1-4"></a>
 
-Apply post-processing by modifying the **postprocessing** parameters in **[user_config.yaml](../user_config.yaml)** as follows:
+Apply post-processing by modifying the **postprocessing** parameters in **[user_config.yaml](../../user_config.yaml)** as follows:
 
 - `confidence_thresh` - A *float* between 0.0 and 1.0, the score threshold to filter detections.
 - `NMS_thresh` - A *float* between 0.0 and 1.0, NMS threshold to filter and reduce overlapped boxes.
@@ -109,36 +109,36 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#2"><b>2. Evaluate your model</b></a></summary><a id="2"></a>
 
-If you chose to modify the [user_config.yaml](../user_config.yaml), you can evaluate the model by running the following command from the **src/** folder:
+If you chose to modify the [user_config.yaml](../../user_config.yaml), you can evaluate the model by running the following command from the UC folder:
 
 ```bash
 python stm32ai_main.py 
 ```
 
-If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the **src/** folder:
+If you chose to update the [evaluation_config.yaml](../config_file_examples/evaluation_config.yaml) and use it, then run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name evaluation_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name evaluation_config.yaml
 ```
 
 In case you want to evaluate the accuracy of the quantized model and then benchmark it, you can either launch the evaluation operation mode followed by the [benchmark service](../benchmarking/README.md) that describes in detail how to proceed, or you can use chained services like launching the **[chain_eqeb](../config_file_examples/chain_eqeb_config.yaml)** example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_eqeb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_eqeb_config.yaml
 ```
 
 </details>

@@ -23,15 +23,15 @@ Link to the source code:
 
 import math
 import tensorflow as tf
-from random_utils import check_dataaug_argument
-from random_affine_utils import \
-            check_fill_and_interpolation, transform_images, \
+from common.data_augmentation import \
+            check_dataaug_argument, check_fill_and_interpolation, transform_images, \
             get_flip_matrix, get_translation_matrix, get_rotation_matrix, \
             get_shear_matrix, get_zoom_matrix
-from segm_random_utils import segm_apply_change_rate
+from src.data_augmentation import segm_apply_change_rate
 
 
-def transform_images_and_labels(
+
+def _transform_images_and_labels(
             images,
             labels,
             transforms,
@@ -101,7 +101,7 @@ def segm_random_flip(images, labels, mode=None, change_rate=0.5):
     image_height = images_shape[2]
     
     matrix = get_flip_matrix(batch_size, image_width, image_height, mode)
-    flipped_images, flipped_labels = transform_images_and_labels(images, labels, matrix)
+    flipped_images, flipped_labels = _transform_images_and_labels(images, labels, matrix)
 
     # Apply the change rate to images and labels
     images_aug, labels_aug = segm_apply_change_rate(
@@ -202,7 +202,7 @@ def segm_random_translation(
 
     matrix = get_translation_matrix(translations)
     
-    translated_images, translated_labels = transform_images_and_labels(
+    translated_images, translated_labels = _transform_images_and_labels(
                 images,
                 labels,
                 matrix,
@@ -281,7 +281,7 @@ def segm_random_rotation(
 
     matrix = get_rotation_matrix(angles, image_width, image_height)
     
-    rotated_images, rotated_labels = transform_images_and_labels(
+    rotated_images, rotated_labels = _transform_images_and_labels(
                 images,
                 labels,
                 matrix,
@@ -364,7 +364,7 @@ def segm_random_shear(
 
     matrix = get_shear_matrix(angles, axis=axis)
     
-    sheared_images, sheared_labels = transform_images_and_labels(
+    sheared_images, sheared_labels = _transform_images_and_labels(
                 images,
                 labels,
                 matrix,
@@ -483,7 +483,7 @@ def segm_random_zoom(
       
     matrix = get_zoom_matrix(zooms, image_width, image_height)
     
-    zoomed_images, zoomed_labels = transform_images_and_labels(
+    zoomed_images, zoomed_labels = _transform_images_and_labels(
                 images,
                 labels,
                 matrix,

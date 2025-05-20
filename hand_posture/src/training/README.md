@@ -204,10 +204,10 @@ A variety of learning rate schedulers are provided with the Model Zoo. If you wa
 </details>
 <details open><summary><a href="#3"><b>3. Train your model</b></a></summary><a id="3"></a>
 
-To launch your model training using a real dataset, run the following command from the **src/** folder:
+To launch your model training using a real dataset, run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name training_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name training_config.yaml
 ```
 Trained h5 model can be found in the [model zoo on GH](https://github.com/STMicroelectronics/stm32ai-modelzoo/hand_posture/) or ../experiments_outputs folders.
 

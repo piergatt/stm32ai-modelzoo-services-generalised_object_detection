@@ -15,11 +15,10 @@ from munch import DefaultMunch
 import numpy as np
 from hydra.core.hydra_config import HydraConfig
 
-from cfg_utils import postprocess_config_dict, check_config_attributes, parse_tools_section, parse_benchmarking_section, \
+from common.utils import postprocess_config_dict, check_config_attributes, parse_tools_section, parse_benchmarking_section, \
                       parse_mlflow_section, parse_top_level, parse_general_section, parse_quantization_section, \
                       parse_training_section, parse_prediction_section, parse_deployment_section, check_hardware_type, \
-                      parse_evaluation_section
-from typing import Dict, List
+                      parse_evaluation_section, get_class_names_from_file, check_attributes
 
     
 def parse_dataset_section(cfg: DictConfig, mode: str = None,
@@ -27,10 +26,9 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None,
                           hardware_type: str = None) -> None:
 
     # cfg: dictionary containing the 'dataset' section of the configuration file
-    # cfg: dictionary containing the 'dataset' section of the configuration file
 
-    legal = ["name", "class_names", "training_path", "validation_path", "validation_split", "test_path",
-             "quantization_path", "quantization_split", "seed"]
+    legal = ["name", "class_names", "classes_file_path", "training_path", "validation_path", 
+             "validation_split", "test_path", "quantization_path", "quantization_split", "seed"]
 
     required = []
     one_or_more = []
@@ -38,14 +36,20 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None,
         required += ["training_path", ]
     elif mode in mode_groups.evaluation:
         one_or_more += ["training_path", "test_path"]
-        
-    if mode not in ("quantization", "benchmarking", "chain_qb"):
-        if hardware_type == "MCU":
-            required += ["class_names", ]
     
     check_config_attributes(cfg, specs={"legal": legal, "all": required, "one_or_more": one_or_more},
                             section="dataset")
 
+    if not mode in ["quantization", "benchmarking", "chain_qb"]:
+        one_or_more = []
+        one_or_more += ["class_names", "classes_file_path"]
+        check_config_attributes(cfg, specs={"legal": legal, "all": None, "one_or_more": one_or_more},
+                               section="dataset")
+        if cfg.class_names: 
+            print("[INFO] : Using provided class names from dataset.class_names")
+        elif cfg.class_names == None:
+            cfg.class_names = get_class_names_from_file(cfg)
+            print("[INFO] : Found {} classes in label file {}".format(len(cfg.class_names), cfg.classes_file_path))
     # Set default values of missing optional attributes
     if not cfg.name:
         cfg.name = "unnamed"
@@ -67,12 +71,6 @@ def parse_dataset_section(cfg: DictConfig, mode: str = None,
             raise ValueError(f"\nThe value of `quantization_split` should be > 0 and < 1. Received {split}\n"
                              "Please check the 'dataset' section of your configuration file.")
 
-
-def get_class_names_from_file(cfg: DictConfig) -> List:
-    if cfg.deployment.label_file_path :
-        with open(cfg.deployment.label_file_path, 'r') as file:
-            class_names = [line.strip() for line in file]
-    return class_names
     
     
 def parse_preprocessing_section(cfg: DictConfig,
@@ -106,7 +104,7 @@ def parse_preprocessing_section(cfg: DictConfig,
                          "Please check the 'resizing.attribute' in the 'preprocessing' section of your configuration file.")
 
     # Check color mode value
-    color_modes = ["grayscale", "rgb", "rgba"]
+    color_modes = ["grayscale", "rgb", "rgba", "bgr"]
     if cfg.color_mode not in color_modes:
         raise ValueError(f"\nUnknown value for `color_mode` attribute. Received {cfg.color_mode}\n"
                          f"Supported values: {color_modes}\n"
@@ -157,7 +155,7 @@ def parse_data_augmentation_section(cfg: DictConfig) -> None:
     cfg.data_augmentation = data_aug
 
 
-def parse_postprocessing_section(cfg: DictConfig, model_type: str) -> None:
+def _parse_postprocessing_section(cfg: DictConfig, model_type: str) -> None:
     # cfg: 'postprocessing' section of the configuration file
 
     legal = ["confidence_thresh", "NMS_thresh", "IoU_eval_thresh", "yolo_anchors", "plot_metrics",
@@ -282,8 +280,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
                               mode_groups.quantization + mode_groups.deployment +
                               mode_groups.prediction):
         if cfg.hardware_type == "MCU":
-            parse_postprocessing_section(cfg.postprocessing, cfg.general.model_type)
-            
+            _parse_postprocessing_section(cfg.postprocessing, cfg.general.model_type)
+
     # Quantization section parsing
     if cfg.operation_mode in mode_groups.quantization:
         legal = ["quantizer", "quantization_type", "quantization_input_type",
@@ -293,7 +291,8 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # Evaluation section parsing
     if cfg.operation_mode in mode_groups.evaluation and "evaluation" in cfg:
-        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name","target"]
+        legal = ["gen_npy_input", "gen_npy_output", "npy_in_name", "npy_out_name","target", 
+                 "profile", "input_type", "output_type", "input_chpos", "output_chpos"]
         parse_evaluation_section(cfg.evaluation,
                                  legal=legal)
 
@@ -327,14 +326,14 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
     # Deployment section parsing
     if cfg.operation_mode in mode_groups.deployment:
         if cfg.hardware_type == "MCU":
-            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup"]
+            legal = ["c_project_path", "IDE", "verbosity", "hardware_setup", "build_conf"]
             legal_hw = ["serie", "board", "stlink_serial_number"]
             # Append additional items if hardware_type is "MCU_H7"
             if cfg.deployment.hardware_setup.serie == "STM32H7":
                 legal_hw += ["input", "output"]
         else:
-            legal = ["c_project_path", "label_file_path","board_deploy_path", "verbosity", "hardware_setup"]
-            legal_hw = ["serie", "board", "ip_address"]
+            legal = ["c_project_path", "board_deploy_path", "verbosity", "hardware_setup"]
+            legal_hw = ["serie", "board", "ip_address", "stlink_serial_number"]
             if cfg.preprocessing.color_mode != "rgb":
                 raise ValueError("\n Color mode used is not supported for deployment on MPU target \n Please use RGB format")
             if cfg.preprocessing.resizing.aspect_ratio != "fit":
@@ -345,12 +344,5 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
 
     # MLFlow section parsing
     parse_mlflow_section(cfg.mlflow)
-
-    # Check that all datasets have the required directory structure
-    cds = cfg.dataset
-
-    if not cds.class_names and cfg.operation_mode in ("deployment","chain_qd") and cfg.hardware_type == "MPU":
-        cds.class_names = get_class_names_from_file(cfg)
-        print("[INFO] : Found {} classes in label file {}".format(len(cds.class_names), cfg.deployment.label_file_path))
 
     return cfg

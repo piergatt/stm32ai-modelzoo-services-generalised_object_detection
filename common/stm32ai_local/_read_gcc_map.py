@@ -17,7 +17,7 @@ import sys
 
 from typing import Optional, List, Union
 
-from stm32ai_local.utils import TableWriter
+from common.stm32ai_local.utils import TableWriter
 
 
 __title__ = 'Utility - Extract info from a GCC-map file'

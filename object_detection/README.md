@@ -2,7 +2,7 @@
 
 ## Directory Components:
 * [datasets](datasets/README.md) placeholder for the object detection datasets.
-* [deployment](deployment/README.md) contains the necessary files for the deployment service.
+* deployment ([STM32H7](./deployment/README_STM32H7.md), [STM32N6](./deployment/README_STM32N6.md)) contains the necessary files for the deployment service.
 * [pretrained_models ](pretrained_models/README.md) points on a collection of optimized pretrained models
   detection use cases.
 * [src](src/README.md) contains tools to train, evaluate, benchmark and quantize your model on your STM32 target.
@@ -17,9 +17,7 @@ You can refer to the README links below that provide typical examples of operati
 - [evaluation, chain_eqeb](./src/evaluation/README.md)
 - [benchmarking](./src/benchmarking/README.md)
 - [prediction](./src/prediction/README.md)
-- For deployment and chain_qd:
-  - [README](./deployment/README.md)
-  - For STM32N6: [README_STM32N6](./deployment/README_STM32N6.md)
+- deployment, chain_qd ([STM32H7](./deployment/README_STM32H7.md), [STM32N6](./deployment/README_STM32N6.md))
 
 All `.yaml` configuration examples are located in the [config_file_examples](./src/config_file_examples/) folder.
 
@@ -48,6 +46,8 @@ The `model_type` attributes currently supported for the object detection are:
 
 - `yolo_v8` : is an advanced object detection model from Ultralytics that builds upon the strengths of its predecessors in the YOLO series. It is designed for real-time object detection, offering high accuracy and speed. YOLOv8 incorporates state-of-the-art techniques such as improved backbone networks, better feature pyramid networks, and advanced anchor-free detection heads, making it highly efficient for various computer vision tasks.
 
+- `yolo_v11` : is an advanced object detection model from Ultralytics that builds upon the strengths of its predecessors in the YOLO series. It is designed for real-time object detection, offering high accuracy and speed. YOLOv11 incorporates state-of-the-art techniques such as improved backbone networks, better feature pyramid networks, and advanced anchor-free detection heads, making it highly efficient for various computer vision tasks.
+
 - `yolo_v5u`: (You Only Look Once version 5 from Ultralytics) is a popular object detection model known for its balance of speed and accuracy. It is part of the YOLO family and is designed to perform real-time object detection. 
  
 - `st_yolo_x`: is an advanced object detection model that builds upon the YOLO (You Only Look Once) series, offering significant improvements in performance and flexibility. Unlike its predecessors, YOLOX can adopt an anchor-free approach, which simplifies the model and enhances its accuracy. It also incorporates advanced techniques such as decoupled head structures for classification and localization, and a more efficient training strategy. YOLOX is designed to achieve high accuracy and speed, making it suitable for real-time applications in various computer vision tasks. This ST variant embeds various tuning capabilities from the yaml configuration file.
@@ -55,6 +55,13 @@ The `model_type` attributes currently supported for the object detection are:
 - `st_yolo_lc_v1`: This is a lightweight version of the tiny yolo v2 object detection algorithm. It was optimized to work well on embedded devices with limited computational resources.
 
 - `tiny_yolo_v2`: This is a lightweight version of the YOLO (You Only Look Once) object detection algorithm. It is designed to work well on embedded devices with limited computational resources.
+
+- `yolo_v4`: YOLO (You Only Look Once) version 4 from Nvidia TAO (train adapt and optimize) toolkit with different possible backbones for feature extractions including different versions of resnet, mobilenet, darknet, efficientnet, vgg, and cspdarknet.
+
+
+- `yolo_v4_tiny`: YOLO (You Only Look Once) version 4 __tiny__ from Nvidia TAO (train adapt and optimize) toolkit with backbones csp_darknet_tiny as the backbone.
+
+
 
 ## You don't know where to start? You feel lost?
 Don't forget to follow our tuto below for a quick ramp up : 

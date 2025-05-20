@@ -25,21 +25,18 @@ import logging
 logging.getLogger('mlflow.tensorflow').setLevel(logging.ERROR)
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
-from logs_utils import log_to_file, log_last_epoch_history, LRTensorBoard
-from gpu_utils import check_training_determinism
-from models_utils import model_summary
-from cfg_utils import collect_callback_args
-from common_training import set_frozen_layers, set_dropout_rate, get_optimizer
-from preprocess import apply_rescaling
-from models_mgt import get_model, get_loss
-from data_augmentation_layer import DataAugmentationLayer
-import data_augmentation
-import lr_schedulers
-from evaluate import evaluate_h5_model
-from visualize_utils import vis_training_curves
+from common.utils import log_to_file, log_last_epoch_history, LRTensorBoard, check_training_determinism, \
+                         model_summary, collect_callback_args, vis_training_curves
+from common.training import set_frozen_layers, set_dropout_rate, get_optimizer, lr_schedulers
+from src.preprocessing import apply_rescaling
+from src.utils import get_model, get_loss
+from src.data_augmentation import DataAugmentationLayer
+from src.evaluation import evaluate_h5_model
 
 
-def load_model_to_train(cfg, model_path=None, num_classes=None) -> tf.keras.Model:
+
+
+def _load_model_to_train(cfg, model_path=None, num_classes=None) -> tf.keras.Model:
     """
     This function loads the model to train, which can be either a:
     - model from the zoo (MobileNet, FD-MobileNet, etc).
@@ -101,7 +98,7 @@ def load_model_to_train(cfg, model_path=None, num_classes=None) -> tf.keras.Mode
     return model, input_shape
 
 
-def add_preprocessing_layers(
+def _add_preprocessing_layers(
                 model: tf.keras.Model,
                 input_shape: Tuple = None, 
                 scale: float = None,
@@ -147,7 +144,7 @@ def add_preprocessing_layers(
     return augmented_model
 
 
-def get_callbacks(callbacks_dict: DictConfig, output_dir: str = None, logs_dir: str = None,
+def _get_callbacks(callbacks_dict: DictConfig, output_dir: str = None, logs_dir: str = None,
                   saved_models_dir: str = None) -> List[tf.keras.callbacks.Callback]:
     """
     This function creates the list of Keras callbacks to be passed to 
@@ -278,7 +275,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
         print("  no test set")
 
     # Load the model to train
-    model, input_shape = load_model_to_train(cfg.training, model_path=cfg.general.model_path, num_classes=num_classes)
+    model, input_shape = _load_model_to_train(cfg.training, model_path=cfg.general.model_path, num_classes=num_classes)
 
     # Info messages about the model that was loaded
     if cfg.training.model:
@@ -321,7 +318,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
 
     if not cfg.training.resume_training_from:
         # Add the preprocessing layers to the model
-        augmented_model = add_preprocessing_layers(model,
+        augmented_model = _add_preprocessing_layers(model,
                                 input_shape=input_shape,
                                 scale=cfg.preprocessing.rescaling.scale,
                                 offset=cfg.preprocessing.rescaling.offset,
@@ -337,7 +334,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
         # loose the loss and optimizer states.
         augmented_model = model
 
-    callbacks = get_callbacks(callbacks_dict=cfg.training.callbacks,
+    callbacks = _get_callbacks(callbacks_dict=cfg.training.callbacks,
                                 output_dir=output_dir,
                                 saved_models_dir=saved_models_dir,
                                 logs_dir=cfg.general.logs_dir)

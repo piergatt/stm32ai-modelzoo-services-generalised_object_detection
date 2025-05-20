@@ -16,8 +16,8 @@ import numpy as np
 from pathlib import Path
 from pesq import pesq
 from pystoi import stoi
-from metrics import si_snr, snr
-from evaluators import BaseTorchEvaluator, BaseONNXEvaluator
+from src.metrics import si_snr, snr
+from src.evaluators import BaseTorchEvaluator, BaseONNXEvaluator
 
 
 class MagSpecTorchEvaluator(BaseTorchEvaluator):

@@ -17,21 +17,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/data_augmentation'))
-sys.path.append(os.path.abspath('../../utils'))
-sys.path.append(os.path.abspath('../../preprocessing'))
-sys.path.append(os.path.abspath('../../data_augmentation'))
-sys.path.append(os.path.abspath('../../models'))
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-from cfg_utils import postprocess_config_dict
-from parse_config import parse_dataset_section, parse_preprocessing_section, parse_data_augmentation_section
-from random_utils import remap_pixel_values_range
-from data_loader import get_ds
-from data_augmentation import data_augmentation
+from common.utils import postprocess_config_dict
+from common.data_augmentation import remap_pixel_values_range
+from src.preprocessing import get_ds
+from src.utils import parse_dataset_section, parse_preprocessing_section, parse_data_augmentation_section
+from src.data_augmentation import segm_random_affine, segm_random_misc
+from src.data_augmentation import data_augmentation
 
 
-def plot_images_and_labels(image: np.array, label: np.array,
+def _plot_images_and_labels(image: np.array, label: np.array,
                            image_aug: np.array, label_aug: np.array) -> None:
     """
     Displays side by side the original and augmented image
@@ -81,7 +78,7 @@ def plot_images_and_labels(image: np.array, label: np.array,
     plt.close()
     
 
-def test_data_augmentation(config_file_path: str, seed_arg: str = None) -> None:
+def _test_data_augmentation(config_file_path: str, seed_arg: str = None) -> None:
     """
     Samples a batch of images with their groundtruth labels from 
     the training set, applies to them the data augmentation functions
@@ -179,12 +176,11 @@ def test_data_augmentation(config_file_path: str, seed_arg: str = None) -> None:
 
         # Plot the images and their groundtruth labels
         for i in range(batch_size):
-            plot_images_and_labels(images[i].numpy(), labels[i].numpy(), 
+            _plot_images_and_labels(images[i].numpy(), labels[i].numpy(), 
                                   images_aug[i].numpy(), labels_aug[i].numpy())
 
 
 def main():
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_file", type=str, default="../../user_config.yaml",
                         help="Path to the YAML configuration file starting from the directory " + \
@@ -206,7 +202,7 @@ def main():
     else:
         seed = None
 
-    test_data_augmentation(Path(args.config_file), seed_arg=seed)
+    _test_data_augmentation(Path(args.config_file), seed_arg=seed)
 
 if __name__ == '__main__':
     main()

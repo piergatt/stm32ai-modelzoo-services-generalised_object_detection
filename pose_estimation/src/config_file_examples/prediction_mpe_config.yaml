@@ -5,6 +5,7 @@ general:
 operation_mode: prediction
 
 dataset:
+   class_names: [person]
    keypoints: 17  # 13
 
 preprocessing:
@@ -17,18 +18,18 @@ preprocessing:
    color_mode: rgb
 
 postprocessing:
-  kpts_conf_thresh: 0.15
-  confidence_thresh: 0.001
-  NMS_thresh: 0.1
-  plot_metrics: false
-  max_detection_boxes: 100
+   kpts_conf_thresh: 0.15
+   confidence_thresh: 0.001
+   NMS_thresh: 0.1
+   plot_metrics: false
+   max_detection_boxes: 100
 
 prediction:
-   test_files_path: ../datasets/COCO_test_dataset_multi_pose
+   test_files_path: ./datasets/COCO_test_dataset_multi_pose
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

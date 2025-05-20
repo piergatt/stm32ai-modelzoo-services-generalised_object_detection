@@ -8,9 +8,12 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-sys.path.append(os.path.abspath('../../../common'))
-from stm32ai_dc import Stm32Ai, CloudBackend
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+#sys.path.append(os.path.abspath('../../../common'))
+
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+from common.stm32ai_dc import Stm32Ai, CloudBackend
 
 """
 Main Features

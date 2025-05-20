@@ -4,7 +4,7 @@
 
 This tutorial demonstrates how to use the `prediction` service to use the `Yolov8n seg` to generate some predictions.
 
-To get started, you will need to update the [user_config.yaml](../user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](../user_config.yaml) file is explained in detail in the following sections.
+To get started, you will need to update the [user_config.yaml](../../user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](../../user_config.yaml) file is explained in detail in the following sections.
 
 <details open><summary><a href="#2"><b>2. Choose the operation mode</b></a></summary><a id="2"></a>
 
@@ -24,7 +24,7 @@ The `general` section and its attributes are shown below.
 ```yaml
 general:
   project_name: coco_instance_seg          # Project name. Optional, defaults to "<unnamed>".
-  model_path: https://github.com/stm32-hotspot/ultralytics/raw/refs/heads/main/examples/YOLOv8-STEdgeAI/stedgeai_models/segmentation/yolov8n_256_quant_pc_uf_seg_coco-st.tflite
+  model_path: https://github.com/stm32-hotspot/ultralytics/raw/refs/heads/main/examples/YOLOv8-STEdgeAI/stedgeai_models/segmentation/yolov8n_256_quant_pc_ii_seg_coco-st.tflite
   gpu_memory_limit: 16                     # Maximum amount of GPU memory in GBytes that TensorFlow may use (an integer).
 ```
 
@@ -41,7 +41,7 @@ The `dataset` section and its attributes are shown in the YAML code below.
 dataset:
   name: COCO                    # Dataset name. Optional, defaults to "<unnamed>".
   # One of the following parameters should be provided:
-  classes_file_path: ../dataset/coco_classes.txt
+  classes_file_path: ./dataset/coco_classes.txt
   class_names: [person, bicycle, car, motorcycle, airplane, bus, train, ...] # Names of the classes in the dataset.
 ```
 
@@ -49,7 +49,7 @@ The `name` attribute is optional and can be used to specify the name of your dat
 
 The `classes_file_path` attribute specifies the path to a file that contains the names of the classes in the dataset. Each class name should be listed on a new line in the file. This attribute is useful when you have a large number of classes and prefer to manage them in a separate file.
 
-The `class_names` attribute is an array that lists the names of the classes in the dataset. This attribute is useful when you have a small number of classes and prefer to specify them directly in the YAML file. If you provide the `class_names` attribute, you do not need to provide the `classes_file_path` attribute, and vice versa.
+The `class_names` attribute specifies the classes in the dataset. This information must be provided in the YAML file. If the `class_names` attribute is absent, the `classes_name_file` argument can be used as an alternative, pointing to a text file containing the class names.
 
 </details></ul>
 <details open><summary><a href="#5"><b>5. Apply image preprocessing</b></a></summary><a id="5"></a>
@@ -105,14 +105,14 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>

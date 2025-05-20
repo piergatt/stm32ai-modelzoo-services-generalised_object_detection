@@ -23,15 +23,15 @@ import onnxruntime
 warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from preprocess import preprocess_image, preprocess_input, postprocess_output_values
-from logs_utils import log_to_file
-from utils import tf_segmentation_dataset_to_np_array
-from onnx_evaluation import predict_onnx, model_is_quantized
-from models_utils import count_h5_parameters, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from models_mgt import ai_runner_invoke
+from src.preprocessing import preprocess_input, postprocess_output_values
+from src.utils import ai_runner_invoke, tf_segmentation_dataset_to_np_array
+from common.evaluation import model_is_quantized, predict_onnx
+from common.utils import count_h5_parameters, log_to_file, \
+                         ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
 
 
-def prediction_accuracy_on_batch(pred_mask: np.ndarray = None, true_mask: np.ndarray = None) -> float:
+
+def _prediction_accuracy_on_batch(pred_mask: np.ndarray = None, true_mask: np.ndarray = None) -> float:
     """
         Evaluation of the prediction accuracy on a batch of network outputs.
 
@@ -47,7 +47,7 @@ def prediction_accuracy_on_batch(pred_mask: np.ndarray = None, true_mask: np.nda
     return accuracy_on_batch
 
 
-def iou_per_class(pred_mask: np.ndarray = None, true_mask: np.ndarray = None, num_classes: int = None) -> list:
+def _iou_per_class(pred_mask: np.ndarray = None, true_mask: np.ndarray = None, num_classes: int = None) -> list:
     """
         Evaluation of IOU per class on a batch of network outputs.
 
@@ -78,7 +78,7 @@ def iou_per_class(pred_mask: np.ndarray = None, true_mask: np.ndarray = None, nu
     return ious_on_batch_class
 
 
-def evaluate_tflite_model(cfg: DictConfig = None, 
+def _evaluate_tflite_model(cfg: DictConfig = None, 
                           model_path: str = None, eval_ds: tf.data.Dataset = None, class_names: list = None,
                           output_dir: str = None, name_ds: Optional[str] = 'test_set',
                           num_threads: Optional[int] = 1) -> tuple:
@@ -148,10 +148,10 @@ def evaluate_tflite_model(cfg: DictConfig = None,
 
             pred_mask = np.argmax(out, axis=-1)
             true_mask = tf.squeeze(msk, axis=-1).numpy()
-            accuracy = prediction_accuracy_on_batch(pred_mask, true_mask)
+            accuracy = _prediction_accuracy_on_batch(pred_mask, true_mask)
             accuracy_list.append(accuracy)
 
-            ious_per_image = iou_per_class(pred_mask, true_mask, num_classes)
+            ious_per_image = _iou_per_class(pred_mask, true_mask, num_classes)
             if ious_per_image:
                 for iou in ious_per_image:
                     iou_global_window.append(iou)
@@ -221,12 +221,12 @@ def evaluate_h5_model(model_path: str = None, eval_ds: tf.data.Dataset = None, c
         else:
             # If the last dimension is not 1, do not squeeze or handle accordingly
             true_mask = mask.numpy()
-        accuracy_on_batch = prediction_accuracy_on_batch(pred_mask, true_mask)
+        accuracy_on_batch = _prediction_accuracy_on_batch(pred_mask, true_mask)
         accuracy_batch.append(accuracy_on_batch)
 
         # Calculate IoU for each class and per image
         for p_msk, t_msk in zip(pred_mask, true_mask):
-            ious_per_image = iou_per_class(p_msk, t_msk, num_classes)
+            ious_per_image = _iou_per_class(p_msk, t_msk, num_classes)
             # Calculate mean IoU for this sample all class for which we have an IoU included
             if ious_per_image:
                 for iou in ious_per_image:
@@ -246,7 +246,7 @@ def evaluate_h5_model(model_path: str = None, eval_ds: tf.data.Dataset = None, c
     return avg_accuracy, avg_iou
 
 
-def evaluate_onnx_model(cfg: DictConfig = None, model_path: str = None, eval_ds: tf.data.Dataset = None,
+def _evaluate_onnx_model(cfg: DictConfig = None, model_path: str = None, eval_ds: tf.data.Dataset = None,
                         class_names: list = None, output_dir: str = None, name_ds: Optional[str] = 'test_set') -> float:
     """
     Evaluates a trained model saved in .onnx format on the provided test data.
@@ -290,10 +290,10 @@ def evaluate_onnx_model(cfg: DictConfig = None, model_path: str = None, eval_ds:
             out  = np.transpose(out, [0, 3, 1, 2])
         pred_mask = np.argmax(out, axis=1)
         true_mask = msk
-        accuracy = prediction_accuracy_on_batch(pred_mask, true_mask)
+        accuracy = _prediction_accuracy_on_batch(pred_mask, true_mask)
         accuracy_list.append(accuracy)
 
-        ious_per_image = iou_per_class(pred_mask, true_mask, num_classes)
+        ious_per_image = _iou_per_class(pred_mask, true_mask, num_classes)
         if ious_per_image:
             for iou in ious_per_image:
                 iou_global_window.append(iou)
@@ -342,11 +342,11 @@ def evaluate(cfg: DictConfig = None, eval_ds: tf.data.Dataset = None,
                               name_ds=name_ds)
         elif file_extension == '.tflite':
             # Evaluate TensorFlow Lite model
-            evaluate_tflite_model(cfg=cfg, model_path=model_path, eval_ds=eval_ds, class_names=class_names,
+            _evaluate_tflite_model(cfg=cfg, model_path=model_path, eval_ds=eval_ds, class_names=class_names,
                                   output_dir=output_dir, name_ds=name_ds, num_threads=cfg.general.num_threads_tflite)
         elif file_extension == '.onnx':
             # Evaluate onnx model
-            evaluate_onnx_model(cfg=cfg, model_path=model_path, eval_ds=eval_ds, class_names=class_names,
+            _evaluate_onnx_model(cfg=cfg, model_path=model_path, eval_ds=eval_ds, class_names=class_names,
                                 output_dir=output_dir, name_ds=name_ds)
     except Exception:
         raise ValueError(f"Model accuracy evaluation failed\nReceived model path: {model_path}")

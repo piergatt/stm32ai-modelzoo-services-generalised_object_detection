@@ -12,10 +12,10 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from typing import Optional
 
-from postprocess import heatmaps_spe_postprocess
+from src.postprocessing import heatmaps_spe_postprocess
 
 
-def oks_matrix(kpt0:tf.Tensor, kpt1:tf.Tensor, area:tf.Tensor, stddev:tf.Tensor, eps:Optional[float] = 1e-7):
+def _oks_matrix(kpt0:tf.Tensor, kpt1:tf.Tensor, area:tf.Tensor, stddev:tf.Tensor, eps:Optional[float] = 1e-7):
     '''
     Calculate OKS (object keypoint similarities) matrix
 
@@ -45,7 +45,7 @@ def oks_matrix(kpt0:tf.Tensor, kpt1:tf.Tensor, area:tf.Tensor, stddev:tf.Tensor,
 
     return oks
 
-def pose_area_calculation(tensor:tf.Tensor):
+def _pose_area_calculation(tensor:tf.Tensor):
     '''
     Calculate the area of a pose
 
@@ -60,7 +60,7 @@ def pose_area_calculation(tensor:tf.Tensor):
 
     return area
 
-def matching_predictions(tensor:tf.Tensor, thres:tf.Tensor):
+def _matching_predictions(tensor:tf.Tensor, thres:tf.Tensor):
     '''
     Matching of the predictions with the ground truths
 
@@ -144,7 +144,7 @@ def single_pose_oks(y_true:tf.Tensor, y_pred:tf.Tensor):
 
     nb_kpts = shp[2]//3
 
-    area = pose_area_calculation(y_true[:,:,3:5]) # (batch, 1)
+    area = _pose_area_calculation(y_true[:,:,3:5]) # (batch, 1)
 
     def f1(): return tf.constant([0.026,0.025,0.025,0.035,0.035,0.079,0.079,0.072,0.072,0.062,0.062,0.107,0.107,0.087,0.087,0.089,0.089],tf.float32)
     def f2(): return tf.constant([0.035,0.079,0.079,0.072,0.072,0.062,0.062,0.107,0.107,0.087,0.087,0.089,0.089],tf.float32)
@@ -156,7 +156,7 @@ def single_pose_oks(y_true:tf.Tensor, y_pred:tf.Tensor):
     gt   = tf.reshape(gt,    [shg[0],shg[1],nb_kpts,3]) # shape (batch, 1, nb_kpts, 3)
     pred = tf.reshape(y_pred,[shp[0],shp[1],nb_kpts,3]) # shape (batch, 1, nb_kpts, 3)
 
-    oks_m = oks_matrix(gt,pred,area,stddev)
+    oks_m = _oks_matrix(gt,pred,area,stddev)
 
     return oks_m[:,0,0] # shape (batch,)
 
@@ -193,7 +193,7 @@ def multi_pose_oks_mAP(y_true:tf.Tensor, y_pred:tf.Tensor):
 
     nb_kpts = sh[2]//3
 
-    area = pose_area_calculation(y_true[:,:,3:5]) # shape : (batch, N) FLOAT32 calculate area for the pose
+    area = _pose_area_calculation(y_true[:,:,3:5]) # shape : (batch, N) FLOAT32 calculate area for the pose
     gtT  = tf.reduce_sum(y_true[:,:,5:],-1)       # shape : (batch, M) FLOAT32 sum of all prediction values for each prediction
     preT = tf.reduce_sum(y_pred,-1)               # shape : (batch, M) FLOAT32 sum of all prediction values for each prediction
     maskpad = tf.cast(preT>0,tf.float32)          # shape : (batch, M) FLOAT32 see if a prediction if truly a prediction or just a padding
@@ -210,9 +210,9 @@ def multi_pose_oks_mAP(y_true:tf.Tensor, y_pred:tf.Tensor):
     conf = y_pred[:,:,4]                         # shape (batch, M)
     conf = tf.reshape(conf,[-1])                 # shape (batch*M,)
 
-    oks_m = oks_matrix(gt,pred,area,stddev) # (batch, N, M)
+    oks_m = _oks_matrix(gt,pred,area,stddev) # (batch, N, M)
 
-    mtp = matching_predictions(oks_m,thres) # (batch, M, thres)
+    mtp = _matching_predictions(oks_m,thres) # (batch, M, thres)
 
     tp  = tf.reshape(mtp,[sh[0]*sh[1],-1])  # (batch*M, thres)
 
@@ -222,7 +222,7 @@ def multi_pose_oks_mAP(y_true:tf.Tensor, y_pred:tf.Tensor):
 
     return tp, conf, nb_gt, maskpad # (batch*M,thresh), (batch*M,), (1,), (batch*M,)
 
-def precision_recall(tp:tf.Tensor, conf:tf.Tensor, nb_gt:tf.Tensor, maskpad:tf.Tensor, eps:Optional[float] = 1e-7):
+def _precision_recall(tp:tf.Tensor, conf:tf.Tensor, nb_gt:tf.Tensor, maskpad:tf.Tensor, eps:Optional[float] = 1e-7):
     '''
     Compute precision and recall for all thresholds
 
@@ -252,7 +252,7 @@ def precision_recall(tp:tf.Tensor, conf:tf.Tensor, nb_gt:tf.Tensor, maskpad:tf.T
 
     return precision, recall
 
-def auc(precision:tf.Tensor, recall:tf.Tensor):
+def _auc(precision:tf.Tensor, recall:tf.Tensor):
     '''
     Compute the Area Under the Curve (AUC) that gives the mAP value
 
@@ -298,14 +298,14 @@ def compute_ap(tp:tf.Tensor, conf:tf.Tensor, nb_gt:tf.Tensor, maskpad:tf.Tensor,
         mAPs (tf.Tensor): shape (thresh, ) FLOAT32 mean Average Precision values
     '''
 
-    precision,recall = precision_recall(tp, conf, nb_gt, maskpad)
+    precision,recall = _precision_recall(tp, conf, nb_gt, maskpad)
 
     sp = tf.shape(precision)
 
     mAPs = []
 
     for i in range(sp[1]):
-        ac = auc(precision[:,i],recall[:,i])
+        ac = _auc(precision[:,i],recall[:,i])
         mAPs.append(ac[0])
 
     if plot_metrics:

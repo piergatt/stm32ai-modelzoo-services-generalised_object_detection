@@ -259,7 +259,6 @@ def num_labels_above_percentage(dataset_path : str=None,
         num_examples += 1
         labels = parse_label_file(path)
         if not labels:
-            num_empty_txt += 1
             label_sizes.append(0)
         else:
             label_sizes.append(len(labels))

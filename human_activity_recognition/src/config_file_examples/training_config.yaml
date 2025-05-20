@@ -11,7 +11,7 @@ operation_mode: training
 dataset:
   name: wisdm
   class_names: [Jogging,Stationary,Stairs,Walking]
-  training_path: ../datasets/WISDM_ar_v1.1/WISDM_ar_v1.1_raw.txt
+  training_path: ./datasets/WISDM_ar_v1.1/WISDM_ar_v1.1_raw.txt
   validation_split: 0.2
   test_path:
   test_split: 0.25
@@ -46,8 +46,8 @@ training:
       patience: 60
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

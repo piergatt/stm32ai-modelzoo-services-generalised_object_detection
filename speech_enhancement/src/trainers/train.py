@@ -12,12 +12,13 @@ import copy
 from pathlib import Path
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
-from trainers import MagSpecTrainer
-from dataset_utils import load_dataset_from_cfg
-from utils import plot_training_metrics, log_to_file
+from src.trainers import MagSpecTrainer
+from src.dataset_utils import load_dataset_from_cfg
+from src.utils import plot_training_metrics, log_to_file
 import pandas as pd
-import models
-import preprocessing
+import src.models
+import src.preprocessing
+from src.preprocessing import IdentityPipeline
 
 
 def _train(model,
@@ -73,19 +74,19 @@ def train(cfg):
 
     del pipeline_args["pipeline_type"]
 
-    input_pipeline = getattr(preprocessing, cfg.preprocessing.pipeline_type)(
+    input_pipeline = getattr(src.preprocessing, cfg.preprocessing.pipeline_type)(
         magnitude=False, **pipeline_args)
 
     if loss == "spec_mse":
         # If using 
         train_target_pipeline = input_pipeline
     elif loss in ['wave_mse', 'wave_sisnr', 'wave_snr']:
-        train_target_pipeline = preprocessing.IdentityPipeline(peak_normalize=pipeline_args["peak_normalize"])
+        train_target_pipeline = IdentityPipeline(peak_normalize=pipeline_args["peak_normalize"])
     else:
         raise ValueError("Invalid loss type. Should be one of 'spec_mse', 'wave_mse',"
                          f"'wave_sisnr', 'wave_snr', but was {loss}")
 
-    valid_target_pipeline = preprocessing.IdentityPipeline(peak_normalize=pipeline_args["peak_normalize"])
+    valid_target_pipeline = IdentityPipeline(peak_normalize=pipeline_args["peak_normalize"])
 
     # Load training dataset
     train_ds = load_dataset_from_cfg(cfg,
@@ -114,7 +115,7 @@ def train(cfg):
     # Load model
     model_type = cfg.model.model_type
     model_specific_args = cfg.model_specific
-    model = getattr(models, model_type)(**model_specific_args)
+    model = getattr(src.models, model_type)(**model_specific_args)
 
     log_to_file(cfg.output_dir, f"Model type: {cfg.model.model_type}")
     

@@ -20,8 +20,8 @@ from typing import Tuple, Dict, Optional
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf, DictConfig, open_dict
 
-from models_utils import get_model_name_and_its_input_shape
-from handposture_dictionnary import hand_posture_dict
+from common.utils import get_model_name_and_its_input_shape
+from .handposture_dictionnary import hand_posture_dict
 
 
 def gen_h_user_file(config: DictConfig = None, model_path: str = None) -> None:

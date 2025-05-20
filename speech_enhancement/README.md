@@ -6,7 +6,7 @@
 
 
 ## Quick & easy examples:
-The `operation_mode` top-level parameter in the [configuration file](./src/user_config.yaml) specifies the operations or the service you want to execute. This may be a single operation or a set of chained operations.
+The `operation_mode` top-level parameter in the [configuration file](./user_config.yaml) specifies the operations or the service you want to execute. This may be a single operation or a set of chained operations.
 
 You can refer to the README links below that provide typical examples of operation modes, and tutorials on specific services:
    - [training](./src/trainers/README.md)

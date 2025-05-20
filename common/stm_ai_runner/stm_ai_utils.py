@@ -1193,8 +1193,8 @@ def st_neural_art_node_type_to_str(op_type_id):
         desc_ += f'epoch (extra HW.{sub_id})'
     elif id_ == 2:  # SW epoch
         desc_ += 'epoch (SW)'
-    elif id_ == 3:  # mix epoch
-        desc_ += 'epoch (MIX)'
+    elif id_ == 3:  # hybrid epoch
+        desc_ += 'epoch (HYBRID)'
     elif id_ == 4:  # epoch controller
         desc_ += 'epoch (EC)'
     else:  # default HW

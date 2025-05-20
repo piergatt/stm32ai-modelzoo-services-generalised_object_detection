@@ -14,7 +14,7 @@ from tensorflow.keras import layers
 from typing import Tuple
 
 
-def depthwise_conv_block(inputs, filters, alpha, depth_multiplier=1, strides=(1, 1), block_id=1):
+def _depthwise_conv_block(inputs, filters, alpha, depth_multiplier=1, strides=(1, 1), block_id=1):
     """Adds a depthwise convolution block.
 
     This function defines a depthwise convolution block for use in a mobile
@@ -57,7 +57,7 @@ def depthwise_conv_block(inputs, filters, alpha, depth_multiplier=1, strides=(1,
     return x
 
 
-def get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classes: int = None, 
+def _get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classes: int = None, 
                       dropout: float = None) -> tf.keras.Model:
     """Get a MobileNet V1 model from scratch.
 
@@ -84,24 +84,24 @@ def get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classe
     x = layers.ReLU(6.)(x)
 
     # Depthwise convolution blocks.
-    x = depthwise_conv_block(x, filters=64, alpha=alpha, strides=(1, 1), block_id=1)
+    x = _depthwise_conv_block(x, filters=64, alpha=alpha, strides=(1, 1), block_id=1)
 
-    x = depthwise_conv_block(x, filters=128, alpha=alpha, strides=(2, 2), block_id=2)
-    x = depthwise_conv_block(x, filters=128, alpha=alpha, strides=(1, 1), block_id=3)
+    x = _depthwise_conv_block(x, filters=128, alpha=alpha, strides=(2, 2), block_id=2)
+    x = _depthwise_conv_block(x, filters=128, alpha=alpha, strides=(1, 1), block_id=3)
 
-    x = depthwise_conv_block(x, filters=256, alpha=alpha, strides=(2, 2), block_id=4)
-    x = depthwise_conv_block(x, filters=256, alpha=alpha, strides=(1, 1), block_id=5)
+    x = _depthwise_conv_block(x, filters=256, alpha=alpha, strides=(2, 2), block_id=4)
+    x = _depthwise_conv_block(x, filters=256, alpha=alpha, strides=(1, 1), block_id=5)
 
-    x = depthwise_conv_block(x, filters=512, alpha=alpha, strides=(2, 2), block_id=6)
+    x = _depthwise_conv_block(x, filters=512, alpha=alpha, strides=(2, 2), block_id=6)
 
-    x = depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=7)
-    x = depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=8)
-    x = depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=9)
-    x = depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=10)
-    x = depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=11)
+    x = _depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=7)
+    x = _depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=8)
+    x = _depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=9)
+    x = _depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=10)
+    x = _depthwise_conv_block(x, filters=512, alpha=alpha, strides=(1, 1), block_id=11)
 
-    x = depthwise_conv_block(x, filters=1024, alpha=alpha, strides=(2, 2), block_id=12)
-    x = depthwise_conv_block(x, filters=1024, alpha=alpha, strides=(1, 1), block_id=13)
+    x = _depthwise_conv_block(x, filters=1024, alpha=alpha, strides=(2, 2), block_id=12)
+    x = _depthwise_conv_block(x, filters=1024, alpha=alpha, strides=(1, 1), block_id=13)
 
     # Global average pooling and output layer.
     x = keras.layers.GlobalAveragePooling2D()(x)
@@ -118,7 +118,7 @@ def get_scratch_model(input_shape: tuple = None, alpha: float = None, num_classe
     return model
 
 
-def get_transfer_learning_model(input_shape: Tuple[int, int, int] = None, alpha: float = None,
+def _get_transfer_learning_model(input_shape: Tuple[int, int, int] = None, alpha: float = None,
                                 num_classes: int = None, dropout: float = None,
                                 weights: str = None) -> tf.keras.Model:
     """
@@ -134,7 +134,7 @@ def get_transfer_learning_model(input_shape: Tuple[int, int, int] = None, alpha:
         A Keras model object with the MobileNet architecture as the backbone and a randomly initialized head.
     """
     # Create a randomly initialized model
-    random_model = get_scratch_model(input_shape=input_shape, num_classes=num_classes, alpha=alpha, dropout=dropout)
+    random_model = _get_scratch_model(input_shape=input_shape, num_classes=num_classes, alpha=alpha, dropout=dropout)
 
     # Check if input shape is valid for MobileNet architecture
     if input_shape[0] in [224, 192, 160, 128]:
@@ -174,11 +174,11 @@ def get_mobilenetv1(input_shape: tuple, alpha: float = None,
     """
     
     if pretrained_weights:
-        model = get_transfer_learning_model(input_shape=input_shape, alpha=alpha,
+        model = _get_transfer_learning_model(input_shape=input_shape, alpha=alpha,
                                             num_classes=num_classes, dropout=dropout,
                                             weights=pretrained_weights)
     else:
-        model = get_scratch_model(input_shape=input_shape, alpha=alpha,
+        model = _get_scratch_model(input_shape=input_shape, alpha=alpha,
                                   num_classes=num_classes, dropout=dropout)
 
     return model

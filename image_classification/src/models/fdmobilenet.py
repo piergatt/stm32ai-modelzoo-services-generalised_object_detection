@@ -13,7 +13,7 @@ from tensorflow.keras import layers
 from typing import List, Tuple, Optional
 
 
-def create_fd_mobilenet(input_shape: List[int] = [224, 224, 3], alpha: float = 1.0, depth_multiplier: int = 1,
+def _create_fd_mobilenet(input_shape: List[int] = [224, 224, 3], alpha: float = 1.0, depth_multiplier: int = 1,
                         dropout: float = None, input_tensor: Optional[tf.Tensor] = None,
                         classes: int = 101) -> tf.keras.Model:
     """
@@ -51,17 +51,17 @@ def create_fd_mobilenet(input_shape: List[int] = [224, 224, 3], alpha: float = 1
 
     # Build MobileNet architecture
     x = _conv_block(img_input, 32, alpha, strides=(2, 2))
-    x = depthwise_conv_block(x, 64, alpha, depth_multiplier, strides=(2, 2), block_id=1)
-    x = depthwise_conv_block(x, 128, alpha, depth_multiplier, strides=(2, 2), block_id=2)
-    x = depthwise_conv_block(x, 128, alpha, depth_multiplier, block_id=3)
-    x = depthwise_conv_block(x, 256, alpha, depth_multiplier, strides=(2, 2), block_id=4)
-    x = depthwise_conv_block(x, 256, alpha, depth_multiplier, block_id=5)
-    x = depthwise_conv_block(x, 512, alpha, depth_multiplier, strides=(2, 2), block_id=6)
-    x = depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=7)
-    x = depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=8)
-    x = depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=9)
-    x = depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=10)
-    x = depthwise_conv_block(x, 1024, alpha, depth_multiplier, block_id=11)
+    x = _depthwise_conv_block(x, 64, alpha, depth_multiplier, strides=(2, 2), block_id=1)
+    x = _depthwise_conv_block(x, 128, alpha, depth_multiplier, strides=(2, 2), block_id=2)
+    x = _depthwise_conv_block(x, 128, alpha, depth_multiplier, block_id=3)
+    x = _depthwise_conv_block(x, 256, alpha, depth_multiplier, strides=(2, 2), block_id=4)
+    x = _depthwise_conv_block(x, 256, alpha, depth_multiplier, block_id=5)
+    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, strides=(2, 2), block_id=6)
+    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=7)
+    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=8)
+    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=9)
+    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=10)
+    x = _depthwise_conv_block(x, 1024, alpha, depth_multiplier, block_id=11)
 
     # Add classification layers
     shape = (1, 1, int(1024 * alpha))
@@ -103,7 +103,7 @@ def _conv_block(inputs: tf.Tensor, filters: int, alpha: float, kernel: Tuple[int
     return layers.Activation('relu', name='conv1_relu')(x)
 
 
-def depthwise_conv_block(inputs: tf.Tensor, pointwise_conv_filters: int, alpha: float, depth_multiplier: int = 1,
+def _depthwise_conv_block(inputs: tf.Tensor, pointwise_conv_filters: int, alpha: float, depth_multiplier: int = 1,
                          strides: Tuple[int, int] = (1, 1), block_id: int = 1) -> tf.Tensor:
     """
     Adds a depthwise convolutional block to the model.
@@ -150,7 +150,7 @@ def get_fdmobilenet(input_shape: Tuple[int, int, int] = None, num_classes: int =
 
     inputs = tf.keras.Input(shape=input_shape)
 
-    # Create model using create_fd_mobilenet function
-    model = create_fd_mobilenet(input_shape=input_shape, alpha=alpha, depth_multiplier=1, dropout=dropout,
+    # Create model using _create_fd_mobilenet function
+    model = _create_fd_mobilenet(input_shape=input_shape, alpha=alpha, depth_multiplier=1, dropout=dropout,
                                 input_tensor=inputs, classes=num_classes)
     return model

@@ -10,11 +10,12 @@
 import copy
 from pathlib import Path
 from torch.utils.data import DataLoader
-from dataset_utils import load_dataset_from_cfg
-from evaluators import MagSpecONNXEvaluator, MagSpecTorchEvaluator
-from utils import model_is_quantized, log_to_file
-import models
-import preprocessing
+from src.dataset_utils import load_dataset_from_cfg
+from src.evaluators import MagSpecONNXEvaluator, MagSpecTorchEvaluator
+from src.utils import model_is_quantized, log_to_file
+import src.models
+import src.preprocessing
+from src.preprocessing import IdentityPipeline
 import mlflow
 
 def _evaluate(eval_dl,
@@ -55,10 +56,10 @@ def evaluate(cfg):
 
     del pipeline_args["pipeline_type"]
 
-    input_pipeline = getattr(preprocessing, cfg.preprocessing.pipeline_type)(
+    input_pipeline = getattr(src.preprocessing, cfg.preprocessing.pipeline_type)(
         magnitude=False, **pipeline_args)
 
-    target_pipeline = preprocessing.IdentityPipeline(peak_normalize=pipeline_args["peak_normalize"])
+    target_pipeline = IdentityPipeline(peak_normalize=pipeline_args["peak_normalize"])
 
 
     # Load evaluation dataset
@@ -86,7 +87,7 @@ def evaluate(cfg):
     elif cfg.model.model_type and cfg.model.state_dict_path:
         model_type = cfg.model.model_type
         model_specific_args = cfg.model_specific
-        model = getattr(models, model_type)(**model_specific_args)
+        model = getattr(src.models, model_type)(**model_specific_args)
         model_checkpoint = cfg.model.state_dict_path
         model_type = "Float"
     else:

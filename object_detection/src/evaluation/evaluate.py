@@ -25,17 +25,16 @@ import tensorflow as tf
 from onnx import ModelProto
 import onnxruntime
 
-from bounding_boxes_utils import bbox_normalized_to_abs_coords
-from models_mgt import model_family
-from datasets import get_evaluation_data_loader
-from postprocess import get_nmsed_detections
-from objdet_metrics import ObjectDetectionMetricsData, calculate_objdet_metrics, calculate_average_metrics
-from logs_utils import log_to_file
-from models_utils import count_h5_parameters, ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from models_mgt   import ai_runner_invoke
+from src.postprocessing import get_nmsed_detections
+from src.preprocessing import get_evaluation_data_loader
+from src.utils import ai_runner_invoke, bbox_normalized_to_abs_coords, model_family, ObjectDetectionMetricsData, \
+                  calculate_objdet_metrics, calculate_average_metrics
+from common.utils import count_h5_parameters, log_to_file, \
+                         ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
 
 
-def evaluate_float_model(cfg: DictConfig, model_path: str, num_classes: int = None) -> dict:
+
+def _evaluate_float_model(cfg: DictConfig, model_path: str, num_classes: int = None) -> dict:
 
     # Load the model to evaluate
     model = tf.keras.models.load_model(model_path, compile=False)
@@ -72,7 +71,7 @@ def evaluate_float_model(cfg: DictConfig, model_path: str, num_classes: int = No
     return metrics
 
 
-def evaluate_quantized_model(cfg: DictConfig, 
+def _evaluate_quantized_model(cfg: DictConfig, 
                              model_path: str, 
                              num_classes: int = None,
                              output_dir: str = None) -> dict:
@@ -202,7 +201,7 @@ def evaluate_quantized_model(cfg: DictConfig,
     return metrics    
     
 
-def evaluate_onnx_model(cfg: DictConfig, model_path: str, num_classes: int = None) -> dict:
+def _evaluate_onnx_model(cfg: DictConfig, model_path: str, num_classes: int = None) -> dict:
 
     if cfg.evaluation and cfg.evaluation.target:
         target = cfg.evaluation.target
@@ -275,7 +274,7 @@ def evaluate_onnx_model(cfg: DictConfig, model_path: str, num_classes: int = Non
     return metrics    
     
     
-def display_objdet_metrics(metrics, class_names):
+def _display_objdet_metrics(metrics, class_names):
     
     table = []
     classes = list(metrics.keys())    
@@ -300,14 +299,14 @@ def display_objdet_metrics(metrics, class_names):
     print(" Mean AP (mAP):  {:.1f}".format(100 * mAP))
 
 
-def plot_precision_versus_recall(metrics, class_names, plots_dir):
+def _plot_precision_versus_recall(metrics, class_names, plots_dir):
     """
     Plot the precision versus recall curves. AP values are the areas under these curves.
     """
 
     # Create the directory where plots will be saved
     if os.path.exists(plots_dir):
-        rmtree(plots_dir)
+        shutil.rmtree(plots_dir)
     os.makedirs(plots_dir)
 
     for c in list(metrics.keys()):
@@ -349,11 +348,11 @@ def evaluate(cfg: DictConfig, model_path: str = None):
     if Path(model_path).suffix == '.h5':
         count_h5_parameters(output_dir=output_dir, 
                             model_path=model_path)
-        metrics = evaluate_float_model(cfg, model_path, num_classes=num_classes)
+        metrics = _evaluate_float_model(cfg, model_path, num_classes=num_classes)
     elif Path(model_path).suffix == '.tflite':
-        metrics = evaluate_quantized_model(cfg, model_path, num_classes=num_classes, output_dir=output_dir)
+        metrics = _evaluate_quantized_model(cfg, model_path, num_classes=num_classes, output_dir=output_dir)
     elif Path(model_path).suffix == '.onnx':
-        metrics = evaluate_onnx_model(cfg, model_path, num_classes=num_classes)
+        metrics = _evaluate_onnx_model(cfg, model_path, num_classes=num_classes)
     else:
         raise RuntimeError("Evaluation internal error: unsupported model "
                            f"file extension {model_path}")
@@ -362,7 +361,7 @@ def evaluate(cfg: DictConfig, model_path: str = None):
     eval_run_time = int(end_time - start_time)
     print("Evaluation run time: " + str(timedelta(seconds=eval_run_time)))
 
-    display_objdet_metrics(metrics, class_names)
+    _display_objdet_metrics(metrics, class_names)
             
     # Log metrics in the stm32ai_main.log file
     log_to_file(output_dir, f"{model_type} model dataset used: {cfg.dataset.name}")
@@ -385,5 +384,5 @@ def evaluate(cfg: DictConfig, model_path: str = None):
         
         output_dir = HydraConfig.get().runtime.output_dir
         model_path_suffix = Path(model_path).suffix
-        plot_precision_versus_recall(metrics, class_names, plots_dir)
+        _plot_precision_versus_recall(metrics, class_names, plots_dir)
 

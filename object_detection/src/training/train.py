@@ -20,22 +20,22 @@ import logging
 logging.getLogger('mlflow.tensorflow').setLevel(logging.ERROR)
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
-from cfg_utils import parse_random_periodic_resizing
-from logs_utils import log_to_file, log_last_epoch_history
-from models_utils import model_summary
-from models_mgt import model_family, load_model_for_training
-from tiny_yolo_v2 import tiny_yolo_v2
-from anchor_boxes_utils import get_sizes_ratios_ssd_v1, get_sizes_ratios_ssd_v2, get_fmap_sizes, get_anchor_boxes
-from datasets import get_training_data_loaders
-from ssd_train_model import SSDTrainingModel
-from yolo_train_model import YoloTrainingModel
-from yolo_x_train_model import YoloXTrainingModel
-from common_training import set_frozen_layers, set_dropout_rate, get_optimizer
-from callbacks import get_callbacks
-from evaluate import evaluate
+
+from common.utils import log_to_file, log_last_epoch_history, model_summary, parse_random_periodic_resizing
+from common.training import set_frozen_layers, get_optimizer, set_dropout_rate
+from src.evaluation import evaluate
+from src.utils import load_model_for_training, model_family, get_sizes_ratios_ssd_v1, get_sizes_ratios_ssd_v2, \
+                  get_fmap_sizes, get_anchor_boxes
+from src.preprocessing import get_training_data_loaders
+from .callbacks import get_callbacks
+from .ssd_train_model import SSDTrainingModel
+from .yolo_train_model import YoloTrainingModel
+from .yolo_x_train_model import YoloXTrainingModel
 
 
-def set_up_ssd_model(cfg, model, input_shape=None, num_labels=None, 
+
+
+def _set_up_ssd_model(cfg, model, input_shape=None, num_labels=None, 
                      val_dataset_size=None, pixels_range=None):
 
     # Get the anchor boxes
@@ -81,7 +81,7 @@ def set_up_ssd_model(cfg, model, input_shape=None, num_labels=None,
     return ssd_model
 
 
-def set_up_yolo_model(cfg, model, input_shape=None, num_labels=None, val_dataset_size=None, pixels_range=None):
+def _set_up_yolo_model(cfg, model, input_shape=None, num_labels=None, val_dataset_size=None, pixels_range=None):
 
     cpp = cfg.postprocessing
     
@@ -121,7 +121,7 @@ def set_up_yolo_model(cfg, model, input_shape=None, num_labels=None, val_dataset
     return yolo_model
 
 
-def set_up_yolo_x_model(cfg, model, input_shape=None, num_labels=None, val_dataset_size=None, pixels_range=None):
+def _set_up_yolo_x_model(cfg, model, input_shape=None, num_labels=None, val_dataset_size=None, pixels_range=None):
 
     cpp = cfg.postprocessing
     ctm = cfg.training.model
@@ -129,8 +129,11 @@ def set_up_yolo_x_model(cfg, model, input_shape=None, num_labels=None, val_datas
     print("Using Yolo anchors:")
     for anchor in cpp.yolo_anchors:
         print(" ", anchor)
-    print("Using depth_mul: ",ctm.depth_mul)
-    print("Using width_mul: ",ctm.width_mul)
+        
+    if ctm is not None:
+        print("Using depth_mul: ",ctm.depth_mul)
+        print("Using width_mul: ",ctm.width_mul)
+
 
     data_augmentation_cfg = cfg.data_augmentation.config if cfg.data_augmentation else None      
 
@@ -222,7 +225,7 @@ def train(cfg: DictConfig):
     val_dataset_size = sum([x.shape[0] for x, _ in val_ds])
 
     if model_family(cfg.general.model_type) == "ssd":
-        train_model = set_up_ssd_model(
+        train_model = _set_up_ssd_model(
                             cfg,
                             model,
                             input_shape=model_input_shape, 
@@ -231,7 +234,7 @@ def train(cfg: DictConfig):
                             pixels_range=pixels_range)
                                        
     elif model_family(cfg.general.model_type) == "yolo":
-        train_model = set_up_yolo_model(
+        train_model = _set_up_yolo_model(
                             cfg,
                             model,
                             input_shape=model_input_shape,
@@ -240,7 +243,7 @@ def train(cfg: DictConfig):
                             pixels_range=pixels_range)
         
     elif model_family(cfg.general.model_type) == "st_yolo_x":
-        train_model = set_up_yolo_x_model(
+        train_model = _set_up_yolo_x_model(
                             cfg,
                             model,
                             input_shape=model_input_shape,

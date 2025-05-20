@@ -1,12 +1,12 @@
 general:
-  model_path: ../../../model_zoo/object_detection/tiny_yolo_v2/ST_pretrainedmodel_public_dataset/coco_2017_person/tiny_yolo_v2_224/tiny_yolo_v2_224.h5
+  model_path: ../../stm32ai-modelzoo/object_detection/tiny_yolo_v2/ST_pretrainedmodel_public_dataset/coco_2017_person/tiny_yolo_v2_224/tiny_yolo_v2_224.h5
   model_type: tiny_yolo_v2
 operation_mode: quantization
 
 dataset:
   name: COCO_2017_person
   class_names: [ person ]
-  quantization_path: ../datasets/COCO_2017_person/train
+  quantization_path: ./datasets/coco_2017_person/train
   quantization_split: 0.4
 
 preprocessing:
@@ -31,8 +31,8 @@ postprocessing:
   max_detection_boxes: 10
 
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

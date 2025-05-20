@@ -15,19 +15,13 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/data_augmentation'))
-sys.path.append(os.path.abspath('../../utils'))
-sys.path.append(os.path.abspath('../../preprocessing'))
-sys.path.append(os.path.abspath('../../data_augmentation'))
-sys.path.append(os.path.abspath('../../models'))
+from src.utils import get_config
+from src.preprocessing import preprocess
+from common.data_augmentation import random_color, random_affine, random_erasing, random_misc
 
-from parse_config import get_config
-from preprocess import preprocess
-from random_utils import remap_pixel_values_range
-import random_color, random_affine, random_erasing, random_misc
-from data_augmentation import data_augmentation
 
 
 def display_images_side_by_side(image, image_aug, grayscale=None, legend=None):

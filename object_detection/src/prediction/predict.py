@@ -14,23 +14,26 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from onnx import ModelProto
 import onnxruntime
+from hydra.core.hydra_config import HydraConfig
 
-from models_mgt import model_family, ai_runner_invoke
-from models_utils import ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
-from datasets import get_prediction_data_loader
-from postprocess import get_nmsed_detections
-from bounding_boxes_utils import bbox_normalized_to_abs_coords, plot_bounding_boxes
-from random_utils import remap_pixel_values_range
+from common.utils import ai_runner_interp, ai_interp_input_quant, ai_interp_outputs_dequant
+from common.data_augmentation import remap_pixel_values_range
+from src.utils import ai_runner_invoke, bbox_normalized_to_abs_coords, plot_bounding_boxes
+from src.preprocessing  import get_prediction_data_loader
+from src.postprocessing  import get_nmsed_detections
 
 
-def view_image_and_boxes(cfg, image, boxes=None, classes=None, scores=None, class_names=None):
+def _view_image_and_boxes(cfg, image, img_path, boxes=None, classes=None, scores=None, class_names=None):
         
     # Convert TF tensors to numpy
     image = np.array(image, dtype=np.float32)
     boxes = np.array(boxes, dtype=np.int32)
     classes = np.array(classes, dtype=np.int32)
 
-    print(boxes.shape)
+    file_name_with_extension = os.path.basename(img_path.numpy().decode('utf-8'))
+    file_name, _ = os.path.splitext(file_name_with_extension)
+    output_dir = "{}/{}".format(HydraConfig.get().runtime.output_dir,"predictions")
+    os.makedirs(output_dir, exist_ok=True)
 
     # Calculate dimensions for the displayed image
     image_width, image_height = np.shape(image)[:2]
@@ -43,15 +46,21 @@ def view_image_and_boxes(cfg, image, boxes=None, classes=None, scores=None, clas
         y_size = display_size
 
     # Display the image and the bounding boxes
+    fig, ax = plt.subplots(figsize=(x_size, y_size))
+    if cfg.preprocessing.color_mode.lower() == 'bgr':
+        image = image[...,::-1]
+    ax.imshow(image)
+    plot_bounding_boxes(ax, boxes, classes, scores, class_names)
+    # turning off the grid
+    plt.grid(visible=False)
+    plt.axis('off')
+    plt.savefig('{}/{}_predict.jpg'.format(output_dir,file_name))
     if cfg.general.display_figures:
-        fig, ax = plt.subplots(figsize=(x_size, y_size))
-        ax.imshow(image)
-        plot_bounding_boxes(ax, boxes, classes, scores, class_names)
         plt.show()
-        plt.close()
+    plt.close()
     
 
-def predict_float_model(cfg, model_path):
+def _predict_float_model(cfg, model_path):
 
     print("Loading model file:", model_path)
     model = tf.keras.models.load_model(model_path, compile=False)
@@ -63,7 +72,7 @@ def predict_float_model(cfg, model_path):
     data_loader = get_prediction_data_loader(cfg, image_size=image_size)
     
     cpp = cfg.postprocessing
-    for images in data_loader:
+    for images, image_paths in data_loader:
         batch_size = tf.shape(images)[0]
 
         # Predict the images and get the NMS'ed detections
@@ -74,15 +83,16 @@ def predict_float_model(cfg, model_path):
         images = remap_pixel_values_range(images, pixels_range, (0, 1))
         boxes = bbox_normalized_to_abs_coords(boxes, image_size=image_size)        
         for i in range(batch_size):
-            view_image_and_boxes(cfg, 
+            _view_image_and_boxes(cfg, 
                                  images[i],
+                                 image_paths[i],
                                  boxes[i],
                                  classes[i],
                                  scores[i],
                                  class_names=cfg.dataset.class_names)
 
 
-def predict_quantized_model(cfg, model_path):
+def _predict_quantized_model(cfg, model_path):
 
     if cfg.prediction and cfg.prediction.target:
         target = cfg.prediction.target
@@ -105,12 +115,11 @@ def predict_quantized_model(cfg, model_path):
     output_details = interpreter.get_output_details()
 
     data_loader = get_prediction_data_loader(cfg, image_size=image_size, batch_size=batch_size)
-
     cpr = cfg.preprocessing.rescaling
     pixels_range = (cpr.offset, 255 * cpr.scale + cpr.offset)
     cpp = cfg.postprocessing
     
-    for images in data_loader:
+    for images, image_paths in data_loader:
         batch_size = tf.shape(images)[0]
 
         # Allocate input tensor to predict the batch of images
@@ -158,15 +167,16 @@ def predict_quantized_model(cfg, model_path):
         images = remap_pixel_values_range(images, pixels_range, (0, 1))
         boxes = bbox_normalized_to_abs_coords(boxes, image_size=image_size)        
         for i in range(batch_size):
-            view_image_and_boxes(cfg, 
+            _view_image_and_boxes(cfg, 
                                  images[i],
+                                 image_paths[i],
                                  boxes[i],
                                  classes[i],
                                  scores[i],
                                  class_names=cfg.dataset.class_names)
 
 
-def predict_onnx_model(cfg, model_path, num_classes=None):
+def _predict_onnx_model(cfg, model_path, num_classes=None):
 
     if cfg.prediction and cfg.prediction.target:
         target = cfg.prediction.target
@@ -196,12 +206,17 @@ def predict_onnx_model(cfg, model_path, num_classes=None):
     data_loader = get_prediction_data_loader(cfg, image_size=image_size, batch_size=batch_size)
     
     cpr = cfg.preprocessing.rescaling
-    pixels_range = (cpr.offset, 255 * cpr.scale + cpr.offset)
+    # if the scale and offsets are 3 number lists instead of scalars using averages
+    offset = np.mean(cpr.offset) if isinstance(cpr.offset, (list, tuple)) else cpr.offset
+    scale = np.mean(cpr.scale) if isinstance(cpr.scale, (list, tuple)) else cpr.scale
+    
+    # calculating pixels range
+    pixels_range = (offset, 255 * scale + offset)
 
     inputs  = sess.get_inputs()
     outputs = sess.get_outputs()
 
-    for images in data_loader:
+    for images, image_paths in data_loader:
         batch_size = tf.shape(images)[0]
         
         channel_first_images = np.transpose(images.numpy(), [0, 3, 1, 2])
@@ -222,8 +237,9 @@ def predict_onnx_model(cfg, model_path, num_classes=None):
         images = remap_pixel_values_range(images, pixels_range, (0, 1))
         boxes = bbox_normalized_to_abs_coords(boxes, image_size=image_size)        
         for i in range(batch_size):
-            view_image_and_boxes(cfg, 
+            _view_image_and_boxes(cfg, 
                                  images[i],
+                                 image_paths[i],
                                  boxes[i],
                                  classes[i],
                                  scores[i],
@@ -245,10 +261,10 @@ def predict(cfg):
     model_path = cfg.general.model_path
     
     if Path(model_path).suffix == ".h5":
-        predict_float_model(cfg, model_path)
+        _predict_float_model(cfg, model_path)
     elif Path(model_path).suffix == ".tflite":
-         predict_quantized_model(cfg, model_path)
+        _predict_quantized_model(cfg, model_path)
     elif Path(model_path).suffix == ".onnx":
-         predict_onnx_model(cfg, model_path)
+        _predict_onnx_model(cfg, model_path)
     else:
         raise RuntimeError("Evaluation internal error: unsupported model type")

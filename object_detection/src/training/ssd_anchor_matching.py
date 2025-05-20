@@ -8,10 +8,11 @@
 
 import tensorflow as tf
 import numpy as np
-from bounding_boxes_utils import calculate_box_wise_iou
+
+from src.utils import calculate_box_wise_iou
 
 
-def calculate_iou_matrix(anchor_boxes: tf.Tensor, gt_boxes: tf.Tensor) -> tf.Tensor:
+def _calculate_iou_matrix(anchor_boxes: tf.Tensor, gt_boxes: tf.Tensor) -> tf.Tensor:
     """
     Takes as inputs a set of anchor boxes and a set of groundtruth boxes,
     and calculates the IOU of each anchor box with each groundtruth box.
@@ -52,7 +53,7 @@ def calculate_iou_matrix(anchor_boxes: tf.Tensor, gt_boxes: tf.Tensor) -> tf.Ten
     return iou_matrix
 
 
-def bipartite_matching(
+def _bipartite_matching(
                 iou_matrix: tf.Tensor,
                 gt_labels: tf.Tensor,
                 num_anchors: int = None,
@@ -155,7 +156,7 @@ def bipartite_matching(
     return gt_anchor_matches[:, :-1], iou_matrix[:, :-1, :]
 
 
-def positive_iou_matching(
+def _positive_iou_matching(
                 iou_matrix: tf.Tensor,
                 gt_labels: tf.Tensor,
                 matches: tf.Tensor,
@@ -227,7 +228,7 @@ def positive_iou_matching(
     return matches, iou_matrix
 
 
-def neutral_iou_matching(
+def _neutral_iou_matching(
                 iou_matrix: tf.Tensor,
                 matches: tf.Tensor,
                 pos_iou_threshold: float = None,
@@ -284,7 +285,7 @@ def neutral_iou_matching(
     return matches
     
 
-def postprocess_anchor_matches(
+def _postprocess_anchor_matches(
                 box_matches: tf.Tensor,
                 anchor_boxes: tf.Tensor,
                 num_anchors: int = None):
@@ -383,25 +384,25 @@ def match_gt_anchors(anchor_boxes: tf.Tensor,
     x = tf.tile(anchor_boxes, [batch_size, 1])
     anchor_boxes = tf.reshape(x, [batch_size, num_anchor_boxes, 4])
   
-    iou_matrix = calculate_iou_matrix(anchor_boxes, gt_labels[..., 1:])
+    iou_matrix = _calculate_iou_matrix(anchor_boxes, gt_labels[..., 1:])
 
-    matches, iou_matrix = bipartite_matching(
+    matches, iou_matrix = _bipartite_matching(
                     iou_matrix, gt_labels,
                     num_anchors=num_anchors, num_labels=num_labels)
 
-    matches, iou_matrix = positive_iou_matching(
+    matches, iou_matrix = _positive_iou_matching(
                     iou_matrix, gt_labels, matches,
                     num_anchors=num_anchors, num_labels=num_labels,
                     pos_iou_threshold=pos_iou_threshold)
     
     if neg_iou_threshold < pos_iou_threshold:
-        matches = neutral_iou_matching(
+        matches = _neutral_iou_matching(
                         iou_matrix, matches,
                         pos_iou_threshold=pos_iou_threshold, neg_iou_threshold=neg_iou_threshold)
 
     class_matches = tf.cast(matches[..., 0], tf.int32)
     class_matches = tf.one_hot(class_matches, depth=num_classes + 1, on_value=1.0, off_value=0.0, dtype=tf.float32)
-    box_matches = postprocess_anchor_matches(matches[..., 1:], anchor_boxes, num_anchors)
+    box_matches = _postprocess_anchor_matches(matches[..., 1:], anchor_boxes, num_anchors)
 
     output = tf.concat([class_matches, box_matches, anchor_boxes], axis=-1)
 

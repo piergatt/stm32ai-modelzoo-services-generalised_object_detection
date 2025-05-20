@@ -88,13 +88,13 @@ dataset:
                 "car", "cat", "chair", "cow", "dining table", "dog", "horse", "motorbike",
                 "person", "potted plant", "sheep", "sofa", "train", "tv/monitor"]
 
-  training_path: ../datasets/VOC2012_train_val/JPEGImages
-  training_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  training_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
+  training_path: ./datasets/VOC2012_train_val/JPEGImages
+  training_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  training_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/trainaug.txt
 
-  validation_path: ../datasets/VOC2012_train_val/JPEGImages
-  validation_masks_path: ../datasets/VOC2012_train_val/SegmentationClassAug
-  validation_files_path: ../datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt
+  validation_path: ./datasets/VOC2012_train_val/JPEGImages
+  validation_masks_path: ./datasets/VOC2012_train_val/SegmentationClassAug
+  validation_files_path: ./datasets/VOC2012_train_val/ImageSets/Segmentation/val.txt
   validation_split: 
   
   test_path: 
@@ -103,7 +103,7 @@ dataset:
 
 ```
 
-the `name` holds the identifier for the dataset, which in this case is pascal_voc. The `class_names` is a list of class names that the dataset contains. It includes a variety of categories such as "background", "aeroplane", "bicycle", and so on, for a total of 20 object classes plus the "background" class.
+The `name` holds the identifier for the dataset, which in this case is pascal_voc. The `class_names` attribute specifies the classes in the dataset. This information must be provided in the YAML file. If the `class_names` attribute is absent, the `classes_name_file` argument can be used as an alternative, pointing to a text file containing the class names.
 
 The `training_path` specifies the directory path to the training images, the `training_masks_path` points to the location of the segmentation masks corresponding to the training images and `training_files_path` indicates the file that contains the list of image filenames used for training.
 
@@ -242,23 +242,23 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 </details></ul>
 </details>
 
 <details open><summary><a href="#3"><b>3. Train your model</b></a></summary><a id="3"></a>
 
-To launch your model training using a real dataset, run the following command from **src/** folder:
+To launch your model training using a real dataset, run the following command from UC folder:
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name training_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name training_config.yaml
 ```
 Trained h5 model can be found in corresponding **experiments_outputs/** folder.
 </details>
@@ -518,13 +518,13 @@ training:
 
 In case you want to train and quantize a model, you can either launch the training operation mode followed by the quantization operation on the trained model (please refer to quantization **[README.md](../quantization/README.md)** that describes in details the quantization part) or you can use chained services like launching [chain_tqe](../config_file_examples/chain_tqe_config.yaml) example with command below:
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_tqe_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_tqe_config.yaml
 ```
 This specific example trains a mobilenet v2 model with imagenet pre-trained weights, fine tunes it by retraining latest seven layers but the fifth one (this only as an example), aand quantizes it 8-bits using quantization_split (30% in this example) of the train dataset for calibration before evaluating the quantized model.
 
 In case you also want to execute a benchmark on top of training and quantize services, it is recommended to launch the chain service called [chain_tqeb](../config_file_examples/chain_tqeb_config.yaml) that stands for train, quantize, evaluate, benchmark like the example with command below:
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_tqeb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_tqeb_config.yaml
 ```
 
 </details></ul>

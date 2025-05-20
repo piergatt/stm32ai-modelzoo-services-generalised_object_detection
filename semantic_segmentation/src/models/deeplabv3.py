@@ -12,7 +12,7 @@ from tensorflow.keras.applications import MobileNetV2, ResNet50
 from tensorflow.keras import layers, models, backend
 
 
-def calculate_dilation_rates(height):
+def _calculate_dilation_rates(height):
     """
     Calculate dilation rates based on the height of the input tensor.
     """
@@ -21,7 +21,7 @@ def calculate_dilation_rates(height):
     dilation_rate3 = dilation_rate1 * 3
     return [dilation_rate1, dilation_rate2, dilation_rate3]
 
-def dilated_conv2d(x, out_filters, dilation_rate):
+def _dilated_conv2d(x, out_filters, dilation_rate):
     """
     Apply dilated Conv2D with BatchNormalization and ReLU activation.
     """
@@ -30,7 +30,7 @@ def dilated_conv2d(x, out_filters, dilation_rate):
     x = layers.Activation('relu')(x)
     return x
 
-def dilated_depthwise_conv2d(x, out_filters, dilation_rate):
+def _dilated_depthwise_conv2d(x, out_filters, dilation_rate):
     """
     Apply dilated DepthwiseConv2D with BatchNormalization and ReLU activation, followed by a pointwise Conv2D.
     """
@@ -42,7 +42,7 @@ def dilated_depthwise_conv2d(x, out_filters, dilation_rate):
     x = layers.Activation('relu')(x)
     return x
 
-def aspp(x, out_filters, aspp_size, version='v1'):
+def _aspp(x, out_filters, aspp_size, version='v1'):
     """
     ASPP module with either standard or depthwise separable atrous convolutions.
     """
@@ -50,7 +50,7 @@ def aspp(x, out_filters, aspp_size, version='v1'):
     _, height, width, channels = backend.int_shape(x)
 
     # Calculate dilation rates based on height
-    dilation_rates = calculate_dilation_rates(height)
+    dilation_rates = _calculate_dilation_rates(height)
 
     # Start with a 1x1 convolution
     x1 = layers.Conv2D(out_filters, (1, 1), padding='same', kernel_initializer='he_normal')(x)
@@ -58,13 +58,13 @@ def aspp(x, out_filters, aspp_size, version='v1'):
     x1 = layers.Activation('relu')(x1)
 
     if version == 'v1':
-        x2 = dilated_conv2d(x, out_filters, dilation_rates[0])
-        x3 = dilated_conv2d(x, out_filters, dilation_rates[1])
-        x4 = dilated_conv2d(x, out_filters, dilation_rates[2])
+        x2 = _dilated_conv2d(x, out_filters, dilation_rates[0])
+        x3 = _dilated_conv2d(x, out_filters, dilation_rates[1])
+        x4 = _dilated_conv2d(x, out_filters, dilation_rates[2])
     elif version == 'v2':
-        x2 = dilated_depthwise_conv2d(x, out_filters, dilation_rates[0])
-        x3 = dilated_depthwise_conv2d(x, out_filters, dilation_rates[1])
-        x4 = dilated_depthwise_conv2d(x, out_filters, dilation_rates[2])
+        x2 = _dilated_depthwise_conv2d(x, out_filters, dilation_rates[0])
+        x3 = _dilated_depthwise_conv2d(x, out_filters, dilation_rates[1])
+        x4 = _dilated_depthwise_conv2d(x, out_filters, dilation_rates[2])
     else:
         raise ValueError(f"Unsupported ASPP version {version}")
 
@@ -136,7 +136,7 @@ def get_deeplab_v3(input_shape: list = None, backbone: str = None, version: str 
     aspp_size = (h, w)
 
     # Apply ASPP with the given feature map size and a fixed number of filters (256)
-    x = aspp(x, 256, aspp_size, version=aspp_version)
+    x = _aspp(x, 256, aspp_size, version=aspp_version)
 
     # Apply dropout with the given rate
     x = layers.Dropout(dropout)(x)

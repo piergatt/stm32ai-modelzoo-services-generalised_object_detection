@@ -24,15 +24,15 @@ Link to the source code:
 
 import math
 import tensorflow as tf
-from random_utils import check_dataaug_argument
-from random_affine_utils import \
-            check_fill_and_interpolation, transform_images, \
+
+from common.data_augmentation import \
+            check_fill_and_interpolation, transform_images, check_dataaug_argument, \
             get_flip_matrix, get_translation_matrix, get_rotation_matrix, \
             get_shear_matrix, get_zoom_matrix
-from objdet_random_utils import objdet_apply_change_rate
+from .objdet_random_utils import objdet_apply_change_rate
 
 
-def transform_boxes(boxes, transforms, image_width, image_height, scale=1.):
+def _transform_boxes(boxes, transforms, image_width, image_height, scale=1.):
     """
     This function applies affine transformations to a batch of boxes.
     The transformation matrices are independent from each other
@@ -182,7 +182,7 @@ def objdet_random_flip(images, labels, mode=None, change_rate=0.5):
 
     boxes = labels[..., 1:]
     flipped_images = transform_images(images, matrix)
-    flipped_boxes = transform_boxes(boxes, matrix, image_width, image_height)
+    flipped_boxes = _transform_boxes(boxes, matrix, image_width, image_height)
 
     # Apply the change rate to images and labels
     images_aug, boxes_aug = objdet_apply_change_rate(
@@ -295,7 +295,7 @@ def objdet_random_translation(
             fill_mode=fill_mode,
             fill_value=fill_value)
 
-    translated_boxes = transform_boxes(
+    translated_boxes = _transform_boxes(
             boxes,
             translation_matrix,
             image_width,
@@ -384,7 +384,7 @@ def objdet_random_rotation(
                         fill_value=fill_value,
                         interpolation=interpolation)
  
-    rotated_boxes = transform_boxes(
+    rotated_boxes = _transform_boxes(
                         boxes,
                         rotation_matrix,
                         image_width,
@@ -482,7 +482,7 @@ def objdet_random_shear(
                         fill_value=fill_value,
                         interpolation=interpolation)
  
-    sheared_boxes = transform_boxes(
+    sheared_boxes = _transform_boxes(
                         boxes,
                         shear_matrix,
                         image_width,
@@ -612,7 +612,7 @@ def objdet_random_zoom(
                 fill_value=fill_value,
                 interpolation=interpolation)
 
-    zoomed_boxes = transform_boxes(
+    zoomed_boxes = _transform_boxes(
                 boxes,
                 zoom_matrix,
                 image_width,

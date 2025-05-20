@@ -16,7 +16,18 @@ The performances on reference STM32 MCU and MPU are provided for float and quant
 This project is organized by application, for each application you will have a step by step guide that will indicate how to train and deploy the models.
 
 ## What's new in releases :
-<details open><summary><b>3.0:</b></summary>
+<details open><summary><b>3.1:</b></summary>
+
+* Support for `STEdgeAI Core v2.1.0` (STM32Cube.AI v10.1.0).
+* Application code for STM32N6 board is now directly available in the STM32 model zoo repository; eliminating the need for separate downloads. 
+* Support of `On device evaluation` and `On device prediction` on the `STM32N6570-DK` boards integrated in evaluation and prediction services.
+* More models supported : Yolov11, LSTM model added in the Speech Enhancement, ST Yolo X variants.
+* ClearML support.
+* A few bug fixes and improvements like proper imports, OD metrics alignments. 
+
+
+</details>
+<details><summary><b>3.0:</b></summary>
 
 * Full support of the new [STM32N6570-DK](https://www.st.com/en/evaluation-tools/stm32n6570-dk) board.
 * Included additional models compatible with the `STM32N6`.
@@ -139,7 +150,7 @@ Object detection is used to detect, locate and estimate the occurrences probabil
 | [Tiny Yolo v2](https://github.com/STMicroelectronics/stm32ai-modelzoo/blob/master/object_detection/tiny_yolo_v2/README.md)   |  224x224x3<br> 416x416x3<br>  | Full OD Services      | [STM32N6570-DK](https://www.st.com/en/development-tools/stm32n6-ai.html)<br>     |
 | [ST Yolo X](https://github.com/STMicroelectronics/stm32ai-modelzoo/blob/master/object_detection/st_yolo_x/README.md)   |  256x256x3<br> 320x320x3<br> 416x416x3<br>  480x480x3<br> | Full OD Services      | [STM32N6570-DK](https://www.st.com/en/development-tools/stm32n6-ai.html)<br>     |
 | [Yolo v8](https://github.com/stm32-hotspot/ultralytics/tree/main/examples/YOLOv8-STEdgeAI/stedgeai_models/object_detection) <br> Yolo v5u  |  192x192x3<br> 256x256x3<br> 320x320x3<br> 416x416x3<br>  | Evaluation / Benchmarking / Prediction / Deployment    | [STM32N6570-DK](https://www.st.com/en/development-tools/stm32n6-ai.html)<br>     |
-
+| Yolo v11  |  192x192x3<br> 256x256x3<br> 320x320x3<br> 416x416x3<br>  | Evaluation / Benchmarking / Prediction    | [STM32N6570-DK](https://www.st.com/en/development-tools/stm32n6-ai.html)<br>     |
 
 [Full OD Services](object_detection/README.md) : training, evaluation, quantization, benchmarking, prediction, deployment
 
@@ -302,11 +313,15 @@ Speech Enhancement is an algorithm that enhances audio perception in a noisy env
 ![plot](./speech_enhancement/src/doc/img/output_application_se.JPG)
 </div>
 
-<details open><summary><b>Speech Enhancement SE) Models</b></summary>
+<details open><summary><b>Speech Enhancement (SE) Models</b></summary>
 
 | Models             | Input Resolutions | Supported Services    | Targets for deployment |
 |--------------------|------------------|-----------------------|-------------------|
 | [stft_tcnn](https://github.com/STMicroelectronics/stm32ai-modelzoo/blob/master/speech_enhancement/stft_tcnn/README.md)   | 257x40 <br>  | Full SE Services     |  [STM32N6570-DK](https://www.st.com/en/development-tools/stm32n6-ai.html) <br> |
+| [convlstm denoiser]()   | 257x1 <br>  | training, evaluation    |  None yet <br> |
+
+Note that ConvLSTM denoiser models cannot be deployed yet. See the [Speech Enhancement top README](./speech_enhancement/README.md) for more information.
+
 
 [Full SE Services](./speech_enhancement/README.md) : training, evaluation, quantization, benchmarking, deployment
 
@@ -355,7 +370,10 @@ This allows to recognize a set of hand postures using Time of Flight (ToF) senso
 |--------------------|------------------|-----------------------|-------------------|
 | [ST CNN 2D Hand Posture](https://github.com/STMicroelectronics/stm32ai-modelzoo/blob/master/hand_posture/CNN2D_ST_HandPosture/README.md)   |  64x50x1<br>  | training / Evaluation / Benchmarking / Deployment       | [NUCLEO-F401RE](application_code/hand_posture/STM32F4) with X-NUCLEO-53LxA1 Time-of-Flight Nucleo expansion board<br>    |
 
+</details>
+
 Hand Posture Recognition top readme **[here](./hand_posture/README.md)**
+
 
 ## <a id="Hugging Face">Hugging Face host</a>
 The Model Zoo Dashboard is hosted in a Docker environment under the [STMicroelectronics Organization](https://huggingface.co/STMicroelectronics). This dashboard is developed using Dash Plotly and Flask, and it operates within a Docker container.
@@ -373,9 +391,9 @@ You can also find our models on Hugging Face under the [STMicroelectronics Organ
 
 ## Available tutorials and utilities
 
-* [stm32ai_model_zoo_colab.ipynb](tutorials/notebooks/stm32ai_model_zoo_colab.ipynb): a Jupyter notebook that can be
+* [stm32ai_model_zoo.ipynb](tutorials/notebooks/stm32ai_model_zoo.ipynb): a Jupyter notebook that can be
   easily deployed on Colab to exercise STM32 model zoo training scripts.
-* [stm32ai_devcloud.ipynb](tutorials/notebooks/stm32ai_devcloud.ipynb): a Jupyter notebook that shows how to
+* [stedgeai_devcloud.ipynb](tutorials/notebooks/stedgeai_devcloud.ipynb): a Jupyter notebook that shows how to
   access to the STM32Cube.AI Developer Cloud through [ST Python APIs](common/stm32ai_dc) (based on REST API) instead of
   using the web application https://stedgeai-dc.st.com.
 * [stm32ai_quantize_onnx_benchmark.ipynb](tutorials/notebooks/stm32ai_quantize_onnx_benchmark.ipynb):

@@ -35,7 +35,7 @@ tasks such as training the model or quantizing the model, while the chained serv
 perform more complex functions, such as training the model, quantizing it, and evaluating the quantized model
 successively.
 
-To use the services in the Object detection model zoo, you can utilize the model zoo [stm32ai_main.py](stm32ai_main.py) along with the [user_config.yaml](user_config.yaml) file as input. The yaml file specifies the service or the chained services and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
+To use the services in the Object detection model zoo, you can utilize the model zoo [stm32ai_main.py](../stm32ai_main.py) along with the [user_config.yaml](../user_config.yaml) file as input. The yaml file specifies the service or the chained services and a set of configuration parameters such as the model (either from the model zoo or your own custom model), the dataset, the number of epochs, and the preprocessing parameters, among others.
 
 More information about the different services and their configuration options can be found in the <a href="#2">next
 section</a>.
@@ -64,7 +64,7 @@ val/:
 This tutorial demonstrates how to use the `chain_tqeb` services to train, benchmark, quantize, evaluate, and benchmark
 the model.
 
-To get started, you will need to update the [user_config.yaml](user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](user_config.yaml) file is explained in detail in the following sections.
+To get started, you will need to update the [user_config.yaml](../user_config.yaml) file, which specifies the parameters and configuration options for the services that you want to use. Each section of the [user_config.yaml](../user_config.yaml) file is explained in detail in the following sections.
 
 <ul><details open><summary><a href="#2-1">2.1 Choose the operation mode</a></summary><a id="2-1"></a>
 
@@ -93,7 +93,7 @@ You can refer to readme links below that provide typical examples of operation m
 - [quantization, chain_eqe, chain_qb](./quantization/README.md)
 - [evaluation, chain_eqeb](./evaluation/README.md)
 - [benchmarking](./benchmarking/README.md)
-- [deployment, chain_qd](../deployment/README.md)
+- deployment, chain_qd ([STM32H7](../deployment/README_STM32H7.md), [STM32N6](../deployment/README_STM32N6.md))
 
 In this tutorial, the `operation_mode` used is the `chain_tqeb` as shown below to train a model, quantize, evaluate it to be later deployed in the STM32 boards.
 
@@ -150,6 +150,8 @@ The `model_type` attribute specifies the type of the model architecture that you
 
 - `yolo_v8` : is an advanced object detection model from Ultralytics that builds upon the strengths of its predecessors in the YOLO series. It is designed for real-time object detection, offering high accuracy and speed. YOLOv8 incorporates state-of-the-art techniques such as improved backbone networks, better feature pyramid networks, and advanced anchor-free detection heads, making it highly efficient for various computer vision tasks. Don't hesitate to check the tuto ["How can I quantize, evaluate and deploy an Ultralytics Yolov8 model?"](../../object_detection/deployment/doc/tuto/How_to_deploy_yolov8_yolov5_object_detection.md) for more information on Ultralytics Yolov8 model deployment.
 
+- `yolo_v11` : is an advanced object detection model from Ultralytics that builds upon the strengths of its predecessors in the YOLO series. It is designed for real-time object detection, offering high accuracy and speed. YOLOv11 incorporates state-of-the-art techniques such as improved backbone networks, better feature pyramid networks, and advanced anchor-free detection heads, making it highly efficient for various computer vision tasks. Don't hesitate to check the tuto ["How can I quantize, evaluate and deploy an Ultralytics Yolov8 model?"](../../object_detection/deployment/doc/tuto/How_to_deploy_yolov8_yolov5_object_detection.md) for more information on Ultralytics Yolov11 model deployment.
+
 - `yolo_v5u`: (You Only Look Once version 5 from Ultralytics) is a popular object detection model known for its balance of speed and accuracy. It is part of the YOLO family and is designed to perform real-time object detection. Don't hesitate to check the tuto ["How can I quantize, evaluate and deploy an Ultralytics Yolov5 model?"](../../object_detection/deployment/doc/tuto/How_to_deploy_yolov8_yolov5_object_detection.md) for more information on Ultralytics Yolov5u model deployment.
  
 - `st_yolo_x`: is an advanced object detection model that builds upon the YOLO (You Only Look Once) series, offering significant improvements in performance and flexibility. Unlike its predecessors, YOLOX can adopt an anchor-free approach, which simplifies the model and enhances its accuracy. It also incorporates advanced techniques such as decoupled head structures for classification and localization, and a more efficient training strategy. YOLOX is designed to achieve high accuracy and speed, making it suitable for real-time applications in various computer vision tasks. This ST variant embeds various tuning capabilities from the yaml configuration file.
@@ -177,6 +179,8 @@ not used since we are using a pre-trained model from the Model Zoo.
 </details></ul>
 <ul><details open><summary><a href="#2-3">2.3 Dataset specification</a></summary><a id="2-3"></a>
 
+Before you start using this project It's important to convert your dataset to the `tfs format`, to do so you can use our [tfs converter](../datasets/dataset_create_tfs). Please note that the converter expects as input the [yolo darknet txt format](https://roboflow.com/formats/yolo-darknet-txt).
+
 The `dataset` section and its attributes are shown in the YAML code below.
 
 ```yaml
@@ -193,6 +197,8 @@ dataset:
 ```
 
 The `name` attribute is optional and can be used to specify the name of your dataset.
+
+The `class_names` attribute specifies the classes in the dataset. This information must be provided in the YAML file. If the `class_names` attribute is absent, the `classes_name_file` argument can be used as an alternative, pointing to a text file containing the class names.
 
 When a training is run, the training set is split in two to create a validation dataset if `validation_path` is not
 provided. When a model accuracy evaluation is run, the test set is used if there is one, otherwise the validation set is
@@ -275,7 +281,7 @@ representative data.
 
 A 'training' section is required in all the operation modes that include a training, namely 'training', 'chain_tqeb' and 'chain_tqe'. In this tutorial, we will be using a custom object detection model called st_ssd_mobilenet_v1. This model is a custom SSD (Single Shot Detector) model that uses MobileNetv1 as its backbone. The backbone weights have been pre-trained on the ImageNet dataset, which is a large dataset consisting of 1.4 million images and 1000 classes.
 
-As an example, we will be using our custom st_ssd_mobilenet_v1 model, which uses a MobileNet V1 with an alpha value of 0.25 as its backbone, to do so we will need to configure the model section in [user_config.yaml](user_config.yaml) as the following:
+As an example, we will be using our custom st_ssd_mobilenet_v1 model, which uses a MobileNet V1 with an alpha value of 0.25 as its backbone, to do so we will need to configure the model section in [user_config.yaml](../user_config.yaml) as the following:
 
 ```yaml
 training:
@@ -308,7 +314,10 @@ training:
 The `model` subsection is used to specify a model that is available with the Model Zoo:
 
 - The `input_shape` attribute must always be present.
-- Additional attributes are needed depending on the type of model. For example, an `alpha` attribute is required for SSD MobileNet models.
+- Additional attributes are needed depending on the type of model. For example:
+  - `alpha` attribute is required for SSD MobileNet models.
+  - `depth_mul` st_yolo_x attribute, It is a multiplier for the depth of the network, default value is 0.33. Recommended values for optimum performance are: 0.34, 0.67, 1.0, 1.34, 1.67, ...
+  - `width_mul` st_yolo_x attribute, It is a multiplier for the width of the network, default value is 0.25. Recommended values for optimum performance are: 0.25 +- x * 0.03125
 
 The `batch_size` and `epochs` attributes are mandatory.
 
@@ -436,7 +445,7 @@ benchmarking:
   board: STM32H747I-DISCO     # Name of the STM32 board to benchmark the model on
 ```
 
-The `path_to_cubeIDE` attribute is for the [deployment](../deployment/README.md) service which is not part of the
+The `path_to_cubeIDE` attribute is for the deployment service which is not part of the
 `chain_tqeb` used in this tutorial.
 
 </details></ul>
@@ -444,7 +453,7 @@ The `path_to_cubeIDE` attribute is for the [deployment](../deployment/README.md)
 
 In this tutorial, we are using the `chain_tqeb` toolchain, which does not include the deployment service. However, if
 you want to deploy the model after running the chain, you can do so by referring to
-the [README](../deployment/README.md) and modifying the `deployment_config.yaml` file or by setting the `operation_mode`
+the deployment README and modifying the `deployment_config.yaml` file or by setting the `operation_mode`
 to `deploy` and modifying the `user_config.yaml` file as described below:
 
 ```yaml
@@ -470,7 +479,7 @@ tools:
   path_to_cubeIDE: C:/ST/STM32CubeIDE_<*.*.*>/STM32CubeIDE/stm32cubeide.exe
 
 deployment:
-  c_project_path: ../../application_code/object_detection/STM32H7/
+  c_project_path: ../application_code/object_detection/STM32H7/
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -499,7 +508,7 @@ board of the STM32 device, as well as the input and output interfaces. Once all 
 users can run the deployment service to deploy their model to the STM32 device.
 
 Please refer to readme below for a complete deployment tutorial:
-- on H7-MCU : [README.md](../deployment/README.md)
+- on H7-MCU : [README_STM32H7.md](../deployment/README_STM32H7.md)
 - on N6-NPU : [README_STM32N6.md](../deployment/README_STM32N6.md)
 - on MPU : [README_MPU.md](../deployment/README_MPU.md)
 
@@ -514,7 +523,7 @@ chained services results</a>:
 ```yaml
 hydra:
   run:
-    dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown
@@ -522,14 +531,14 @@ below:
 
 ```yaml
 mlflow:
-  uri: ./experiments_outputs/mlruns
+  uri: ./src/experiments_outputs/mlruns
 ```
 
 </details></ul>
 </details>
 <details open><summary><a href="#3"><b>3. Run the object detection chained service</b></a></summary><a id="3"></a>
 
-After updating the [user_config.yaml](user_config.yaml) file, please run the following command:
+After updating the [user_config.yaml](../user_config.yaml) file, please run the following command:
 
 ```bash
 python stm32ai_main.py

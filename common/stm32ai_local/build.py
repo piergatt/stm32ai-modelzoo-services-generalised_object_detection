@@ -154,6 +154,7 @@ def _update_source_tree(session: STMAiSession, user_files: Union[str, List[str],
         src, dest, mode, _ = val
         cur_count = count
         if mode in ('copy', 'copy-file'):
+            found = False
             for idx, cdt_file in enumerate(u_files):
                 if key == cdt_file.name:
                     tag = 'u' if idx < s_files_idx else 's'
@@ -163,7 +164,19 @@ def _update_source_tree(session: STMAiSession, user_files: Union[str, List[str],
                         dest = dest.with_suffix('.bin')
                     shutil.copy(cdt_file, dest)
                     count += 1
+                    found = True
                     break
+            # Second chance to find the file in the session generated dir
+            if found == False:
+                pattern_file = os.path.join(session.generated_dir, "**", key)
+                cdt_file = glob.glob(pattern_file, recursive=True)
+                if len(cdt_file) == 1:
+                    cdt_file = Path(cdt_file[0])
+                    logger.info(f' -> {tag}:copying file.. "{key}" to {dest}')
+                    logger.debug(f'    src="{cdt_file}"')
+                    shutil.copy(cdt_file, dest)
+                    count += 1
+
         elif mode in 'stm.ai.renderer':
             if session.renderer_params():
                 logger.info(f' -> rendering.. "{key}" to {dest}')
@@ -328,7 +341,7 @@ def _programm_dev_board(config, series:str="", serial_number=None):
                 if series == "stm32n6":
                     mode = re.search('mode=HOTPLUG', str_args, re.IGNORECASE)
                     hardRst = re.search('-hardRst', str_args, re.IGNORECASE)
-                    str_args = str_args[:mode.start()+12] + " --extload " + path_external_loader + str_args[hardRst.end():]
+                    str_args = str_args[:mode.start()+12] + f' sn={str(serial_number)} '+ " --extload " + path_external_loader + str_args[hardRst.end():]
                 else:
                     str_args = str_args[:port.start()] + f'port=swd sn={str(serial_number)} ' + str_args[port.end() + 1:] + " --extload " + path_external_loader
             else:
@@ -352,11 +365,7 @@ def _programm_dev_board(config, series:str="", serial_number=None):
         mode = re.search('mode=HOTPLUG', str_args_network_data, re.IGNORECASE)
         hardRst = re.search('-hardRst', str_args_network_data, re.IGNORECASE)
 
-        # @TODO Remove to use cmdline in dk.conf
-        if config.cproject_name == "GS_Audio_N6":
-            str_args_network_data = str_args_network_data[:mode.start()+12] + " --extload " + path_external_loader + " -w ../../X-CUBE-AI/models/" + "network_atonbuf.xSPI2.bin 0x70180000"
-        else:
-            str_args_network_data = str_args_network_data[:mode.start()+12] + " --extload " + path_external_loader + str_args_network_data[hardRst.end():]
+        str_args_network_data = str_args_network_data[:mode.start()+12] + f' sn={str(serial_number)}' + " --extload " + path_external_loader + str_args_network_data[hardRst.end():]
 
         run_shell_cmd(str_args_network_data,
                     cwd=config.cwd,
@@ -374,16 +383,13 @@ def _programm_dev_board(config, series:str="", serial_number=None):
         mode = re.search('mode=HOTPLUG', str_args_fsbl, re.IGNORECASE)
         hardRst = re.search('-hardRst', str_args_fsbl, re.IGNORECASE)
 
-        # @TODO Remove to use cmdline in dk.conf
-        if config.cproject_name == "GS_Audio_N6":
-            str_args_fsbl = str_args_fsbl[:mode.start()+12] + " --extload " + path_external_loader + " -w ../../../Binaries/fsbl_fw_lrun_v1.2.0.bin 0x70000000"
-        else:
-            str_args_fsbl = str_args_fsbl[:mode.start()+12] + " --extload " + path_external_loader + " -w ../Binary/ai_fsbl.hex"
+        str_args_fsbl = str_args_fsbl[:mode.start()+12] + f' sn={str(serial_number)}' + " mode=HOTPLUG" + " --extload " + path_external_loader + str_args_fsbl[hardRst.end():]
 
         run_shell_cmd(str_args_fsbl,
                     cwd=config.cwd,
                     logger=logger,
                     parser=parser)
+
     if parser and parser.error:
         logger.error(f'Board programming failed: "{parser.error}"')
 

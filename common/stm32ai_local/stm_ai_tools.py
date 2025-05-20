@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 from typing import List, Union, Tuple
 
-from stm32ai_local.utils import (STMAICToolsError,
+from common.stm32ai_local.utils import (STMAICToolsError,
                                  STMAiVersion,
                                  _LOGGER_NAME_,
                                  load_json_safe,

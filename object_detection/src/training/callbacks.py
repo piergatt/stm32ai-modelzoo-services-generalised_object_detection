@@ -12,13 +12,12 @@ from omegaconf import DictConfig
 import numpy as np
 import tensorflow as tf
 
-from cfg_utils import collect_callback_args
-from logs_utils import LRTensorBoard
-import lr_schedulers
-from objdet_metrics import calculate_objdet_metrics
+from common.utils import LRTensorBoard, collect_callback_args
+from common.training import lr_schedulers
+from src.utils import calculate_objdet_metrics
 
 
-class ObjectDetectionMetrics(tf.keras.callbacks.Callback):
+class _ObjectDetectionMetrics(tf.keras.callbacks.Callback):
 
     def __init__(self, num_classes, iou_threshold, name=None):
         super().__init__()
@@ -42,7 +41,7 @@ class ObjectDetectionMetrics(tf.keras.callbacks.Callback):
         self.model.reset_metrics_data()
 
 
-def get_callback_monitoring(args: DictConfig, callback_name: str = None, message: str = None) -> tuple:
+def _get_callback_monitoring(args: DictConfig, callback_name: str = None, message: str = None) -> tuple:
 
     if not args.monitor:
         monitor = "val_loss"
@@ -70,7 +69,7 @@ def get_callback_monitoring(args: DictConfig, callback_name: str = None, message
     return monitor, mode
 
 
-def get_best_model_callback(cfg: DictConfig, 
+def _get_best_model_callback(cfg: DictConfig, 
                             saved_models_dir: str = None,
                             message: str = None) -> tf.keras.callbacks.Callback:
 
@@ -83,7 +82,7 @@ def get_best_model_callback(cfg: DictConfig,
             if k not in ("monitor", "mode"):
                 raise ValueError("\nThe 'ModelCheckpoint' callback is built-in. Only the "
                                 f"`monitor` and `mode` arguments can be specified.{message}")
-        monitor, mode = get_callback_monitoring(args, callback_name="ModelCheckpoint", message=message)
+        monitor, mode = _get_callback_monitoring(args, callback_name="ModelCheckpoint", message=message)
 
     callback = tf.keras.callbacks.ModelCheckpoint(
                     filepath=os.path.join(saved_models_dir, "best_weights.h5"),
@@ -144,7 +143,7 @@ def get_callbacks(cfg: DictConfig,
     
     # The callback that calculates the object detection
     # metrics must be first in the list of callbacks.
-    callback_list.append(ObjectDetectionMetrics(num_classes, iou_eval_threshold))
+    callback_list.append(_ObjectDetectionMetrics(num_classes, iou_eval_threshold))
 
     for name, args in cfg.items():
         # The ModelCheckpoint callback is handled separately.
@@ -155,7 +154,7 @@ def get_callbacks(cfg: DictConfig,
             raise ValueError(f"\nThe `{name}` callback is built-in and can't be redefined.{message}")
 
         if name in  ("ReduceLROnPlateau", "EarlyStopping"):
-            monitor, mode = get_callback_monitoring(args, callback_name=name, message=message)
+            monitor, mode = _get_callback_monitoring(args, callback_name=name, message=message)
             args.monitor = monitor
             args.mode = mode
     
@@ -183,7 +182,7 @@ def get_callbacks(cfg: DictConfig,
         raise ValueError(f"\nFound more than one learning rate scheduler{message}")
 
     # Add the Keras callback that saves the best model obtained so far
-    callback = get_best_model_callback(cfg, saved_models_dir=saved_models_dir, message=message)
+    callback = _get_best_model_callback(cfg, saved_models_dir=saved_models_dir, message=message)
     callback_list.append(callback)
 
     # Add the Keras callback that saves the model at the end of the epoch

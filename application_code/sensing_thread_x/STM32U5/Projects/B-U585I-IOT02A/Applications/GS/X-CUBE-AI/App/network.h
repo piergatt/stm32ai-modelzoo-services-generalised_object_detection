@@ -2,12 +2,12 @@
   ******************************************************************************
   * @file    network.h
   * @author  AST Embedded Analytics Research Platform
-  * @date    2024-09-19T15:40:04+0000
+  * @date    2025-04-04T12:41:06+0000
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -23,7 +23,7 @@
 
 /******************************************************************************/
 #define AI_NETWORK_MODEL_NAME          "network"
-#define AI_NETWORK_ORIGIN_MODEL_NAME   "node_5c56f2ac2ecd451a95a569cc323c0a98"
+#define AI_NETWORK_ORIGIN_MODEL_NAME   "node_9f771e8ef8c6450190a78d426b1d3b47"
 
 /******************************************************************************/
 #define AI_NETWORK_ACTIVATIONS_ALIGNMENT   (4)
@@ -43,12 +43,12 @@ AI_DEPRECATED
 #define AI_NETWORK_IN_SIZE_BYTES { \
   AI_NETWORK_IN_1_SIZE_BYTES, \
 }
-#define AI_NETWORK_IN_1_FORMAT      (AI_BUFFER_FORMAT_S8)
-#define AI_NETWORK_IN_1_HEIGHT      (64)
-#define AI_NETWORK_IN_1_WIDTH       (96)
+#define AI_NETWORK_IN_1_FORMAT      (AI_BUFFER_FORMAT_FLOAT)
+#define AI_NETWORK_IN_1_HEIGHT      (24)
+#define AI_NETWORK_IN_1_WIDTH       (3)
 #define AI_NETWORK_IN_1_CHANNEL     (1)
-#define AI_NETWORK_IN_1_SIZE        (6144)
-#define AI_NETWORK_IN_1_SIZE_BYTES  (6144)
+#define AI_NETWORK_IN_1_SIZE        (72)
+#define AI_NETWORK_IN_1_SIZE_BYTES  (288)
 
 /******************************************************************************/
 #define AI_NETWORK_OUT_NUM       (1)
@@ -64,12 +64,12 @@ AI_DEPRECATED
   AI_NETWORK_OUT_1_SIZE_BYTES, \
 }
 #define AI_NETWORK_OUT_1_FORMAT      (AI_BUFFER_FORMAT_FLOAT)
-#define AI_NETWORK_OUT_1_CHANNEL     (10)
-#define AI_NETWORK_OUT_1_SIZE        (10)
-#define AI_NETWORK_OUT_1_SIZE_BYTES  (40)
+#define AI_NETWORK_OUT_1_CHANNEL     (4)
+#define AI_NETWORK_OUT_1_SIZE        (4)
+#define AI_NETWORK_OUT_1_SIZE_BYTES  (16)
 
 /******************************************************************************/
-#define AI_NETWORK_N_NODES (21)
+#define AI_NETWORK_N_NODES (4)
 
 
 AI_API_DECLARE_BEGIN

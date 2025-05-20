@@ -45,7 +45,7 @@ deployment:
   output_silence_threshold: -50
   
   # Change this to the path on your machine.
-  c_project_path:  ../../application_code/audio/STM32N6/
+  c_project_path:  ../application_code/audio/STM32N6/
   IDE: GCC
   verbosity: 1
   hardware_setup:
@@ -57,8 +57,8 @@ deployment:
   # build_conf : "N6 Audio Thread X Low Power"
 
 mlflow:
-  uri: ./experiment_outputs/mlruns
+  uri: ./src/experiment_outputs/mlruns
 
 hydra:
   run:
-    dir: ./experiment_outputs/${now:%Y_%m_%d_%H_%M_%S}
+    dir: ./src/experiment_outputs/${now:%Y_%m_%d_%H_%M_%S}

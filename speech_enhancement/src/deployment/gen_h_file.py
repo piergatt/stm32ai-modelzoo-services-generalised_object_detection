@@ -40,7 +40,7 @@ def gen_h_user_file(config):
     header_path.mkdir(exist_ok=True)
     preproc_args = config.preprocessing
     deploy_args = config.deployment
-    with open("deployment/template_ai_model_config.h", "r") as h:
+    with open("src/deployment/template_ai_model_config.h", "r") as h:
         template_lines = h.readlines()
         with open(Path(header_path, "ai_model_config.h"), "wt") as f:
             # Copy header from template to output h file

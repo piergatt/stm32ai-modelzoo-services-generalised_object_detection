@@ -23,10 +23,8 @@ import tensorflow as tf
 import tqdm
 from typing import Optional
 
-from visualize_utils import plot_confusion_matrix
-from logs_utils import log_to_file
-from models_utils import compute_confusion_matrix, count_h5_parameters
-from models_mgt import get_loss
+from common.utils import plot_confusion_matrix, log_to_file, compute_confusion_matrix, count_h5_parameters
+from src.utils import get_loss
 
 
 def evaluate_h5_model(model_path: str = None, eval_ds: tf.data.Dataset = None, class_names: list = None,

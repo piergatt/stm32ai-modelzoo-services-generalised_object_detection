@@ -977,7 +977,7 @@ class StAiFormat(ct.c_int32):
             return np.void
 
         if _type == self.TYPE_BOOL:
-            return np.bool
+            return bool
 
         if _type in (self.TYPE_Q, self.TYPE_FXP):
             if _sign and _bits == 1:

@@ -17,18 +17,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/utils'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../../common/data_augmentation'))
-sys.path.append(os.path.abspath('../../utils'))
-sys.path.append(os.path.abspath('../../preprocessing'))
-sys.path.append(os.path.abspath('../../data_augmentation'))
-sys.path.append(os.path.abspath('../../models'))
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-from cfg_utils import postprocess_config_dict
-from parse_config import parse_dataset_section, parse_preprocessing_section, parse_data_augmentation_section
-from random_utils import remap_pixel_values_range
-from preprocess import preprocess
-from data_augmentation import data_augmentation
+from common.data_augmentation import remap_pixel_values_range
+from common.utils import postprocess_config_dict
+from src.utils import parse_dataset_section, parse_preprocessing_section, parse_data_augmentation_section
+from src.preprocessing import preprocess
+from image_classification.src.data_augmentation import data_augmentation
 
 
 def display_images_side_by_side(image, image_aug):
@@ -55,7 +51,7 @@ def display_images_side_by_side(image, image_aug):
     plt.close()
     
 
-def test_data_augmentation(config_file_path: str, seed_arg: str = None) -> None:
+def test_data_augmentation(config_file_path: str, seed_arg: str = None, num_image: int = 0) -> None:
     """
     Samples a batch of images with their groundtruth labels from 
     the training set, applies to them the data augmentation functions
@@ -142,8 +138,13 @@ def test_data_augmentation(config_file_path: str, seed_arg: str = None) -> None:
         images_aug = remap_pixel_values_range(images_aug, pixels_range, (0, 1))
 
         # Plot the original and augmented images side-by-side
-        for i in range(batch_size):
-            display_images_side_by_side(images[i], images_aug[i])
+        if num_image == 0 :
+            for i in range(batch_size):
+                display_images_side_by_side(images[i], images_aug[i])
+        else:
+            for i in range(0, num_image):
+                display_images_side_by_side(images[i], images_aug[i])
+            break
 
 
 def main():
@@ -152,24 +153,18 @@ def main():
     parser.add_argument("--config_file", type=str, default="../../user_config.yaml",
                         help="Path to the YAML configuration file starting from the directory " + \
                         "above this script. Default: ../user_config.yaml")
-    parser.add_argument("--seed", type=str, default="",
+    parser.add_argument("--seed", type=int, default=0,
                         help="Seed for the random generators used to sample the dataset. " + \
                         "By default, samples will be different every time the script is run.")
+    parser.add_argument("--num_image", type=int, default=0,
+                        help="Number of displayed images. Default: 0, all the dataset.")
     
     args = parser.parse_args()
 
     if not os.path.isfile(Path(args.config_file)):
         raise ValueError(f"\nCould not find configuration file {args.config_file}")
 
-    if args.seed:
-        try:
-            seed = int(args.seed)
-        except:
-            raise ValueError(f"\nThe `seed` argument should be an integer. Received {args.seed}")
-    else:
-        seed = None
-
-    test_data_augmentation(Path(args.config_file), seed_arg=seed)
+    test_data_augmentation(Path(args.config_file), seed_arg=args.seed, num_image=args.num_image)
 
 if __name__ == '__main__':
     main()

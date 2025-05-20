@@ -20,18 +20,16 @@ from omegaconf import DictConfig
 import numpy as np
 import tensorflow as tf
 
-from logs_utils import log_to_file, log_last_epoch_history, LRTensorBoard
-from gpu_utils import check_training_determinism
-from models_utils import model_summary
-from cfg_utils import collect_callback_args
-from common_training import set_frozen_layers, set_dropout_rate, get_optimizer
-from models_mgt import get_model, get_loss
-import lr_schedulers
-from evaluate import evaluate_h5_model
-from visualize_utils import vis_training_curves
+from common.utils import log_to_file, log_last_epoch_history, LRTensorBoard, check_training_determinism, \
+                         model_summary, collect_callback_args, vis_training_curves
+
+from common.training import set_frozen_layers, set_dropout_rate, get_optimizer, lr_schedulers
+from src.utils import get_model, get_loss
+from src.evaluation import evaluate_h5_model
 
 
-def load_model_to_train(cfg, model_path=None, num_classes=None) -> tf.keras.Model:
+
+def _load_model_to_train(cfg, model_path=None, num_classes=None) -> tf.keras.Model:
     """
     This function loads the model to train, which can be either a:
     - model from the zoo (ign, gmp, custom) .h5 model
@@ -74,7 +72,7 @@ def load_model_to_train(cfg, model_path=None, num_classes=None) -> tf.keras.Mode
     return model, input_shape
 
 
-def get_callbacks(callbacks_dict: DictConfig, output_dir: str = None, logs_dir: str = None,
+def _get_callbacks(callbacks_dict: DictConfig, output_dir: str = None, logs_dir: str = None,
                   saved_models_dir: str = None) -> List[tf.keras.callbacks.Callback]:
     """
     This function creates the list of Keras callbacks to be passed to 
@@ -212,7 +210,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
     else:
         print("  no test set")
 
-    model, _ = load_model_to_train(cfg.training, model_path=cfg.general.model_path,
+    model, _ = _load_model_to_train(cfg.training, model_path=cfg.general.model_path,
                                    num_classes=num_classes)
 
     # Info messages about the model that was loaded
@@ -261,7 +259,7 @@ def train(cfg: DictConfig = None, train_ds: tf.data.Dataset = None,
                   metrics=['accuracy'],
                   optimizer=get_optimizer(cfg=cfg.training.optimizer))
 
-    callbacks = get_callbacks(callbacks_dict=cfg.training.callbacks,
+    callbacks = _get_callbacks(callbacks_dict=cfg.training.callbacks,
                               output_dir=output_dir,
                               saved_models_dir=saved_models_dir,
                               logs_dir=cfg.general.logs_dir)

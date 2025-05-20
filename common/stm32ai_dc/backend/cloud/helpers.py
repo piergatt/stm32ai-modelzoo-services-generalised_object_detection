@@ -11,8 +11,8 @@ import typing
 import requests
 from requests.adapters import HTTPAdapter, Retry
 from requests.structures import CaseInsensitiveDict
-from stm32ai_dc.backend.cloud.endpoints import get_supported_versions_ep
-from stm32ai_dc.errors import ServerRouteNotFound
+from common.stm32ai_dc.backend.cloud.endpoints import get_supported_versions_ep
+from common.stm32ai_dc.errors import ServerRouteNotFound
 
 
 def get_ssl_verify_status():

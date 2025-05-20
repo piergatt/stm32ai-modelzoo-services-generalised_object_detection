@@ -168,7 +168,7 @@ def cmd_compile(
     output_dir = session.workspace
 
     logger.info('compiling... "%s" session', session.name)
-    logger.info(' model_path  : %s', session.model_path)
+    logger.info(' model_path  : %s', session.model_path[0])
 
     if session.is_empty:
         logger.error('no model file(s) is available')
@@ -183,7 +183,10 @@ def cmd_compile(
     cmd_line.extend(['generate --target', str(series)])
     for m_file in session.model_path:
         cmd_line.extend(['-m', m_file])
-    cmd_line.extend(['--output', output_dir, '--workspace', output_dir])
+    if session.stm_ai_version.major == 10 and session.stm_ai_version.minor == 1 and session.stm_ai_version.micro == 0:
+        cmd_line.extend(['--output', output_dir, '--workspace', os.path.join(output_dir, 'workspace')])
+    else:
+        cmd_line.extend(['--output', output_dir, '--workspace', output_dir])
 
     session.options.dll = True
 

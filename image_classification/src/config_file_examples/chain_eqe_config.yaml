@@ -1,13 +1,12 @@
 general:
-   model_path: ../../../model_zoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
-
+   model_path: ../../stm32ai-modelzoo/image_classification/mobilenetv2/ST_pretrainedmodel_public_dataset/flowers/mobilenet_v2_0.35_128_fft/mobilenet_v2_0.35_128_fft.h5
 operation_mode: chain_eqe
 
 dataset:
   name: flowers
   class_names: [daisy, dandelion, roses, sunflowers, tulips]
-  test_path: ../datasets/flower_photos_testset
-  quantization_path: ../datasets/flower_photos
+  test_path: ./datasets/flower_photos_testset
+  quantization_path: ./datasets/flower_photos
 
 preprocessing:
    rescaling:
@@ -26,8 +25,8 @@ quantization:
    export_dir: quantized_models
 
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}

@@ -221,14 +221,14 @@ The `mlflow` and `hydra` sections must always be present in the YAML configurati
 ```yaml
 hydra:
    run:
-      dir: ./experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
+      dir: ./src/experiments_outputs/${now:%Y_%m_%d_%H_%M_%S}
 ```
 
 The `mlflow` section is used to specify the location and name of the directory where MLflow files are saved, as shown below:
 
 ```yaml
 mlflow:
-   uri: ./experiments_outputs/mlruns
+   uri: ./src/experiments_outputs/mlruns
 ```
 
 </details>
@@ -238,10 +238,10 @@ mlflow:
 <details open>
 <summary><a href="#3"><b>3. Train your model</b></a></summary><a id="3"></a>
 
-To launch your model training using a real dataset, run the following command from the **src/** folder:
+To launch your model training using a real dataset, run the following command from the UC folder:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name training_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name training_config.yaml
 ```
 The trained .h5 model can be found in the corresponding **experiments_outputs/** folder.
 
@@ -368,9 +368,6 @@ When setting the `resume_training_from` attribute, the `model:` subsection of th
 
 The configuration file of the training you are resuming should be reused as is, the only exception being the number of epochs. If you make changes to the dropout rate, the frozen layers or the optimizer, they will be ignored and the original settings will be kept. Changes made to the batch size or the callback section will be taken into account. However, they may lead to unexpected results.
 
-Here is the corrected and improved version of the remaining sections of your README:
-
-```markdown
 The state of the optimizer is saved in the **last_augmented_model.h5** file, so you will restart from where you left off. The model is called 'augmented' because it includes the rescaling and data augmentation preprocessing layers.
 
 There are two other model files in the **saved_models** directory. The one that is called **best_augmented_model.h5** is the best augmented model that was obtained since the beginning of the training. The other one that is called **best_model.h5** is the same model as **best_augmented_model.h5**, but it does not include the preprocessing layers and cannot be used to resume a training. An error will be thrown if you attempt to do so.
@@ -543,7 +540,7 @@ training:
 In case you want to train and quantize a model, you can either launch the training operation mode followed by the quantization operation on the trained model (please refer to the quantization **[README.md](../quantization/README.md)** that describes in detail the quantization part) or you can use chained services like launching [chain_tqe](../config_file_examples/chain_tqe_config.yaml) example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_tqe_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_tqe_config.yaml
 ```
 
 This specific example trains a MobileNet V2 model with ImageNet pre-trained weights, fine-tunes it by retraining the latest seven layers but the fifth one (this only as an example), and quantizes it to 8-bits using quantization_split (30% in this example) of the train dataset for calibration before evaluating the quantized model.
@@ -551,7 +548,7 @@ This specific example trains a MobileNet V2 model with ImageNet pre-trained weig
 In case you also want to execute a benchmark on top of training and quantizing services, it is recommended to launch the chain service called [chain_tqeb](../config_file_examples/chain_tqeb_config.yaml) that stands for train, quantize, evaluate, benchmark like the example with the command below:
 
 ```bash
-python stm32ai_main.py --config-path ./config_file_examples/ --config-name chain_tqeb_config.yaml
+python stm32ai_main.py --config-path ./src/config_file_examples/ --config-name chain_tqeb_config.yaml
 ```
 
 This specific example uses the "Bring Your Own Model" feature using `model_path`, then it fine tunes the initial model by retraining all the layers but the twenty first (as an example), benchmarks the float model on the STM32H747I-DISCO board using the STM32Cube.AI developer cloud, quantizes it to 8-bits using quantization_split (30% in this example) of the train dataset for calibration before evaluating the quantized model and benchmarking it.

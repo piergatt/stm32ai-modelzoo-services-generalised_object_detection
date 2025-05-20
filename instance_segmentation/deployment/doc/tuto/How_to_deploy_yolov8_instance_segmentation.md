@@ -30,6 +30,7 @@ If you want to train, you can use directly Ultralytics repository at [https://gi
 By default, Ultralytics requirements do not install the packages required to export to onnx or tensorflow lite.
 When exporting for the first time, it will either use pre-installed packages or do an auto update installing the latest versions which then causes compatibility issues.
 To ensure compatibility, you need to install (or downgrade) the versions of tensorflow, onnx and onnxruntime following below requirements:
+Ultralytics version has to be <= 8.3.88
 Tensorflow version between 2.8.3 and 2.15.1
 ONNX version between 1.12.0 and 1.15.0
 ONNX runtime version between 1.13 and 1.18.1
@@ -48,15 +49,15 @@ Please refer to [https://github.com/ultralytics/ultralytics](https://github.com/
 
 ## Exporting a quantized model with Ultralytics scripts
 
-By default, Ultralytcis scripts are using per-tensor qnatuization, whereas to better maintain accuracy quantization per-channel is recommended.
+By default, Ultralytcis scripts are using per-tensor quantization, whereas to better maintain accuracy quantization per-channel is recommended.
 ST toolchain is expecting per-channel quantization, per-tensor support is experimental and not recommended.
 
 > To use per-channel with Ultralytics scripts, the file ultralytics/engine/exporter.py shall be modified.
 > Locate it in your installation. If installed through pip in a conda environment, it should be located in:  
-> .conda/envs/my_env/Lib/site-packages/ultralytics/engine
-> Open the exporter.py file and modify the following line of the onn2tf.convert callback:
-> quant_type="per-tensor",  # "per-tensor" (faster) or "per-channel" (slower but more accurate)
-> to
+> .conda/envs/my_env/Lib/site-packages/ultralytics/engine  
+> Open the exporter.py file and modify the following line of the onn2tf.convert callback:  
+> quant_type="per-tensor",  # "per-tensor" (faster) or "per-channel" (slower but more accurate)  
+> to  
 > quant_type="per-channel",  # "per-tensor" (faster) or "per-channel" (slower but more accurate)
 
 To export the model as int8 tflite, let's take the default example of a model trained on COCO dataset using Ultralytics CLI:
@@ -80,7 +81,7 @@ For deployment the model shall be quantized with input as int8 and output as int
 
 ## Evaluation of the quantized model with Ultralytics scripts
 
-Use the model with int8 input and output, then use the CLI to evaluate the model onn the COCO validation set:
+Use the model with int8 input and output, then use the CLI to evaluate the model on the COCO validation set:
 
 ```
 	yolo segment val model=./quantized_models/yolov8n-seg_integer_quant.tflite data=coco.yaml imgsz=256

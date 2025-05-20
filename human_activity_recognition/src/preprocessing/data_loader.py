@@ -18,14 +18,14 @@ from typing import Tuple, List
 import pandas as pd
 from tqdm import tqdm
 from tensorflow.keras.utils import to_categorical
-from preprocessing import gravity_rotation
+from .preprocessing import gravity_rotation
 import statistics
 
 
-def read_pkl_dataset(pkl_file_path: str,
+def _read_pkl_dataset(pkl_file_path: str,
                      class_names: List[str]):
     '''
-    read_pkl_dataset reads a pkl dataset and returns a pandas DataFrame
+    _read_pkl_dataset reads a pkl dataset and returns a pandas DataFrame
     arg:
         pkl_file_path: path to the pkl file to be read
         class_names: a list of strings containing the names of the activities
@@ -80,7 +80,7 @@ def read_pkl_dataset(pkl_file_path: str,
     return my_dataset
 
 
-def clean_csv(file_path):
+def _clean_csv(file_path):
     '''
     This function is specifically written for WISDM dataset.
     This function takes as an input the path to the csv file,
@@ -106,7 +106,7 @@ def clean_csv(file_path):
     fin.close()
 
 
-def get_segment_indices(data_column: List, win_len: int):
+def _get_segment_indices(data_column: List, win_len: int):
     '''
     this function gets the start and end indices for the segments
     args:
@@ -123,7 +123,7 @@ def get_segment_indices(data_column: List, win_len: int):
         init = init + win_len
 
 
-def get_data_segments(dataset: pd.DataFrame,
+def _get_data_segments(dataset: pd.DataFrame,
                       seq_len: int) -> Tuple[np.ndarray, np.ndarray]:
 
     '''
@@ -141,8 +141,8 @@ def get_data_segments(dataset: pd.DataFrame,
     # need the following variable for tqdm to show the progress bar
     num_segments = int(np.floor((n_samples - seq_len) / seq_len)) + 1
 
-    # creating segments until the get_segment_indices keep on yielding the start and end of the segments
-    for (init, end) in tqdm(get_segment_indices(data_indices, seq_len),
+    # creating segments until the _get_segment_indices keep on yielding the start and end of the segments
+    for (init, end) in tqdm(_get_segment_indices(data_indices, seq_len),
                             unit=' segments', desc='Segments built ',
                             total=num_segments):
 
@@ -164,7 +164,7 @@ def get_data_segments(dataset: pd.DataFrame,
     return segments, labels
 
 
-def preprocess_data_new(data: np.ndarray,
+def _preprocess_data_new(data: np.ndarray,
                         gravity_rot_sup: bool = True,
                         normalization: bool = False) -> np.ndarray:
     '''
@@ -192,7 +192,7 @@ def preprocess_data_new(data: np.ndarray,
         return data
 
 
-def preprocess_data(data: np.ndarray,
+def _preprocess_data(data: np.ndarray,
                     gravity_rot_sup: bool,
                     normalization: bool) -> np.ndarray:
 
@@ -238,7 +238,7 @@ def preprocess_data(data: np.ndarray,
     return data
 
 
-def load_wisdm(dataset_path: str,
+def _load_wisdm(dataset_path: str,
                class_names: List[str],
                input_shape: Tuple,
                gravity_rot_sup: bool,
@@ -251,7 +251,7 @@ def load_wisdm(dataset_path: str,
     """
     Loads the wisdm dataset and return two TensorFlow datasets for training and validation.
     """
-    clean_csv(dataset_path)
+    _clean_csv(dataset_path)
 
     # read all the data in csv 'WISDM_ar_v1.1_raw.txt' into a dataframe
     #  called dataset
@@ -282,10 +282,10 @@ def load_wisdm(dataset_path: str,
 
     # removing the columns for time stamp and rearranging remaining columns
     dataset = dataset[['x', 'y', 'z', 'Activity_Label']]
-    segments, labels = get_data_segments(dataset=dataset,
+    segments, labels = _get_data_segments(dataset=dataset,
                                          seq_len=input_shape[0])
 
-    segments = preprocess_data(segments, gravity_rot_sup, normalization)
+    segments = _preprocess_data(segments, gravity_rot_sup, normalization)
     labels = to_categorical([class_names.index(label)
                             for label in labels], num_classes=len(class_names))
 
@@ -320,7 +320,7 @@ def load_wisdm(dataset_path: str,
     return train_ds, valid_ds, test_ds
 
 
-def load_mobility_v1(train_path: str,
+def _load_mobility_v1(train_path: str,
                      test_path: str,
                      validation_split: float,
                      class_names: List[str],
@@ -333,22 +333,22 @@ def load_mobility_v1(train_path: str,
     """
     Loads the mobility dataset and return two TensorFlow datasets for training, validation and test.
     """
-    train_dataset = read_pkl_dataset(train_path, class_names)
-    test_dataset = read_pkl_dataset(test_path, class_names)
+    train_dataset = _read_pkl_dataset(train_path, class_names)
+    test_dataset = _read_pkl_dataset(test_path, class_names)
 
     train_dataset[train_dataset.columns[:3]] = train_dataset[train_dataset.columns[:3]] * 9.8
     test_dataset[test_dataset.columns[:3]] = test_dataset[test_dataset.columns[:3]] * 9.8
 
     print('[INFO] : Building train segments!')
-    train_segments, train_labels = get_data_segments(dataset=train_dataset,
+    train_segments, train_labels = _get_data_segments(dataset=train_dataset,
                                                      seq_len=input_shape[0])
     print('[INFO] : Building test segments!')
-    train_segments = preprocess_data(train_segments, gravity_rot_sup, normalization)
+    train_segments = _preprocess_data(train_segments, gravity_rot_sup, normalization)
     train_labels = to_categorical([class_names.index(label)
                                   for label in train_labels], num_classes=len(class_names))
-    test_segments, test_labels = get_data_segments(dataset=test_dataset,
+    test_segments, test_labels = _get_data_segments(dataset=test_dataset,
                                                    seq_len=input_shape[0])
-    test_segments = preprocess_data(test_segments, gravity_rot_sup, normalization)
+    test_segments = _preprocess_data(test_segments, gravity_rot_sup, normalization)
     test_labels = to_categorical([class_names.index(label)
                                   for label in test_labels], num_classes=len(class_names))
 
@@ -417,7 +417,7 @@ def load_dataset(dataset_name: str = None,
     """
     if dataset_name == "wisdm":
         # Load wisdm dataset
-        train_ds, val_ds, test_ds = load_wisdm(dataset_path=training_path,
+        train_ds, val_ds, test_ds = _load_wisdm(dataset_path=training_path,
                                                class_names=class_names,
                                                input_shape=input_shape,
                                                gravity_rot_sup=gravity_rot_sup,
@@ -428,7 +428,7 @@ def load_dataset(dataset_name: str = None,
                                                batch_size=batch_size,
                                                to_cache=to_cache)
     elif dataset_name == "mobility_v1":
-        train_ds, val_ds, test_ds = load_mobility_v1(train_path=training_path,
+        train_ds, val_ds, test_ds = _load_mobility_v1(train_path=training_path,
                                                      test_path=test_path,
                                                      validation_split=validation_split,
                                                      class_names=class_names,

@@ -12,9 +12,8 @@ import os
 import shutil
 from pathlib import Path
 import sys
-sys.path.append('../../../common/')
-import stm32ai_local as stmaic
-from utils import cloud_connect
+import common.stm32ai_local as stmaic
+
 
 def stm32ai_deploy_stm32n6(target: bool = False,
                    stlink_serial_number: str = None,

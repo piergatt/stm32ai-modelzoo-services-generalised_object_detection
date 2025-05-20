@@ -15,10 +15,10 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 from typing import Tuple, List
-from handposture_dictionnary import hand_posture_dict
+from src.utils import hand_posture_dict
 
 
-def get_ds(data_path: str = None,
+def _get_ds(data_path: str = None,
            class_names: list[str] = None,
            validation_split: float = None,
            Max_distance: float = None,
@@ -86,7 +86,7 @@ def get_ds(data_path: str = None,
         "target_status": ["target_status"],
         "valid": ["valid"]}
 
-    gdata, gheaders, zdata, zheaders = fetch_npz_data(class_names, data_path,
+    gdata, gheaders, zdata, zheaders = _fetch_npz_data(class_names, data_path,
                                                       dict_of_glob_data_fields,
                                                       dict_of_zone_data_fields)
 
@@ -206,6 +206,105 @@ def get_ds(data_path: str = None,
         return ds_1, ds_2
 
 
+
+def _find_data_field_index(list_of_fields, list_of_accepted_names, verbose=True):
+    header_index = None
+    for fn in list_of_accepted_names:
+        try:
+            header_index = list_of_fields.index(fn)
+        except ValueError:
+            continue
+        break
+    if verbose and header_index is None:
+        print("Could not find one of the accepted fields\n{}\nin list\n{}".format(list_of_accepted_names, list_of_fields))
+    return header_index
+    
+"""
+    This function loads data fields in dict_of_data_fields from the .npz files listed in list_of_dirs
+    In case one field is not available in one .npz file, the associated data is set to np.nan
+    save_to_file option will save one npz file with all data in it in PresenceEVK format style
+    """
+def _fetch_npz_data(class_names,path,
+                   dict_of_glob_data_fields,
+                   dict_of_zone_data_fields,
+                   expected_nb_of_zones=64,
+                   save_to_file=None):
+
+    working_dir = os.getcwd()
+    dataset_path = os.path.join(working_dir, path)
+    List_of_gesture_dir = [os.path.join(dataset_path, posture) for posture in class_names if posture in os.listdir(dataset_path)]
+    list_of_dirs = [os.path.join(gesture_folder_path, record, "npz") for gesture_folder_path in List_of_gesture_dir for
+                    record in os.listdir(gesture_folder_path)]
+    npzFiles = []
+    for rootdir in list_of_dirs:
+        for root, dirs, files in os.walk(rootdir):
+            for f in files:
+                if ".npz" in f[-4:]:
+                    npzFiles.append(os.path.join(root, f))
+    print('{} .npz files found'.format(len(npzFiles)))
+    globdata_shape = [len(dict_of_glob_data_fields), 0]
+    zonedata_shape = [len(dict_of_zone_data_fields), expected_nb_of_zones, 0]
+    for i, fname in enumerate(tqdm(npzFiles, desc='Analysing data shapes')):
+        dataload = np.load(fname)
+        globdata_shape[-1] += dataload['glob_data'].shape[-1]
+        zonedata_shape[-1] += dataload['zone_data'].shape[-1]
+        if dataload['zone_data'].shape[1] != expected_nb_of_zones:
+            raise Exception("Wrong number of zones found in zone_data array of file {}".format(fname))
+    RAMsizeGB = (int(globdata_shape[0] * globdata_shape[1]) + \
+                 int(zonedata_shape[0] * zonedata_shape[1] * zonedata_shape[2])) * \
+                np.zeros(1, dtype=np.float64).nbytes / float(10 ** 9)
+    print('Dataset needs {} GB RAM size ({} GB is required during loading)'.format(round(RAMsizeGB, 3),
+                                                                                   round(RAMsizeGB * 2, 3)))
+
+    print('Loading {} .npz files'.format(len(npzFiles)))
+    zdata = np.empty(tuple(zonedata_shape), dtype=np.float64)
+    gdata = np.empty(tuple(globdata_shape), dtype=np.float64)
+    zdata[:] = np.nan
+    gdata[:] = np.nan
+    zheaders = {zfn: i for i, zfn in enumerate(dict_of_zone_data_fields.keys())}
+    gheaders = {gfn: i for i, gfn in enumerate(dict_of_glob_data_fields.keys())}
+    ind = 0
+    for i, fname in enumerate(tqdm(npzFiles)):
+        dataload = np.load(fname)
+        length = dataload['glob_data'].shape[1]
+
+        # Load all global data fields
+        for i, (fieldname, fieldnames) in enumerate(dict_of_glob_data_fields.items()):
+            header_index = _find_data_field_index(list(dataload['glob_head'].astype('U')), fieldnames)
+            if header_index is not None:
+                gdata[i, ind:ind + length] = dataload['glob_data'][header_index, :]
+
+        # Load all zone data fields
+        for i, (fieldname, fieldnames) in enumerate(dict_of_zone_data_fields.items()):
+            header_index = _find_data_field_index(list(dataload['zone_head'].astype('U')), fieldnames)
+            if header_index is not None:
+                zdata[i, :, ind:ind + length] = dataload['zone_data'][header_index, :, :]
+
+        ind += length
+
+    if save_to_file is not None:
+        if ".HostTimestamp" in gheaders:
+            np.savez_compressed(save_to_file,
+                                start_tstmp=np.min(gdata[gheaders[".HostTimestamp"]]),
+                                end_tstmp=np.max(gdata[gheaders[".HostTimestamp"]]),
+                                zone_data=zdata,
+                                glob_data=gdata,
+                                zone_head=[h for h, i in sorted(zheaders.items(), key=lambda it: it[1])],
+                                glob_head=[h for h, i in sorted(gheaders.items(), key=lambda it: it[1])])
+        else:
+            raise Exception(
+                "Could not save data to file because '.HostTimestamp' does not appear in global headers and it is a mandatory field.")
+
+    if gdata.shape[-1] != zdata.shape[-1]:
+        raise Exception("Global data and zone data do not have the same number of frames. Please check datalogs.")
+    elif gdata.shape[0] != len(gheaders):
+        raise Exception("Global headers do not match global data matrix shape. Please check datalogs.")
+    elif zdata.shape[0] != len(zheaders):
+        raise Exception("Zone headers do not match zone data matrix shape. Please check datalogs.")
+
+    return gdata, gheaders, zdata, zheaders
+
+
 def load_dataset(dataset_name: str = None,
                  training_path: str = None,
                  validation_path: str = None,
@@ -267,7 +366,7 @@ def load_dataset(dataset_name: str = None,
         # There is no validation. We split the
         # training set in two to create one.
         print("\nTraining and Validation dataset using a validation_split = {}:".format(validation_split))
-        train_ds, val_ds = get_ds(
+        train_ds, val_ds = _get_ds(
             training_path,
             class_names=class_names,
             validation_split=validation_split,
@@ -279,7 +378,7 @@ def load_dataset(dataset_name: str = None,
             shuffle=True)
     elif training_path and validation_path:
         print("Training dataset:")
-        train_ds = get_ds(
+        train_ds = _get_ds(
             training_path,
             class_names=class_names,
             validation_split=0,
@@ -291,7 +390,7 @@ def load_dataset(dataset_name: str = None,
             shuffle=True)
 
         print("Validation dataset:")
-        val_ds = get_ds(
+        val_ds = _get_ds(
             validation_path,
             class_names=class_names,
             validation_split=0,
@@ -308,7 +407,7 @@ def load_dataset(dataset_name: str = None,
 
     if test_path:
         print("Test dataset:")
-        test_ds = get_ds(
+        test_ds = _get_ds(
             test_path,
             class_names=class_names,
             validation_split=0,
@@ -323,99 +422,3 @@ def load_dataset(dataset_name: str = None,
 
     return train_ds, val_ds, test_ds #quantization_ds,
 
-"""
-    This function loads data fields in dict_of_data_fields from the .npz files listed in list_of_dirs
-    In case one field is not available in one .npz file, the associated data is set to np.nan
-    save_to_file option will save one npz file with all data in it in PresenceEVK format style
-    """
-def fetch_npz_data(class_names,path,
-                   dict_of_glob_data_fields,
-                   dict_of_zone_data_fields,
-                   expected_nb_of_zones=64,
-                   save_to_file=None):
-
-    working_dir = os.getcwd()
-    dataset_path = os.path.join(working_dir, path)
-    List_of_gesture_dir = [os.path.join(dataset_path, posture) for posture in class_names if posture in os.listdir(dataset_path)]
-    list_of_dirs = [os.path.join(gesture_folder_path, record, "npz") for gesture_folder_path in List_of_gesture_dir for
-                    record in os.listdir(gesture_folder_path)]
-    npzFiles = []
-    for rootdir in list_of_dirs:
-        for root, dirs, files in os.walk(rootdir):
-            for f in files:
-                if ".npz" in f[-4:]:
-                    npzFiles.append(os.path.join(root, f))
-    print('{} .npz files found'.format(len(npzFiles)))
-    globdata_shape = [len(dict_of_glob_data_fields), 0]
-    zonedata_shape = [len(dict_of_zone_data_fields), expected_nb_of_zones, 0]
-    for i, fname in enumerate(tqdm(npzFiles, desc='Analysing data shapes')):
-        dataload = np.load(fname)
-        globdata_shape[-1] += dataload['glob_data'].shape[-1]
-        zonedata_shape[-1] += dataload['zone_data'].shape[-1]
-        if dataload['zone_data'].shape[1] != expected_nb_of_zones:
-            raise Exception("Wrong number of zones found in zone_data array of file {}".format(fname))
-    RAMsizeGB = (int(globdata_shape[0] * globdata_shape[1]) + \
-                 int(zonedata_shape[0] * zonedata_shape[1] * zonedata_shape[2])) * \
-                np.zeros(1, dtype=np.float64).nbytes / float(10 ** 9)
-    print('Dataset needs {} GB RAM size ({} GB is required during loading)'.format(round(RAMsizeGB, 3),
-                                                                                   round(RAMsizeGB * 2, 3)))
-
-    print('Loading {} .npz files'.format(len(npzFiles)))
-    zdata = np.empty(tuple(zonedata_shape), dtype=np.float64)
-    gdata = np.empty(tuple(globdata_shape), dtype=np.float64)
-    zdata[:] = np.nan
-    gdata[:] = np.nan
-    zheaders = {zfn: i for i, zfn in enumerate(dict_of_zone_data_fields.keys())}
-    gheaders = {gfn: i for i, gfn in enumerate(dict_of_glob_data_fields.keys())}
-    ind = 0
-    for i, fname in enumerate(tqdm(npzFiles)):
-        dataload = np.load(fname)
-        length = dataload['glob_data'].shape[1]
-
-        # Load all global data fields
-        for i, (fieldname, fieldnames) in enumerate(dict_of_glob_data_fields.items()):
-            header_index = find_data_field_index(list(dataload['glob_head'].astype('U')), fieldnames)
-            if header_index is not None:
-                gdata[i, ind:ind + length] = dataload['glob_data'][header_index, :]
-
-        # Load all zone data fields
-        for i, (fieldname, fieldnames) in enumerate(dict_of_zone_data_fields.items()):
-            header_index = find_data_field_index(list(dataload['zone_head'].astype('U')), fieldnames)
-            if header_index is not None:
-                zdata[i, :, ind:ind + length] = dataload['zone_data'][header_index, :, :]
-
-        ind += length
-
-    if save_to_file is not None:
-        if ".HostTimestamp" in gheaders:
-            np.savez_compressed(save_to_file,
-                                start_tstmp=np.min(gdata[gheaders[".HostTimestamp"]]),
-                                end_tstmp=np.max(gdata[gheaders[".HostTimestamp"]]),
-                                zone_data=zdata,
-                                glob_data=gdata,
-                                zone_head=[h for h, i in sorted(zheaders.items(), key=lambda it: it[1])],
-                                glob_head=[h for h, i in sorted(gheaders.items(), key=lambda it: it[1])])
-        else:
-            raise Exception(
-                "Could not save data to file because '.HostTimestamp' does not appear in global headers and it is a mandatory field.")
-
-    if gdata.shape[-1] != zdata.shape[-1]:
-        raise Exception("Global data and zone data do not have the same number of frames. Please check datalogs.")
-    elif gdata.shape[0] != len(gheaders):
-        raise Exception("Global headers do not match global data matrix shape. Please check datalogs.")
-    elif zdata.shape[0] != len(zheaders):
-        raise Exception("Zone headers do not match zone data matrix shape. Please check datalogs.")
-
-    return gdata, gheaders, zdata, zheaders
-
-def find_data_field_index(list_of_fields, list_of_accepted_names, verbose=True):
-    header_index = None
-    for fn in list_of_accepted_names:
-        try:
-            header_index = list_of_fields.index(fn)
-        except ValueError:
-            continue
-        break
-    if verbose and header_index is None:
-        print("Could not find one of the accepted fields\n{}\nin list\n{}".format(list_of_accepted_names, list_of_fields))
-    return header_index
