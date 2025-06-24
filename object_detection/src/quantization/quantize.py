@@ -21,6 +21,10 @@ from onnx import ModelProto
 import onnxruntime
 from typing import Optional
 
+#MODIFIED
+#from neural_compressor.tensorflow import quantize_model, StaticQuantConfig
+#from neural_compressor.data import DataLoader
+
 from common.optimization import model_formatting_ptq_per_tensor
 from common.utils import tf_dataset_to_np_array
 from common.quantization import quantize_onnx
@@ -82,6 +86,8 @@ def _tflite_ptq_quantizer(model: tf.keras.Model = None,
     # Create the output directory
     tflite_models_dir = Path(os.path.join(output_dir, "{}/".format(export_dir)))
     tflite_models_dir.mkdir(exist_ok=True, parents=True)
+    
+    
 
     # Set the quantization types for the input and output
     if quantization_input_type == 'int8':
@@ -93,6 +99,7 @@ def _tflite_ptq_quantizer(model: tf.keras.Model = None,
         converter.inference_output_type = tf.int8
     elif quantization_output_type == 'uint8':
         converter.inference_output_type = tf.uint8
+    
 
     # Set the optimizations and representative dataset generator
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
@@ -228,7 +235,61 @@ def _quantize_onnx_model(cfg, model_path):
                         "user_config.yaml file!")
     
     return quantized_model_path
+
+#MODIFIED
+def _quantize_neurComp_model(cfg, model_path):
+    """
+        Quantize a keras model using Intel Neural Compressor
+
+        Args:
+            cfg (DictConfig): Entire configuration file.
+            model_path: Optional[str]: Path to the float model
+
+        Returns:
+            quantized model path
+        """
+    print("here 1")
+    float_model = tf.keras.models.load_model(model_path, compile=False)
+    input_shape = float_model.input.shape[1:]
+    print("here 2")
+    quant_ds = get_quantization_data_loader(cfg,
+                image_size=input_shape, batch_size=1)
+    print("here 3")
+    calib_loader = DataLoader(
+        framework='tensorflow',
+        dataset=quant_ds,
+        batch_size=1 
+    )
+    print("here 4")
+    out_dir = Path(HydraConfig.get().runtime.output_dir) / cfg.quantization.export_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    print("here 5")
+    quant_cfg = StaticQuantConfig(
+        weight_dtype='int4',
+        act_dtype='int4',
+        weight_granularity='per_channel',
+        act_granularity='per_tensor',
+        weight_sym=True,
+        act_sym=True,
+    )
+    print("here 6")
+    inp_op = float_model.input_names[0].split(':')[0]
+    quant_cfg.set_local(inp_op, StaticQuantConfig(act_dtype='int8'))
     
+    for tensor_name in float_model.output_names:
+        op_name = tensor_name.split(':')[0]
+        quant_cfg.set_local(op_name, StaticQuantConfig(act_dtype='float32'))
+    print("here 7")
+    qmodel = quantize_model(
+        model=float_model,
+        quant_config=quant_cfg,
+        calib_dataloader=calib_loader
+    )
+    print("here 8")
+    save_path = out_dir / 'quant_model'
+    qmodel.save(str(save_path))
+    print(str(save_path))
+    return str(save_path)
 
 def quantize(cfg, model_path=None):
 
@@ -242,10 +303,17 @@ def quantize(cfg, model_path=None):
             raise ValueError("\nUnknown or unsupported quantizer\n"
                              f"Received: {cfq.quantizer}\n"
                              "Supported quantizer: onnx_quantizer")
+    elif cfq.quantization_weights_type == "int4" and cfq.quantizer.lower() != "neural_compressor":
+        raise ValueError("\nUnknown or unsupported quantizer\n"
+                             f"Received: {cfq.quantizer}\n"
+                             "Supported quantizer for int4: neural_compressor")
 
     print("[INFO] : Quantizing the model ... This might take few minutes ...")
     start_time = timer()
-    if Path(model_path).suffix == ".h5":
+    #MODIFIED
+    if cfq.quantizer == "neural_compressor":
+        quantized_model_path = _quantize_neurComp_model(cfg, model_path)
+    elif Path(model_path).suffix == ".h5":
         quantized_model_path = _quantize_keras_model(cfg, model_path)
     elif Path(model_path).suffix == ".onnx":
         quantized_model_path = _quantize_onnx_model(cfg, model_path)

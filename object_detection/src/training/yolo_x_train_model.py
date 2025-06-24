@@ -107,18 +107,29 @@ class YoloXTrainingModel(tf.keras.Model):
             detectors_mask_matching_true_boxes = get_detector_mask(gt_labels_loss, self.anchors[i], image_size=image_size,network_stride=ns)
             per_level_masks.append(detectors_mask_matching_true_boxes)
 
-
+        #print(self.num_classes) MODIFIED
         with tf.GradientTape() as tape:
             tloss = 0
             predictions = self.model(images, training=True)
-            for i , prediction in enumerate(predictions):
+            if len(self.network_stride) > 1:
+                for i , prediction in enumerate(predictions):
+                    fmap_loss = yolo_loss(self.anchors[i],
+                                    self.num_classes, 
+                                    prediction,
+                                    gt_labels_loss,
+                                    per_level_masks[i][0],
+                                    per_level_masks[i][1],
+                                    image_size)
+                    tloss = tloss + fmap_loss
+            else:
+                i = 0
                 fmap_loss = yolo_loss(self.anchors[i],
-                                self.num_classes, 
-                                prediction,
-                                gt_labels_loss,
-                                per_level_masks[i][0],
-                                per_level_masks[i][1],
-                                image_size)
+                                    self.num_classes, 
+                                    predictions,
+                                    gt_labels_loss,
+                                    per_level_masks[i][0],
+                                    per_level_masks[i][1],
+                                    image_size)
                 tloss = tloss + fmap_loss
         loss = tloss                    
         # Compute gradients and update weights
@@ -151,22 +162,40 @@ class YoloXTrainingModel(tf.keras.Model):
             per_level_masks.append(detectors_mask_matching_true_boxes)
 
         vloss = 0
-        for i , prediction in enumerate(predictions):
+        #MODIFIED
+        if len(self.network_stride) > 1:
+            for i , prediction in enumerate(predictions):
+                fmap_loss = yolo_loss(self.anchors[i],
+                                self.num_classes, 
+                                prediction,
+                                gt_labels_loss,
+                                per_level_masks[i][0],
+                                per_level_masks[i][1],
+                                image_size)
+                vloss = vloss + fmap_loss
+        else:
+            i = 0
             fmap_loss = yolo_loss(self.anchors[i],
-                            self.num_classes, 
-                            prediction,
-                            gt_labels_loss,
-                            per_level_masks[i][0],
-                            per_level_masks[i][1],
-                            image_size)
+                                self.num_classes, 
+                                predictions,
+                                gt_labels_loss,
+                                per_level_masks[i][0],
+                                per_level_masks[i][1],
+                                image_size)
             vloss = vloss + fmap_loss
         val_loss = vloss
 
-        # Decode the predictions
+        # Decode the predictions MODIFIED
         levels_boxes = []
         levels_scores = []
-        for i , prediction in enumerate(predictions):
-            box, score = decode_yolo_predictions(prediction, self.num_classes, self.anchors[i], image_size)
+        if len(self.network_stride) > 1:
+            for i , prediction in enumerate(predictions):
+                box, score = decode_yolo_predictions(prediction, self.num_classes, self.anchors[i], image_size)
+                levels_boxes.append(box)
+                levels_scores.append(score)
+        else:
+            i = 0
+            box, score = decode_yolo_predictions(predictions, self.num_classes, self.anchors[i], image_size)
             levels_boxes.append(box)
             levels_scores.append(score)
         

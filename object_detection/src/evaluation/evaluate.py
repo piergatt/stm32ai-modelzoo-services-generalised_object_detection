@@ -59,6 +59,7 @@ def _evaluate_float_model(cfg: DictConfig, model_path: str, num_classes: int = N
 
         # Predict the images, decode and NMS the detections
         predictions = model(images)
+        #tf.print(tf.shape(predictions))
         boxes, scores, classes = get_nmsed_detections(cfg, predictions, image_size)
 
         # Record GT boxes and detection boxes in (x1, y1, x2, y2) absolute coordinates
@@ -154,10 +155,12 @@ def _evaluate_quantized_model(cfg: DictConfig,
 
         if model_family(cfg.general.model_type) in ["ssd", "st_yolo_x"]:
             if target == 'host':
-                # Model outputs are scores, boxes and anchors.
-                predictions = (interpreter.get_tensor(output_details[0]['index']),
-                               interpreter.get_tensor(output_details[1]['index']),
-                               interpreter.get_tensor(output_details[2]['index']))
+                # Model outputs are scores, boxes and anchors. MODIFIED
+                # Dynamically collect every output head from the TFLite model
+                predictions = tuple(interpreter.get_tensor(o['index'])
+                                        for o in output_details)
+                if len(cpp.network_stride) < 2:
+                    predictions = predictions[0]
         else:
             if target == 'host':
                 predictions = interpreter.get_tensor(output_details[0]['index'])

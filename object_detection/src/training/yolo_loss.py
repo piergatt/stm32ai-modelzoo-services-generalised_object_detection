@@ -184,7 +184,8 @@ def yolo_loss(anchors, num_classes, pred, image_labels, detectors_mask, matching
     mean_loss : float
         mean localization loss across minibatch
     """
-
+    #Used for easier debugging
+    #tf.config.run_functions_eagerly(True)
     (yolo_output, true_boxes, detectors_mask, matching_true_boxes, image_size) = \
                       pred,image_labels, detectors_mask, matching_true_boxes, image_size
                       
@@ -193,14 +194,19 @@ def yolo_loss(anchors, num_classes, pred, image_labels, detectors_mask, matching
     no_object_scale = 1
     class_scale = 1
     coordinates_scale = 1
-
-    pred_xy, pred_wh, pred_confidence, pred_class_prob = yolo_head(yolo_output, anchors, num_classes)
-              
+    
+    #
+    total_ch = tf.shape(yolo_output)[-1]
+    detected_classes = tf.maximum(total_ch - 5, 0)
+    
     yolo_output_shape = tf.shape(yolo_output)
+    pred_xy, pred_wh, pred_confidence, pred_class_prob = yolo_head(yolo_output, anchors, detected_classes)
+              
     feats = tf.reshape(yolo_output, [
         -1, yolo_output_shape[1], yolo_output_shape[2], num_anchors,
-        num_classes + 5
+        detected_classes + 5
     ])
+    #
     pred_boxes = tf.concat(
         [tf.math.sigmoid(feats[..., 0:2]), feats[..., 2:4]], axis=-1)
     
@@ -247,11 +253,20 @@ def yolo_loss(anchors, num_classes, pred, image_labels, detectors_mask, matching
     matching_classes = tf.cast(matching_true_boxes[..., 4], tf.int32)
 
     matching_classes = tf.one_hot(matching_classes, num_classes, on_value=1.0, off_value=0.0, axis=-1)
+
+    #here
+    do_class = tf.greater(detected_classes, 0)
+    classification_loss = tf.cond(
+        do_class,
+        lambda: class_scale * detectors_mask *
+                tf.math.square(matching_classes - pred_class_prob),
+        lambda: tf.constant(0.0)
+    )
     
-    classification_loss = (class_scale * detectors_mask *
-                           tf.math.square(matching_classes - pred_class_prob))
                            
     matching_boxes = matching_true_boxes[..., 0:4]
+    #print("pred_boxes shape   :", pred_boxes.shape)
+    #print("matching_boxes shape:", matching_boxes.shape)
 
     coordinates_loss = (coordinates_scale * detectors_mask * 
                         tf.math.square(matching_boxes - pred_boxes))
@@ -259,15 +274,23 @@ def yolo_loss(anchors, num_classes, pred, image_labels, detectors_mask, matching
     confidence_loss = tf.reshape(confidence_loss, [-1])
     confidence_loss_sum = tf.math.reduce_sum(confidence_loss)
 
+    
+        
     classification_loss = tf.reshape(classification_loss, [-1])
     classification_loss_sum = tf.math.reduce_sum(classification_loss)
     
     coordinates_loss = tf.reshape(coordinates_loss, [-1])
     coordinates_loss_sum = tf.math.reduce_sum(coordinates_loss)
-
-    confidence_loss_sum = 0.5 * confidence_loss_sum
-    classification_loss_sum = 0.5 * classification_loss_sum
-    coordinates_loss_sum = 0.5 * coordinates_loss_sum
+    
+    mult = tf.cond(
+        do_class,
+        lambda: 0.5,
+        lambda: 0.0
+    )
+    
+    confidence_loss_sum = (1.0-mult) * confidence_loss_sum
+    classification_loss_sum = mult * classification_loss_sum
+    coordinates_loss_sum = (1.0-mult) * coordinates_loss_sum
     total_loss = confidence_loss_sum + classification_loss_sum + coordinates_loss_sum
 
     return total_loss

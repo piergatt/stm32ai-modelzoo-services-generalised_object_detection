@@ -88,21 +88,20 @@ def yolo_head(feats, anchors, num_classes):
     box_class_pred : tensor
         Probability distribution estimate for each box over class labels.
     """
-
     num_anchors = tf.shape(anchors)[0]
     anchors = tf.reshape(anchors, [1, 1, 1, num_anchors, 2])
 
-    # Get the dimensions of the grid of cells
+    # Get the dimensions of the grid of cells 
     conv_dims = tf.shape(feats)[1:3]
     
     # Generate the grid cell indices
     # Note: YOLO iterates over height index before width index.
     i = tf.where(tf.ones([conv_dims[1], conv_dims[0]], dtype=tf.bool))
     conv_index = tf.stack([i[:, 1], i[:, 0]], axis=-1)
-    
+    #print(tf.shape(feats))
     # The coordinates box_xy of the centers of prediction boxes
     # are relative to the top-left corner of the grid cells.
-    feats = tf.reshape(feats, [-1, conv_dims[0], conv_dims[1], num_anchors, num_classes + 5])
+    feats = tf.reshape(feats, [-1, conv_dims[0], conv_dims[1], num_anchors, tf.maximum(0, tf.shape(feats)[3]-5) + 5])
     box_xy = tf.math.sigmoid(feats[..., :2])
     box_wh = tf.math.exp(feats[..., 2:4])
     box_confidence = tf.math.sigmoid(feats[..., 4:5])
@@ -123,9 +122,9 @@ def yolo_head(feats, anchors, num_classes):
 
     
 def decode_yolo_predictions(predictions, num_classes, anchors, image_size):
-
+    
     box_xy, box_wh, box_confidence, box_class_probs = yolo_head(predictions, anchors, num_classes)
-
+    
     x = box_xy[..., 0]
     y = box_xy[..., 1]
     w = box_wh[..., 0]
@@ -141,8 +140,17 @@ def decode_yolo_predictions(predictions, num_classes, anchors, image_size):
 
     boxes = tf.reshape(boxes, [batch_size, num_boxes, 4])
     
+    #MODIFIED
+    
+    
     box_confidence = tf.reshape(box_confidence, [batch_size, num_boxes, 1])
-    box_class_probs = tf.reshape(box_class_probs, [batch_size, num_boxes, num_classes])
+    box_class_probs = tf.cond(
+        tf.greater(tf.shape(predictions)[-1], 5),
+        lambda: tf.reshape(box_class_probs, [batch_size, num_boxes, num_classes]),
+        lambda: tf.constant(1.0)
+    )
+    
+    #tf.print(tf.shape(predictions))
     scores = box_confidence * box_class_probs
     
     return boxes, scores
@@ -272,7 +280,7 @@ def get_nmsed_detections(cfg, predictions, image_size):
         boxes, scores = decode_yolo_predictions(predictions, num_classes, cpp.yolo_anchors, image_size)
 
     elif model_family(cfg.general.model_type) == "st_yolo_x":
-        np_anchors=[]
+        np_anchors=[] #MODIFIED
         anchors = cpp.yolo_anchors
         network_stride = cpp.network_stride
         predictions = sorted(predictions, key=lambda x: x.shape[1], reverse=True)
@@ -282,16 +290,29 @@ def get_nmsed_detections(cfg, predictions, image_size):
                 np_anchors.append(anch.astype(np.float32))
             else:
                 np_anchors.append(anch.numpy().astype(np.float32)) 
+        #np_anchors = np_anchors[max(0, 3 - len(predictions)):]
         levels_boxes = []
         levels_scores = []
-        for i , prediction in enumerate(predictions):
-            box, score = decode_yolo_predictions(prediction, num_classes, np_anchors[i], image_size)
+        #print(f"Number of prediction scales: {len(predictions)}")
+        #print(f"Number of anchor sets:       {len(np_anchors)}, {np_anchors}")
+        if len(cpp.network_stride) > 1:
+            for i , prediction in enumerate(predictions):
+                box, score = decode_yolo_predictions(prediction, num_classes, np_anchors[i], image_size)
+                levels_boxes.append(box)
+                levels_scores.append(score)
+
+            boxes = tf.concat(levels_boxes, axis=1)
+            scores = tf.concat(levels_scores, axis=1)
+        else:
+            i = 0
+            box, score = decode_yolo_predictions(predictions, num_classes, np_anchors[i], image_size)
             levels_boxes.append(box)
             levels_scores.append(score)
-        
-        boxes = tf.concat(levels_boxes, axis=1)
-        scores = tf.concat(levels_scores, axis=1)
-    
+
+            boxes = tf.concat(levels_boxes, axis=1)
+            scores = tf.concat(levels_scores, axis=1)
+
+
     elif model_family(cfg.general.model_type) == "yolo_v8":
         boxes, scores = decode_yolo_v8_predictions(predictions)
     elif model_family(cfg.general.model_type) == "yolo_v4":

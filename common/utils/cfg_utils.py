@@ -327,19 +327,21 @@ def parse_quantization_section(cfg: DictConfig,
         cfg (DictConfig): 'quantization' section of the configuration file
         legal (List): UC specific usable attributes
     '''
-    required = [x for x in legal if x not in ["export_dir", "granularity", "optimize", "target_opset", "extra_options", "op_types_to_quantize"]]
+    required = [x for x in legal if x not in ["export_dir", "granularity", "optimize", "target_opset", "extra_options", "op_types_to_quantize", "quantization_weights_type"]]
     check_config_attributes(cfg, specs={"legal": legal, "all": required}, section="quantization")
 
-    # Set default values of missing optional arguments
+    # Set default values of missing optional arguments MODIFIED
     if not cfg.export_dir:
         cfg.export_dir = "quantized_models"
     if not cfg.granularity:
         cfg.granularity = "per_channel"
+    if not cfg.quantization_weights_type:
+        cfg.quantization_weights_type = "int8"
     cfg.optimize = cfg.optimize if cfg.optimize is not None else False
     cfg.target_opset = cfg.target_opset if cfg.target_opset is not None else 17
-
-    # Check the quantizer name
-    if cfg.quantizer.lower() not in ["tflite_converter", "onnx_quantizer"]:
+    
+    # Check the quantizer name MODIFIED
+    if cfg.quantizer.lower() not in ["tflite_converter", "onnx_quantizer", "neural_compressor"]:
         raise ValueError(f"\nUnknown or unsupported quantizer. Received `{cfg.quantizer}`\n"
                          "Supported quantizers are : TFlite_converter or Onnx_quantizer\n"
                          "Please check the 'quantization.quantizer' attribute in your configuration file.")

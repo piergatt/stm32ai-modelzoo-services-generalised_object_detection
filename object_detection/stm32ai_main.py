@@ -57,7 +57,14 @@ def process_mode(cfg: DictConfig):
     log_to_file(cfg.output_dir, f'operation_mode: {mode}')
 
     if mode == "training":
-        train(cfg)
+        gpus = tf.config.list_physical_devices('GPU')
+        if len(gpus) > 1:
+            print(f"[INFO] {len(gpus)} GPUs detected, using MirroredStrategy.")
+            strategy = tf.distribute.MirroredStrategy()
+            with strategy.scope():
+                train(cfg)
+        else:
+            train(cfg)
         print("[INFO] training complete")
 
     elif mode == "evaluation":
@@ -96,7 +103,14 @@ def process_mode(cfg: DictConfig):
             print('[INFO] : Please on STM32N6570-DK toggle the boot switches to the left and power cycle the board.')
 
     elif mode == 'chain_tqe':
-        trained_model_path = train(cfg)
+        gpus = tf.config.list_physical_devices('GPU')
+        if len(gpus) > 1:
+            print(f"[INFO] {len(gpus)} GPUs detected, using MirroredStrategy.")
+            strategy = tf.distribute.MirroredStrategy()
+            with strategy.scope():
+                trained_model_path = train(cfg)
+        else:
+            trained_model_path = train(cfg)
         quantized_model_path = quantize(cfg, model_path=trained_model_path)
         evaluate(cfg, model_path=quantized_model_path)
         print("Trained model path:", trained_model_path)

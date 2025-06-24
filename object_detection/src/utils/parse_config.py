@@ -157,17 +157,16 @@ def parse_data_augmentation_section(cfg: DictConfig) -> None:
 
 def _parse_postprocessing_section(cfg: DictConfig, model_type: str) -> None:
     # cfg: 'postprocessing' section of the configuration file
-
-    legal = ["confidence_thresh", "NMS_thresh", "IoU_eval_thresh", "yolo_anchors", "plot_metrics",
-             'max_detection_boxes']
+    #MODIFIED
+    legal = ["confidence_thresh", "NMS_thresh", "IoU_eval_thresh", "yolo_anchors", "plot_metrics", 'max_detection_boxes', "network_stride"]
     required = ["confidence_thresh", "NMS_thresh", "IoU_eval_thresh"]
     check_config_attributes(cfg, specs={"legal": legal, "all": required}, section="postprocessing")
-
+    #MODIFIED
     if model_type == "tiny_yolo_v2":
         cfg.network_stride = 32
     elif model_type == "st_yolo_lc_v1":
         cfg.network_stride = 16
-    elif model_type == "st_yolo_x":
+    elif model_type == "st_yolo_x" and cfg.network_stride == None:
         cfg.network_stride = [8,16,32]
     
     # Set default YOLO anchors
@@ -282,10 +281,10 @@ def get_config(config_data: DictConfig) -> DefaultMunch:
         if cfg.hardware_type == "MCU":
             _parse_postprocessing_section(cfg.postprocessing, cfg.general.model_type)
 
-    # Quantization section parsing
+    # Quantization section parsing MODIFIED
     if cfg.operation_mode in mode_groups.quantization:
         legal = ["quantizer", "quantization_type", "quantization_input_type",
-                "quantization_output_type", "granularity", "export_dir", "optimize","target_opset"]
+                "quantization_output_type", "quantization_weights_type", "granularity", "export_dir", "optimize","target_opset"]
         parse_quantization_section(cfg.quantization,
                                    legal=legal)
 

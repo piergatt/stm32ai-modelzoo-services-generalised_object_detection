@@ -101,7 +101,7 @@ def _set_up_yolo_model(cfg, model, input_shape=None, num_labels=None, val_datase
     for anchor in cpp.yolo_anchors:
         print(" ", anchor)
 
-    data_augmentation_cfg = cfg.data_augmentation.config if cfg.data_augmentation else None      
+    data_augmentation_cfg = cfg.data_augmentation.config if cfg.data_augmentation else None 
 
     # Create the custom model
     yolo_model = YoloTrainingModel(
@@ -136,7 +136,7 @@ def _set_up_yolo_x_model(cfg, model, input_shape=None, num_labels=None, val_data
 
 
     data_augmentation_cfg = cfg.data_augmentation.config if cfg.data_augmentation else None      
-
+    #print(cpp.network_stride)
     # Create the custom model
     yolo_model = YoloXTrainingModel(
                         model,
